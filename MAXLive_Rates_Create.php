@@ -424,57 +424,87 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						}
 						// : End
 						
-						// : Check locations exist
+						// : Check locations exist and/or create them if they dont exist
 						try {
-							$this->_session->open ( $this->_maxurl . "/Country_Tab/cities?&tab_id=50" );
+							$_locations = array();
+							$_locations[] = $_dataset["location from point"];
+							$_locations[] = $_dataset["location to point"];
+							$_locations[] = $_dataset["location from town"];
+							$_locations[] = $_dataset["location to town"];
+							$_type = NULL;
+							foreach($_locations as $aLocation) {
+								if (!$_aLocation["id"]) {
+									// Store key value of array
+									$_locationKey = key($aLocation);
+									
+									// : Determine type of location
+									if ((strpos($aLocation["value"], "town")) != FALSE) {
+										$_type = "udo_City";
+									} else {
+										$_type = "udo_Point";
+									}
+									// : End
+									// Build string for sql query like search for location 
+									$_searchStr = "%" . preg_replace("@\s@", "%", $aLocation["value"]) . "%"; 
+									$myQuery = "select ID from udo_location where name like '" . $_searchStr . "' and _type='" . $_type . "';";
+									$result = $this->queryDB ( $myQuery );
+									if (count ( $result ) != 0) {
+										$_dataset [$_locationKey] ["id"] = intval ( $result [0] ["ID"] );
+									} else {
+										// If location not found then create new location
+										$this->_session->open ( $this->_maxurl . "/Country_Tab/cities?&tab_id=50" );
+											
+										$e = $w->until ( function ($session) {
+											return $session->element ( "css selector", "div.toolbar-cell-create" );
+										} );
+										$this->_session->element ( "css selector", "div.toolbar-cell-create" )->click ();
+											
+										$e = $w->until ( function ($session) {
+											return $session->element ( "xpath", "//*[contains(text(),'Capture the details of City')]" );
+										} );
+												
+											$this->assertElementPresent ( "css selector", "#udo_City-14_0_0_name-14" );
+											$this->assertElementPresent ( "css selector", "#udo_City-15__0_parent_id-15" );
+											$this->assertElementPresent ( "css selector", "#checkbox_udo_City-2_0_0_active-2" );
+											$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+												
+											$this->_session->element ( "css selector", "#udo_City-14_0_0_name-14" )->sendKeys ( $city );
+											$this->_session->element ( "xpath", "//*[@id='udo_City-15__0_parent_id-15']/option[text()='" . self::PROVINCE . "']" )->click ();
+											$this->_session->element ( "css selector", "#checkbox_udo_City-2_0_0_active-2" )->click ();
+											$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+												
+											$e = $w->until ( function ($session) {
+												return $session->element ( "css selector", "div.toolbar-cell-create" );
+											} );
+													
+												$this->_session->element ( "css selector", "div.toolbar-cell-create" )->click ();
+													
+												$e = $w->until ( function ($session) {
+													return $session->element ( "xpath", "//*[contains(text(),'Create Zones - City')]" );
+												} );
+														
+													$this->assertElementPresent ( "css selector", "#udo_ZoneCity_link-5__0_zone_id-5" );
+													$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+														
+													$zone_id = preg_split ( "/kms.*/", $city );
+														
+													$this->_session->element ( "xpath", "//*[@id='udo_ZoneCity_link-5__0_zone_id-5']/option[text()='" . $zone_id [0] . "kms Zone " . $_contrib . "']" )->click ();
+													$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+														
+													$e = $w->until ( function ($session) {
+														return $session->element ( "css selector", "div.toolbar-cell-create" );
+													} );
+															
+														$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+														$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+										} catch ( Exception $e ) {
+											print ($e->getMessage ()) ;
+											exit ();
+										}
+									}
+								}
+							}
 							
-							$e = $w->until ( function ($session) {
-								return $session->element ( "css selector", "div.toolbar-cell-create" );
-							} );
-							$this->_session->element ( "css selector", "div.toolbar-cell-create" )->click ();
-							
-							$e = $w->until ( function ($session) {
-								return $session->element ( "xpath", "//*[contains(text(),'Capture the details of City')]" );
-							} );
-							
-							$this->assertElementPresent ( "css selector", "#udo_City-14_0_0_name-14" );
-							$this->assertElementPresent ( "css selector", "#udo_City-15__0_parent_id-15" );
-							$this->assertElementPresent ( "css selector", "#checkbox_udo_City-2_0_0_active-2" );
-							$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-							
-							$this->_session->element ( "css selector", "#udo_City-14_0_0_name-14" )->sendKeys ( $city );
-							$this->_session->element ( "xpath", "//*[@id='udo_City-15__0_parent_id-15']/option[text()='" . self::PROVINCE . "']" )->click ();
-							$this->_session->element ( "css selector", "#checkbox_udo_City-2_0_0_active-2" )->click ();
-							$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
-							
-							$e = $w->until ( function ($session) {
-								return $session->element ( "css selector", "div.toolbar-cell-create" );
-							} );
-							
-							$this->_session->element ( "css selector", "div.toolbar-cell-create" )->click ();
-							
-							$e = $w->until ( function ($session) {
-								return $session->element ( "xpath", "//*[contains(text(),'Create Zones - City')]" );
-							} );
-							
-							$this->assertElementPresent ( "css selector", "#udo_ZoneCity_link-5__0_zone_id-5" );
-							$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-							
-							$zone_id = preg_split ( "/kms.*/", $city );
-							
-							$this->_session->element ( "xpath", "//*[@id='udo_ZoneCity_link-5__0_zone_id-5']/option[text()='" . $zone_id [0] . "kms Zone " . $_contrib . "']" )->click ();
-							$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
-							
-							$e = $w->until ( function ($session) {
-								return $session->element ( "css selector", "div.toolbar-cell-create" );
-							} );
-							
-							$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-							$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
-						} catch ( Exception $e ) {
-							print ($e->getMessage ()) ;
-							exit ();
-						}
 						
 						// : End
 						
