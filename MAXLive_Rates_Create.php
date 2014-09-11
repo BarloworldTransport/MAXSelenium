@@ -37,6 +37,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 	const COLUMN_VALIDATION_FAIL = "Not all columns are present in the following file %s";
 	const PROCESS_FAIL = "An error occured while %s the %o %r";
 	const PB_URL = "/Planningboard";
+	const POINT_URL = "/Country_Tab/points?&tab_id=52";
+	const CITY_URL = "/Country_Tab/cities?&tab_id=50";
 	const CUSTOMER_URL = "/DataBrowser?browsePrimaryObject=461&browsePrimaryInstance=";
 	const LOCATION_BU_URL = "/DataBrowser?browsePrimaryObject=495&browsePrimaryInstance=";
 	const OFF_CUST_BU_URL = "/DataBrowser?browsePrimaryObject=494&browsePrimaryInstance=";
@@ -205,8 +207,10 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 		$_headers = ( array ) array (
 				"customer",
 				"offloading customer",
+				"province from",
 				"location from town",
 				"location from point",
+				"province to",
 				"location to town",
 				"location to point",
 				"rate type",
@@ -218,7 +222,9 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 				"lead kms",
 				"minimum tons",
 				"contribution model",
-				"business unit" 
+				"business unit",
+				"zone from",
+				"zone to" 
 		);
 		
 		$_keys = array (
@@ -413,6 +419,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						$_queries ["location from point"] = "select ID from udo_location where name='" . $_dataset ["location from point"] ["value"] . "' and _type='udo_Point';";
 						$_queries ["location to town"] = "select ID from udo_location where name='" . $_dataset ["location to town"] ["value"] . "' and _type='udo_City';";
 						$_queries ["location to point"] = "select ID from udo_location where name='" . $_dataset ["location to point"] ["value"] . "' and _type='udo_Point';";
+						$_queries ["province from"] = "select ID from udo_location where name='" . $_dataset ["province from"] ["value"] . "' and _type='udo_Province';";
+						$_queries ["province to"] = "select ID from udo_location where name='" . $_dataset ["province to"] ["value"] . "' and _type='udo_Province';";
 						
 						foreach ( $_queries as $_sqlKey => $_sqlValue ) {
 							$result = $this->queryDB ( $_sqlValue );
@@ -423,89 +431,157 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 							}
 						}
 						// : End
-						
-						// : Check locations exist and/or create them if they dont exist
+						// : Check locations exist and create them if they dont
 						try {
-							$_locations = array();
-							$_locations[] = $_dataset["location from point"];
-							$_locations[] = $_dataset["location to point"];
-							$_locations[] = $_dataset["location from town"];
-							$_locations[] = $_dataset["location to town"];
+							$_locationTree = "";
+							$_locationName = "";
+							$_parentId = "";
+							$_locations = array ();
+							$_locations [] = $_dataset ["location from town"];
+							$_locations [] = $_dataset ["location to town"];
+							$_locations [] = $_dataset ["location from point"];
+							$_locations [] = $_dataset ["location to point"];
 							$_type = NULL;
-							foreach($_locations as $aLocation) {
-								if (!$_aLocation["id"]) {
+							foreach ( $_locations as $_aLocation ) {
+								if (! $_aLocation ["id"]) {
 									// Store key value of array
-									$_locationKey = key($aLocation);
-									
+									$_locationKey = key ( $_aLocation );
+									print_r($_aLocation);
 									// : Determine type of location
-									if ((strpos($aLocation["value"], "town")) != FALSE) {
+									if (((strpos ( $_locationKey , "town" )) != FALSE) && ((strpos ( $_locationKey, "from" )) != FALSE)) {
 										$_type = "udo_City";
-									} else {
+										$_parentId = intval($_dataset["province from"]["id"]);
+										$_locationTree = $_dataset["province from"]["value"];
+									} else if (((strpos ( $_locationKey, "town" )) != FALSE) && ((strpos ( $_locationKey, "to" )) != FALSE)) {
+										$_type = "udo_City";
+										$_parentId = intval($_dataset["province to"]["id"]);
+										$_locationTree = $_dataset["province to"]["value"];
+									} else if (((strpos ( $_locationKey, "point" )) != FALSE) && ((strpos ( $_locationKey, "from" )) != FALSE)) {
 										$_type = "udo_Point";
+										$_parentId = intval($_dataset["location from town"]["id"]);
+										$_locationTree = $_dataset["location from town"]["value"];
+									} else if (((strpos ( $_locationKey, "point" )) != FALSE) && ((strpos ( $_locationKey, "to" )) != FALSE)) {
+										$_type = "udo_Point";
+										$_parentId = intval($_dataset["location to town"]["id"]);
+										$_locationTree = $_dataset["location to town"]["value"];
 									}
+									print($_locationKey . PHP_EOL);
+									
 									// : End
-									// Build string for sql query like search for location 
-									$_searchStr = "%" . preg_replace("@\s@", "%", $aLocation["value"]) . "%"; 
+									// Build string for sql query like search for location
+									$_searchStr = "%" . preg_replace ( "@\s@", "%", $_aLocation ["value"] ) . "%";
 									$myQuery = "select ID from udo_location where name like '" . $_searchStr . "' and _type='" . $_type . "';";
 									$result = $this->queryDB ( $myQuery );
 									if (count ( $result ) != 0) {
 										$_dataset [$_locationKey] ["id"] = intval ( $result [0] ["ID"] );
 									} else {
+										
+										// : Build location tree
+										while (!$_parentId != 0) {
+											$treeQuery = "select id, name, parent_id from udo_location where id=" . strval($_parentId) . ";";
+											print($treeQuery . PHP_EOL);
+											$result = $this->queryDB ( $treeQuery );
+											if (count ( $result ) != 0) {
+												$_parentId = intval($result [0] ["parent_id"]);
+												$_locationName = $result [0] ["name"];
+												$_locationTree = $_locationName . " -- " . $_locationTree;
+											} else {
+												throw new Exception("Cannot find parent for location type: $_type, name: " . $_aLocation["value"]);
+											}											
+										}
+										print_r($_locationTree);
+										exit;
+										
+										// : End
+										
 										// If location not found then create new location
-										$this->_session->open ( $this->_maxurl . "/Country_Tab/cities?&tab_id=50" );
-											
-										$e = $w->until ( function ($session) {
-											return $session->element ( "css selector", "div.toolbar-cell-create" );
-										} );
-										$this->_session->element ( "css selector", "div.toolbar-cell-create" )->click ();
-											
-										$e = $w->until ( function ($session) {
-											return $session->element ( "xpath", "//*[contains(text(),'Capture the details of City')]" );
-										} );
+										switch ($_type) {
+											case "udo_City" :
+												// : Create City
+												$this->_session->open ( $this->_maxurl . self::CITY_URL );
 												
-											$this->assertElementPresent ( "css selector", "#udo_City-14_0_0_name-14" );
-											$this->assertElementPresent ( "css selector", "#udo_City-15__0_parent_id-15" );
-											$this->assertElementPresent ( "css selector", "#checkbox_udo_City-2_0_0_active-2" );
-											$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-												
-											$this->_session->element ( "css selector", "#udo_City-14_0_0_name-14" )->sendKeys ( $city );
-											$this->_session->element ( "xpath", "//*[@id='udo_City-15__0_parent_id-15']/option[text()='" . self::PROVINCE . "']" )->click ();
-											$this->_session->element ( "css selector", "#checkbox_udo_City-2_0_0_active-2" )->click ();
-											$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
-												
-											$e = $w->until ( function ($session) {
-												return $session->element ( "css selector", "div.toolbar-cell-create" );
-											} );
-													
+												$e = $w->until ( function ($session) {
+													return $session->element ( "css selector", "div.toolbar-cell-create" );
+												} );
 												$this->_session->element ( "css selector", "div.toolbar-cell-create" )->click ();
-													
+												
+												$e = $w->until ( function ($session) {
+													return $session->element ( "xpath", "//*[contains(text(),'Capture the details of City')]" );
+												} );
+												
+												$this->assertElementPresent ( "css selector", "#udo_City-14_0_0_name-14" );
+												$this->assertElementPresent ( "css selector", "#udo_City-15__0_parent_id-15" );
+												$this->assertElementPresent ( "css selector", "#checkbox_udo_City-2_0_0_active-2" );
+												$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+												
+												$this->_session->element ( "css selector", "#udo_City-14_0_0_name-14" )->sendKeys ( $city );
+												$this->_session->element ( "xpath", "//*[@id='udo_City-15__0_parent_id-15']/option[text()='" . self::PROVINCE . "']" )->click ();
+												$this->_session->element ( "css selector", "#checkbox_udo_City-2_0_0_active-2" )->click ();
+												$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+												
+												$e = $w->until ( function ($session) {
+													return $session->element ( "css selector", "div.toolbar-cell-create" );
+												} );
+												
+												$this->_session->element ( "css selector", "div.toolbar-cell-create" )->click ();
+												
 												$e = $w->until ( function ($session) {
 													return $session->element ( "xpath", "//*[contains(text(),'Create Zones - City')]" );
 												} );
-														
-													$this->assertElementPresent ( "css selector", "#udo_ZoneCity_link-5__0_zone_id-5" );
-													$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-														
-													$zone_id = preg_split ( "/kms.*/", $city );
-														
-													$this->_session->element ( "xpath", "//*[@id='udo_ZoneCity_link-5__0_zone_id-5']/option[text()='" . $zone_id [0] . "kms Zone " . $_contrib . "']" )->click ();
-													$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
-														
-													$e = $w->until ( function ($session) {
-														return $session->element ( "css selector", "div.toolbar-cell-create" );
-													} );
-															
-														$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-														$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
-										} catch ( Exception $e ) {
-											print ($e->getMessage ()) ;
-											exit ();
+												
+												$this->assertElementPresent ( "css selector", "#udo_ZoneCity_link-5__0_zone_id-5" );
+												$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+												
+												$zone_id = preg_split ( "/kms.*/", $city );
+												
+												$this->_session->element ( "xpath", "//*[@id='udo_ZoneCity_link-5__0_zone_id-5']/option[text()='" . $zone_id [0] . "kms Zone " . $_contrib . "']" )->click ();
+												$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+												
+												$e = $w->until ( function ($session) {
+													return $session->element ( "css selector", "div.toolbar-cell-create" );
+												} );
+												
+												$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+												$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+												break;
+												// : End Case
+											case "udo_Point" :
+											case "default" :
+												// : Create Point
+												$this->_session->open ( $this->_maxurl . self::POINT_URL );
+												
+												$e = $w->until ( function ($session) {
+													return $session->element ( "css selector", "div.toolbar-cell-create" );
+												} );
+												$this->_session->element ( "css selector", "div.toolbar-cell-create" )->click ();
+												
+												$e = $w->until ( function ($session) {
+													return $session->element ( "xpath", "//*[contains(text(),'Capture the details of Point')]" );
+												} );
+												
+												$this->assertElementPresent ( "css selector", "#udo_Point-14_0_0_name-14" );
+												$this->assertElementPresent ( "css selector", "#udo_Point-15__0_parent_id-15" );
+												$this->assertElementPresent ( "css selector", "#checkbox_udo_Point-2_0_0_active-2" );
+												$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+												
+												$this->_session->element ( "css selector", "#udo_Point-14_0_0_name-14" )->sendKeys ( $city );
+												$this->_session->element ( "xpath", "//*[@id='udo_Point-15__0_parent_id-15']/option[text()='" . self::PROVINCE . "']" )->click ();
+												$this->_session->element ( "css selector", "#checkbox_udo_Point-2_0_0_active-2" )->click ();
+												$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+												
+												$e = $w->until ( function ($session) {
+													return $session->element ( "css selector", "div.toolbar-cell-create" );
+												} );
+												break;
+												// : End Case
 										}
 									}
 								}
 							}
-							
-						
+						} catch ( Exception $e ) {
+							// Add code here
+						}
+						exit;
 						// : End
 						
 						// : Check locations are linked to customer
@@ -656,10 +732,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								}
 							}
 						} catch ( Exception $e ) {
-							$_msg = preg_replace ( "@/s@", "linking", self::PROCESS_FAIL );
-							$_msg = preg_replace ( "@/o@", "customer location link", $_msg );
-							$_msg = preg_replace ( "@/o@", "dummy data", $_msg );
-							throw new Exception ( $_msg );
+							// Add code here
 						}
 						
 						// : End
@@ -772,10 +845,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								throw new Exception ( "Could not find offloading customer record: " . $point . " (" . $pointname . ")" );
 							}
 						} catch ( Exception $e ) {
-							$_msg = preg_replace ( "@/s@", "creating", self::PROCESS_FAIL );
-							$_msg = preg_replace ( "@/o@", "offloading customer", $_msg );
-							$_msg = preg_replace ( "@/o@", "dummy data", $_msg );
-							throw new Exception ( $_msg );
+							// Add code here
 						}
 						// : End
 						
@@ -887,10 +957,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								throw new Exception ( "Could not find offloading customer record: " . $point . " (" . $pointname . ")" );
 							}
 						} catch ( Exception $e ) {
-							$_msg = preg_replace ( "@/s@", "linking", self::PROCESS_FAIL );
-							$_msg = preg_replace ( "@/o@", "offloading customer link", $_msg );
-							$_msg = preg_replace ( "@/o@", "dummy data", $_msg );
-							throw new Exception ( $_msg );
+							// Add code here
 						}
 						
 						// : End
@@ -1095,8 +1162,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 				}
 				// : End
 			} else {
-				$_msg = preg_replace ( "/%s/", $_file, self::COLUMN_VALIDATION_FAIL );
-				throw new Exception ( $_msg );
+				// Add code here
 			}
 			
 			// : Tear Down
