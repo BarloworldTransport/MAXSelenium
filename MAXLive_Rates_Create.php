@@ -742,341 +742,329 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								throw new Exception ( "Could not find offloading customer record: " . $point . " (" . $pointname . ")" );
 							}
 						} catch ( Exception $e ) {
-							print ($e->getMessage ()) ;
-							exit ();
+							$_msg = preg_replace ( "@/s@", "creating", self::PROCESS_FAIL );
+							$_msg = preg_replace ( "@/o@", "offloading customer", $_msg );
+							$_msg = preg_replace ( "@/o@", "dummy data", $_msg );
+							throw new Exception ( $_msg );
 						}
+						// : End
+						
+						// : Check offloading customer is linked to the customer
+						
+						try {
+							// : Load customer data browser page for Customer
+							$this->_session->open ( $this->_maxurl . self::CUSTOMER_URL . $customer_id );
+							
+							// : Create and link Offloading Customer
+							
+							// Wait for element = Page heading
+							$e = $w->until ( function ($session) {
+								return $session->element ( "css selector", "#subtabselector" );
+							} );
+							$this->_session->element ( "xpath", "//*[@id='subtabselector']/select/option[text()='Offloading Customers where Customer is " . $_customer . "']" )->click ();
+							
+							// Wait for element = Page heading
+							$e = $w->until ( function ($session) {
+								return $session->element ( "css selector", "#button-create" );
+							} );
+							$this->_session->element ( "css selector", "#button-create" )->click ();
+							
+							// Wait for element = Page heading
+							$e = $w->until ( function ($session) {
+								return $session->element ( "xpath", "//*[contains(text(),'Capture the details of Offloading Customers')]" );
+							} );
+							
+							$this->assertElementPresent ( "link text", "Create Customer" );
+							$this->_session->element ( "link text", "Create Customer" )->click ();
+							
+							// Select New Window
+							$_winAll = $this->_session->window_handles ();
+							if (count ( $_winAll > 1 )) {
+								$this->_session->focusWindow ( $_winAll [1] );
+							} else {
+								throw new Exception ( "ERROR: Window not present" );
+							}
+							
+							// Wait for element = Page heading
+							$e = $w->until ( function ($session) {
+								return $session->element ( "xpath", "//*[@id='udo_Customer-22_0_0_tradingName-22']" );
+							} );
+							
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_Customer-22_0_0_tradingName-22']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_Customer-12_0_0_legalName-12']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_Customer-32_0_0_customerType_id-32[11]']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='checkbox_udo_Customer-2_0_0_active-2']" );
+							$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+							
+							$this->_session->element ( "xpath", "//*[@id='udo_Customer-22_0_0_tradingName-22']" )->sendKeys ( $point . " (" . $pointname . ")" );
+							$this->_session->element ( "xpath", "//*[@id='udo_Customer-12_0_0_legalName-12']" )->sendKeys ( $point . " (" . $pointname . ")" );
+							$this->_session->element ( "xpath", "//*[@id='udo_Customer-32_0_0_customerType_id-32[11]']" )->click ();
+							$this->_session->element ( "xpath", "//*[@id='checkbox_udo_Customer-2_0_0_active-2']" )->click ();
+							$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+							
+							if (count ( $_winAll > 1 )) {
+								$this->_session->focusWindow ( $_winAll [0] );
+							}
+							
+							// Wait for element = Page heading
+							$e = $w->until ( function ($session) {
+								return $session->element ( "xpath", "//*[contains(text(),'Capture the details of Offloading Customers')]" );
+							} );
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_OffloadingCustomers-3__0_customer_id-3']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_OffloadingCustomers-6__0_offloadingCustomer_id-6']" );
+							$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+							
+							$this->_session->element ( "xpath", "//*[@id='udo_OffloadingCustomers-3__0_customer_id-3']/option[text()='" . $_customer . "']" )->click ();
+							$this->_session->element ( "xpath", "//*[@id='udo_OffloadingCustomers-6__0_offloadingCustomer_id-6']/option[text()='" . $point . " (" . $pointname . ")" . "']" )->click ();
+							$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+							
+							// : Create Business Unit Link for Offloading Customer Link
+							$myQuery = preg_replace ( "/%o/", $point . " (" . $pointname . ")", $this->_myqueries [1] );
+							$myQuery = preg_replace ( "/%t/", $_customer, $myQuery );
+							$result = $this->queryDB ( $myQuery );
+							if (count ( $result ) != 0) {
+								$offloadingcustomer_id = $result [0] ["ID"];
+								$this->_session->open ( $this->_maxurl . self::OFF_CUST_BU_URL . $offloadingcustomer_id );
+								
+								// Wait for element = #subtabselector
+								$e = $w->until ( function ($session) {
+									return $session->element ( "css selector", "#subtabselector" );
+								} );
+								$this->_session->element ( "xpath", "//*[@id='subtabselector']/select/option[text()='Offloading Customers - Business Unit']" )->click ();
+								
+								// Wait for element = #button-create
+								$e = $w->until ( function ($session) {
+									return $session->element ( "xpath", "//div[@id='button-create']" );
+								} );
+								$this->_session->element ( "xpath", "//div[@id='button-create']" )->click ();
+								
+								// Wait for element = Page Heading
+								$e = $w->until ( function ($session) {
+									return $session->element ( "xpath", "//*[contains(text(),'Create Offloading Customers - Business Unit')]" );
+								} );
+								
+								$this->assertElementPresent ( "xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']" );
+								$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+								
+								$this->_session->element ( "xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']/option[text()='" . $_bu . "']" )->click ();
+								$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+								
+								// Wait for element = #button-create
+								$e = $w->until ( function ($session) {
+									return $session->element ( "xpath", "//div[@id='button-create']" );
+								} );
+							} else {
+								throw new Exception ( "Could not find offloading customer record: " . $point . " (" . $pointname . ")" );
+							}
+						} catch ( Exception $e ) {
+							$_msg = preg_replace ( "@/s@", "linking", self::PROCESS_FAIL );
+							$_msg = preg_replace ( "@/o@", "offloading customer link", $_msg );
+							$_msg = preg_replace ( "@/o@", "dummy data", $_msg );
+							throw new Exception ( $_msg );
 						}
-					} catch ( Exception $e ) {
-						$_msg = preg_replace ( "@/s@", "creating", self::PROCESS_FAIL );
-						$_msg = preg_replace ( "@/o@", "offloading customer", $_msg );
-						$_msg = preg_replace ( "@/o@", "dummy data", $_msg );
-						throw new Exception ( $_msg );
-					}
-					// : End
-					
-					// : Check offloading customer is linked to the customer
-					
-					try {
-						// : Load customer data browser page for Customer
-						$this->_session->open ( $this->_maxurl . self::CUSTOMER_URL . $customer_id );
 						
-						// : Create and link Offloading Customer
+						// : End
 						
-						// Wait for element = Page heading
-						$e = $w->until ( function ($session) {
-							return $session->element ( "css selector", "#subtabselector" );
-						} );
-						$this->_session->element ( "xpath", "//*[@id='subtabselector']/select/option[text()='Offloading Customers where Customer is " . $_customer . "']" )->click ();
+						// : Check if route exists
 						
-						// Wait for element = Page heading
-						$e = $w->until ( function ($session) {
-							return $session->element ( "css selector", "#button-create" );
-						} );
-						$this->_session->element ( "css selector", "#button-create" )->click ();
+						// : End
 						
-						// Wait for element = Page heading
-						$e = $w->until ( function ($session) {
-							return $session->element ( "xpath", "//*[contains(text(),'Capture the details of Offloading Customers')]" );
-						} );
+						// : Check if route and rate exists for customer
 						
-						$this->assertElementPresent ( "link text", "Create Customer" );
-						$this->_session->element ( "link text", "Create Customer" )->click ();
-						
-						// Select New Window
-						$_winAll = $this->_session->window_handles ();
-						if (count ( $_winAll > 1 )) {
-							$this->_session->focusWindow ( $_winAll [1] );
-						} else {
-							throw new Exception ( "ERROR: Window not present" );
-						}
-						
-						// Wait for element = Page heading
-						$e = $w->until ( function ($session) {
-							return $session->element ( "xpath", "//*[@id='udo_Customer-22_0_0_tradingName-22']" );
-						} );
-						
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_Customer-22_0_0_tradingName-22']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_Customer-12_0_0_legalName-12']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_Customer-32_0_0_customerType_id-32[11]']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='checkbox_udo_Customer-2_0_0_active-2']" );
-						$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-						
-						$this->_session->element ( "xpath", "//*[@id='udo_Customer-22_0_0_tradingName-22']" )->sendKeys ( $point . " (" . $pointname . ")" );
-						$this->_session->element ( "xpath", "//*[@id='udo_Customer-12_0_0_legalName-12']" )->sendKeys ( $point . " (" . $pointname . ")" );
-						$this->_session->element ( "xpath", "//*[@id='udo_Customer-32_0_0_customerType_id-32[11]']" )->click ();
-						$this->_session->element ( "xpath", "//*[@id='checkbox_udo_Customer-2_0_0_active-2']" )->click ();
-						$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
-						
-						if (count ( $_winAll > 1 )) {
+						try {
+							
+							// Fix hyphen conversion problem which occurs when importing data from xls
+							$point = preg_replace ( "/–/", "-", $point );
+							$pointname = preg_replace ( "/–/", "-", $pointname );
+							// Store current record been processed for use with error reporting
+							$this->lastRecord = $point . " (" . $pointname . ")";
+							
+							// Get all currently open windows
+							$_winAll = $this->_session->window_handles ();
+							// Set window focus to main window
 							$this->_session->focusWindow ( $_winAll [0] );
-						}
-						
-						// Wait for element = Page heading
-						$e = $w->until ( function ($session) {
-							return $session->element ( "xpath", "//*[contains(text(),'Capture the details of Offloading Customers')]" );
-						} );
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_OffloadingCustomers-3__0_customer_id-3']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_OffloadingCustomers-6__0_offloadingCustomer_id-6']" );
-						$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-						
-						$this->_session->element ( "xpath", "//*[@id='udo_OffloadingCustomers-3__0_customer_id-3']/option[text()='" . $_customer . "']" )->click ();
-						$this->_session->element ( "xpath", "//*[@id='udo_OffloadingCustomers-6__0_offloadingCustomer_id-6']/option[text()='" . $point . " (" . $pointname . ")" . "']" )->click ();
-						$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
-						
-						// : Create Business Unit Link for Offloading Customer Link
-						$myQuery = preg_replace ( "/%o/", $point . " (" . $pointname . ")", $this->_myqueries [1] );
-						$myQuery = preg_replace ( "/%t/", $_customer, $myQuery );
-						$result = $this->queryDB ( $myQuery );
-						if (count ( $result ) != 0) {
-							$offloadingcustomer_id = $result [0] ["ID"];
-							$this->_session->open ( $this->_maxurl . self::OFF_CUST_BU_URL . $offloadingcustomer_id );
+							// If there is more than 1 window open then close all but main window
+							if (count ( $_winAll ) > 1) {
+								$this->clearWindows ();
+							}
+							
+							// : Get kms zone for this entry
+							$kms = preg_split ( "/kms Zone.*/", $pointname );
+							$kms = $kms [0];
+							// : End
+							// Load the MAX customer page
+							$this->_session->open ( $this->_maxurl . self::CUSTOMER_URL . $customer_id );
 							
 							// Wait for element = #subtabselector
 							$e = $w->until ( function ($session) {
 								return $session->element ( "css selector", "#subtabselector" );
 							} );
-							$this->_session->element ( "xpath", "//*[@id='subtabselector']/select/option[text()='Offloading Customers - Business Unit']" )->click ();
+							// Select Rates from the select box
+							$this->_session->element ( "xpath", "//*[@id='subtabselector']/select/option[text()='Rates']" )->click ();
 							
-							// Wait for element = #button-create
-							$e = $w->until ( function ($session) {
-								return $session->element ( "xpath", "//div[@id='button-create']" );
-							} );
-							$this->_session->element ( "xpath", "//div[@id='button-create']" )->click ();
+							// : Run SQL Query to check if route and rate already has been created
+							$myQuery = preg_replace ( "/%f/", $point, $this->_myqueries [3] );
+							$myQuery = preg_replace ( "/%t/", $pointname, $myQuery );
+							$myQuery = preg_replace ( "/%g/", $objectregistry_id, $myQuery );
+							$myQuery = preg_replace ( "/%c/", $customer_id, $myQuery );
+							$myQuery = preg_replace ( "/%d/", $trucktype_id, $myQuery );
+							$myQuery = preg_replace ( "/%m/", $_contrib, $myQuery );
+							$myQuery = preg_replace ( "/%b/", $bunit_id, $myQuery );
+							$myQuery = preg_replace ( "/%r/", $rateType_id, $myQuery );
+							$result = $this->queryDB ( $myQuery );
 							
-							// Wait for element = Page Heading
-							$e = $w->until ( function ($session) {
-								return $session->element ( "xpath", "//*[contains(text(),'Create Offloading Customers - Business Unit')]" );
-							} );
+							// : End
 							
-							$this->assertElementPresent ( "xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']" );
-							$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-							
-							$this->_session->element ( "xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']/option[text()='" . $_bu . "']" )->click ();
-							$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
-							
-							// Wait for element = #button-create
-							$e = $w->until ( function ($session) {
-								return $session->element ( "xpath", "//div[@id='button-create']" );
-							} );
-						} else {
-							throw new Exception ( "Could not find offloading customer record: " . $point . " (" . $pointname . ")" );
+							if (count ( $result ) == 0) {
+								
+								// Wait for element = #button-create
+								$e = $w->until ( function ($session) {
+									return $session->element ( "css selector", "#button-create" );
+								} );
+								// Click element - #button-create
+								$this->_session->element ( "css selector", "#button-create" )->click ();
+								
+								// Wait for element Page Heading
+								$e = $w->until ( function ($session) {
+									return $session->element ( "xpath", "//*[@id='udo_Rates-31__0_route_id-31']" );
+								} );
+								// Assert element on page - link: Create Route
+								$this->assertElementPresent ( "link text", "Create Route" );
+								// Click element - link: Create Route
+								$this->_session->element ( "link text", "Create Route" )->click ();
+								// Select New Window
+								$_allWin = $this->_session->window_handles ();
+								if (count ( $_allWin > 1 )) {
+									$this->_session->focusWindow ( $_allWin [1] );
+								} else {
+									throw new Exception ( "ERROR: Window not present." );
+								}
+								try {
+									// Wait for element Page Heading
+									$e = $w->until ( function ($session) {
+										return $session->element ( "xpath", "//*[@id='udo_Route-6__0_locationFrom_id-6']" );
+									} );
+									
+									// : Assert all elements on page
+									$this->assertElementPresent ( "xpath", "//*[@id='udo_Route-7__0_locationTo_id-7']" );
+									$this->assertElementPresent ( "xpath", "//*[@id='udo_Route-4_0_0_expectedKms-4']" );
+									$this->assertElementPresent ( "xpath", "//*[@id='udo_Route-3_0_0_duration-3']" );
+									$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+									// : End
+									
+									try {
+										$this->_session->element ( "xpath", "//*[@id='udo_Route-6__0_locationFrom_id-6']/option[text()='$point']" )->click ();
+									} catch ( PHPWebDriver_NoSuchElementWebDriverError $e ) {
+										throw new Exception ( "ERROR: Could not find the location from on the create route page" . PHP_EOL . $e->getMessage () );
+									}
+									
+									$this->_session->element ( "xpath", "//*[@id='udo_Route-7__0_locationTo_id-7']/option[text()='" . $pointname . "']" )->click ();
+									$this->_session->element ( "xpath", "//*[@id='udo_Route-4_0_0_expectedKms-4']" )->sendKeys ( $kms );
+									// Calculate duration from kms value at 60K/H
+									$duration = strval ( number_format ( (floatval ( $kms ) / 80) * 60, 0, "", "" ) );
+									$this->_session->element ( "xpath", "//*[@id='udo_Route-3_0_0_duration-3']" )->sendKeys ( $duration );
+									$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+									
+									if (count ( $_allWin > 1 )) {
+										$this->_session->focusWindow ( $_allWin [0] );
+									}
+									
+									// Wait for element Page Heading
+									$e = $w->until ( function ($session) {
+										return $session->element ( "xpath", "//*[@id='udo_Rates-31__0_route_id-31']" );
+									} );
+									
+									$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-30__0_rateType_id-30']" );
+									$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-4__0_businessUnit_id-4']" );
+									$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-36__0_truckDescription_id-36']" );
+									$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-20__0_model-20']" );
+									$this->assertElementPresent ( "xpath", "//*[@id='checkbox_udo_Rates-15_0_0_enabled-15']" );
+									$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+									
+									$this->_session->element ( "xpath", "//*[@id='udo_Rates-31__0_route_id-31']/option[text()='" . $point . " TO " . $pointname . "']" )->click ();
+									$this->_session->element ( "xpath", "//*[@id='udo_Rates-30__0_rateType_id-30']/option[text()='$_rateType']" )->click ();
+									$this->_session->element ( "xpath", "//*[@id='udo_Rates-4__0_businessUnit_id-4']/option[text()='" . $_bu . "']" )->click ();
+									$this->_session->element ( "xpath", "//*[@id='udo_Rates-36__0_truckDescription_id-36']/option[text()='$_truckType']" )->click ();
+									$this->_session->element ( "xpath", "//*[@id='udo_Rates-20__0_model-20']/option[text()='" . $_contrib . "']" )->click ();
+									$this->_session->element ( "xpath", "//*[@id='checkbox_udo_Rates-15_0_0_enabled-15']" )->click ();
+									$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+								} catch ( Exception $e ) {
+									print ($e->getMessage () . PHP_EOL) ;
+									exit ();
+								}
+								// Wait for element = #button-create
+								try {
+									$e = $w->until ( function ($session) {
+										return $session->element ( "css selector", "#button-create" );
+									} );
+								} catch ( PHPWebDriver_NoSuchElementWebDriverError $e ) {
+									throw new Exception ( "ERROR: Could not find the create button after post of create new rate process." . PHP_EOL . $e->getMessage () );
+								}
+								
+								// : Create Rate Value for Route
+								$myQuery = preg_replace ( "/%f/", $point, $this->_myqueries [3] );
+								$myQuery = preg_replace ( "/%t/", $pointname, $myQuery );
+								$myQuery = preg_replace ( "/%g/", $objectregistry_id, $myQuery );
+								$myQuery = preg_replace ( "/%c/", $customer_id, $myQuery );
+								$myQuery = preg_replace ( "/%d/", $trucktype_id, $myQuery );
+								$myQuery = preg_replace ( "/%m/", $_contrib, $myQuery );
+								$myQuery = preg_replace ( "/%b/", $bunit_id, $myQuery );
+								$myQuery = preg_replace ( "/%r/", $rateType_id, $myQuery );
+								$result = $this->queryDB ( $myQuery );
+								if (count ( $result ) != 0) {
+									$rate_id = $result [0] ["ID"];
+									$rateurl = preg_replace ( "/%s/", $rate_id, $this->_maxurl . self::RATEVAL_URL );
+									$this->_session->open ( $rateurl );
+									
+									// Wait for element = #button-create
+									$e = $w->until ( function ($session) {
+										return $session->element ( "css selector", "#button-create" );
+									} );
+									// Click element - #button-create
+									$this->_session->element ( "css selector", "#button-create" )->click ();
+									
+									// Wait for element = #button-create
+									$e = $w->until ( function ($session) {
+										return $session->element ( "xpath", "//*[contains(text(),'Create Date Range Values')]" );
+									} );
+									
+									$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" );
+									$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" );
+									$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+									
+									$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->clear ();
+									$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->sendKeys ( $_startDate );
+									$productname = preg_split ( "/^" . $kms . "kms Zone /", $pointname );
+									$ratevalue = strval ( (number_format ( floatval ( $routes [$kms] [$productname [1]] ), 2, ".", "" )) );
+									$this->_session->element ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" )->sendKeys ( $ratevalue );
+									$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+								} else {
+									throw new Exception ( "ERROR: Could not find newly created rate record." );
+								}
+							}
+						} catch ( Exception $e ) {
+							$_msg = preg_replace ( "@/s@", "creating", self::PROCESS_FAIL );
+							$_msg = preg_replace ( "@/o@", "route and rate", $_msg );
+							$_msg = preg_replace ( "@/o@", "dummy data", $_msg );
+							throw new Exception ( $_msg );
 						}
-					} catch ( Exception $e ) {
-						print ($e->getMessage ()) ;
-						exit ();
-					}
-				}
-			} catch ( Exception $e ) 
-			{
-				$_msg = preg_replace ( "@/s@", "linking", self::PROCESS_FAIL );
-				$_msg = preg_replace ( "@/o@", "offloading customer link", $_msg );
-				$_msg = preg_replace ( "@/o@", "dummy data", $_msg );
-				throw new Exception ( $_msg );
-			}
-			
-			// : End
-			
-			// : Check if route exists
-			
-			// : End
-			
-			// : Check if route and rate exists for customer
-			
-			try {
-				
-				// Fix hyphen conversion problem which occurs when importing data from xls
-				$point = preg_replace ( "/–/", "-", $point );
-				$pointname = preg_replace ( "/–/", "-", $pointname );
-				// Store current record been processed for use with error reporting
-				$this->lastRecord = $point . " (" . $pointname . ")";
-				
-				// Get all currently open windows
-				$_winAll = $this->_session->window_handles ();
-				// Set window focus to main window
-				$this->_session->focusWindow ( $_winAll [0] );
-				// If there is more than 1 window open then close all but main window
-				if (count ( $_winAll ) > 1) {
-					$this->clearWindows ();
-				}
-				
-				// : Get kms zone for this entry
-				$kms = preg_split ( "/kms Zone.*/", $pointname );
-				$kms = $kms [0];
-				// : End
-				// Load the MAX customer page
-				$this->_session->open ( $this->_maxurl . self::CUSTOMER_URL . $customer_id );
-				
-				// Wait for element = #subtabselector
-				$e = $w->until ( function ($session) {
-					return $session->element ( "css selector", "#subtabselector" );
-				} );
-				// Select Rates from the select box
-				$this->_session->element ( "xpath", "//*[@id='subtabselector']/select/option[text()='Rates']" )->click ();
-				
-				// : Run SQL Query to check if route and rate already has been created
-				$myQuery = preg_replace ( "/%f/", $point, $this->_myqueries [3] );
-				$myQuery = preg_replace ( "/%t/", $pointname, $myQuery );
-				$myQuery = preg_replace ( "/%g/", $objectregistry_id, $myQuery );
-				$myQuery = preg_replace ( "/%c/", $customer_id, $myQuery );
-				$myQuery = preg_replace ( "/%d/", $trucktype_id, $myQuery );
-				$myQuery = preg_replace ( "/%m/", $_contrib, $myQuery );
-				$myQuery = preg_replace ( "/%b/", $bunit_id, $myQuery );
-				$myQuery = preg_replace ( "/%r/", $rateType_id, $myQuery );
-				$result = $this->queryDB ( $myQuery );
-				
-				// : End
-				
-				if (count ( $result ) == 0) {
-					
-					// Wait for element = #button-create
-					$e = $w->until ( function ($session) {
-						return $session->element ( "css selector", "#button-create" );
-					} );
-					// Click element - #button-create
-					$this->_session->element ( "css selector", "#button-create" )->click ();
-					
-					// Wait for element Page Heading
-					$e = $w->until ( function ($session) {
-						return $session->element ( "xpath", "//*[@id='udo_Rates-31__0_route_id-31']" );
-					} );
-					// Assert element on page - link: Create Route
-					$this->assertElementPresent ( "link text", "Create Route" );
-					// Click element - link: Create Route
-					$this->_session->element ( "link text", "Create Route" )->click ();
-					// Select New Window
-					$_allWin = $this->_session->window_handles ();
-					if (count ( $_allWin > 1 )) {
-						$this->_session->focusWindow ( $_allWin [1] );
-					} else {
-						throw new Exception ( "ERROR: Window not present." );
-					}
-					try {
-						// Wait for element Page Heading
-						$e = $w->until ( function ($session) {
-							return $session->element ( "xpath", "//*[@id='udo_Route-6__0_locationFrom_id-6']" );
-						} );
 						
-						// : Assert all elements on page
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_Route-7__0_locationTo_id-7']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_Route-4_0_0_expectedKms-4']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_Route-3_0_0_duration-3']" );
-						$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 						// : End
 						
-						try {
-							$this->_session->element ( "xpath", "//*[@id='udo_Route-6__0_locationFrom_id-6']/option[text()='$point']" )->click ();
-						} catch ( PHPWebDriver_NoSuchElementWebDriverError $e ) {
-							throw new Exception ( "ERROR: Could not find the location from on the create route page" . PHP_EOL . $e->getMessage () );
-						}
-						
-						$this->_session->element ( "xpath", "//*[@id='udo_Route-7__0_locationTo_id-7']/option[text()='" . $pointname . "']" )->click ();
-						$this->_session->element ( "xpath", "//*[@id='udo_Route-4_0_0_expectedKms-4']" )->sendKeys ( $kms );
-						// Calculate duration from kms value at 60K/H
-						$duration = strval ( number_format ( (floatval ( $kms ) / 80) * 60, 0, "", "" ) );
-						$this->_session->element ( "xpath", "//*[@id='udo_Route-3_0_0_duration-3']" )->sendKeys ( $duration );
-						$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
-						
-						if (count ( $_allWin > 1 )) {
-							$this->_session->focusWindow ( $_allWin [0] );
-						}
-						
-						// Wait for element Page Heading
-						$e = $w->until ( function ($session) {
-							return $session->element ( "xpath", "//*[@id='udo_Rates-31__0_route_id-31']" );
-						} );
-						
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-30__0_rateType_id-30']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-4__0_businessUnit_id-4']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-36__0_truckDescription_id-36']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-20__0_model-20']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='checkbox_udo_Rates-15_0_0_enabled-15']" );
-						$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-						
-						$this->_session->element ( "xpath", "//*[@id='udo_Rates-31__0_route_id-31']/option[text()='" . $point . " TO " . $pointname . "']" )->click ();
-						$this->_session->element ( "xpath", "//*[@id='udo_Rates-30__0_rateType_id-30']/option[text()='$_rateType']" )->click ();
-						$this->_session->element ( "xpath", "//*[@id='udo_Rates-4__0_businessUnit_id-4']/option[text()='" . $_bu . "']" )->click ();
-						$this->_session->element ( "xpath", "//*[@id='udo_Rates-36__0_truckDescription_id-36']/option[text()='$_truckType']" )->click ();
-						$this->_session->element ( "xpath", "//*[@id='udo_Rates-20__0_model-20']/option[text()='" . $_contrib . "']" )->click ();
-						$this->_session->element ( "xpath", "//*[@id='checkbox_udo_Rates-15_0_0_enabled-15']" )->click ();
-						$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+						// : End
 					} catch ( Exception $e ) {
-						print ($e->getMessage () . PHP_EOL) ;
-						exit ();
-					}
-					// Wait for element = #button-create
-					try {
-						$e = $w->until ( function ($session) {
-							return $session->element ( "css selector", "#button-create" );
-						} );
-					} catch ( PHPWebDriver_NoSuchElementWebDriverError $e ) {
-						throw new Exception ( "ERROR: Could not find the create button after post of create new rate process." . PHP_EOL . $e->getMessage () );
-					}
-					
-					// : Create Rate Value for Route
-					$myQuery = preg_replace ( "/%f/", $point, $this->_myqueries [3] );
-					$myQuery = preg_replace ( "/%t/", $pointname, $myQuery );
-					$myQuery = preg_replace ( "/%g/", $objectregistry_id, $myQuery );
-					$myQuery = preg_replace ( "/%c/", $customer_id, $myQuery );
-					$myQuery = preg_replace ( "/%d/", $trucktype_id, $myQuery );
-					$myQuery = preg_replace ( "/%m/", $_contrib, $myQuery );
-					$myQuery = preg_replace ( "/%b/", $bunit_id, $myQuery );
-					$myQuery = preg_replace ( "/%r/", $rateType_id, $myQuery );
-					$result = $this->queryDB ( $myQuery );
-					if (count ( $result ) != 0) {
-						$rate_id = $result [0] ["ID"];
-						$rateurl = preg_replace ( "/%s/", $rate_id, $this->_maxurl . self::RATEVAL_URL );
-						$this->_session->open ( $rateurl );
-						
-						// Wait for element = #button-create
-						$e = $w->until ( function ($session) {
-							return $session->element ( "css selector", "#button-create" );
-						} );
-						// Click element - #button-create
-						$this->_session->element ( "css selector", "#button-create" )->click ();
-						
-						// Wait for element = #button-create
-						$e = $w->until ( function ($session) {
-							return $session->element ( "xpath", "//*[contains(text(),'Create Date Range Values')]" );
-						} );
-						
-						$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" );
-						$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-						
-						$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->clear ();
-						$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->sendKeys ( $_startDate );
-						$productname = preg_split ( "/^" . $kms . "kms Zone /", $pointname );
-						$ratevalue = strval ( (number_format ( floatval ( $routes [$kms] [$productname [1]] ), 2, ".", "" )) );
-						$this->_session->element ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" )->sendKeys ( $ratevalue );
-						$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
-					} else {
-						throw new Exception ( "ERROR: Could not find newly created rate record." );
+						echo "Error: " . $e->getMessage () . PHP_EOL;
+						echo "Time of error: " . date ( "Y-m-d H:i:s" ) . PHP_EOL;
+						echo "Last record: " . $this->lastRecord;
+						$this->takeScreenshot ();
+						$_erCount = count ( $this->_error );
+						$this->_error [$_erCount + 1] ["error"] = $e->getMessage ();
+						$this->_error [$_erCount + 1] ["record"] = $this->lastRecord;
+						$this->_error [$_erCount + 1] ["type"] = "Rate";
 					}
 				}
-			} catch ( Exception $e ) {
-				$_msg = preg_replace ( "@/s@", "creating", self::PROCESS_FAIL );
-				$_msg = preg_replace ( "@/o@", "route and rate", $_msg );
-				$_msg = preg_replace ( "@/o@", "dummy data", $_msg );
-				throw new Exception ( $_msg );
-			}
-			
-			// : End
-			
-			// : End
-		} catch ( Exception $e ) 
-		{
-			echo "Error: " . $e->getMessage () . PHP_EOL;
-			echo "Time of error: " . date ( "Y-m-d H:i:s" ) . PHP_EOL;
-			echo "Last record: " . $this->lastRecord;
-			$this->takeScreenshot ();
-			$_erCount = count ( $this->_error );
-			$this->_error [$_erCount + 1] ["error"] = $e->getMessage ();
-			$this->_error [$_erCount + 1] ["record"] = $this->lastRecord;
-			$this->_error [$_erCount + 1] ["type"] = "Rate";
-		}
-	}
-	// : End
-} else {
+				// : End
+			} else {
 				$_msg = preg_replace ( "/%s/", $_file, self::COLUMN_VALIDATION_FAIL );
 				throw new Exception ( $_msg );
 			}
