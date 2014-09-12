@@ -97,7 +97,9 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 			"select ID from udo_rates where route_id IN (select ID from udo_route where locationFrom_id IN (select ID from udo_location where name='%f') and locationTo_id IN (select ID from udo_location where name='%t')) and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and model='%m' and businessUnit_id=%b and rateType_id=%r;",
 			"select ID from objectregistry where handle = 'udo_Customer';",
 			"select ID from udo_location where name='%s' and _type='%t';",
-			"select ID from udo_zone where name='%s';" 
+			"select ID from udo_zone where name='%s';",
+			"select ID from udo_route where locationFrom_id IN (select ID from udo_location where name='%f') and locationTo_id IN (select ID from udo_location where name='%t');",
+			"select ID from udo_rates where route_id = %ro and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and model='%m' and businessUnit_id=%b and rateType_id=%ra;" 
 	);
 	
 	// : Public functions
@@ -235,6 +237,13 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 				"other" => "" 
 		);
 		
+		// : Error report columns for the spreadsheet data
+		$_xlsColumns = array (
+				"Error_Msg",
+				"Record Detail",
+				"Type"
+		);
+		
 		$_dataset = array_fill_keys ( $_headers, $_keys );
 		$_colcount = ( int ) count ( $_headers );
 		$_columns = ( array ) array ();
@@ -344,13 +353,23 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 				}
 				// : End
 				
+				// : Get objectregistry_id for udo_Customer
+				$myQuery = $this->_myqueries [4];
+				$result = $this->queryDB ( $myQuery );
+				if (count ( $result ) != 0) {
+					$objectregistry_id = intval ( $result [0] ["ID"] );
+				} else {
+					throw new Exception ( "Error: Object registry record for udo_customer not found." );
+				}
+				// : End
+				
 				// : Load Planningboard to rid of iframe loading on every page from here on
 				$this->_session->open ( $this->_maxurl . self::PB_URL );
 				$e = $w->until ( function ($session) {
 					return $session->element ( "xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]" );
 				} );
 				// : End
-				// : Run line by line through each data entry which === 1 csv row
+				// : Main loop - Run through each row imported from CSV file
 				foreach ( $_data as $_value ) {
 					
 					try {
@@ -359,6 +378,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 							$_dataset [$_aKey] ["value"] = $_value [$_aKey];
 						}
 						// : End
+						
+						$this->lastRecord = "Customer: " . $_dataset["customer"]["value"] . ", Route: " . $_dataset["location from town"]["value"] . " TO " . $_dataset["location to town"] . ", Rate Value: " . $_dataset["rate"] ["value"];
 						
 						// Get truck description ID
 						$myQuery = "select ID from udo_truckdescription where description='" . $_dataset ["truck type"] ["value"] . "';";
@@ -473,6 +494,40 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								}
 							}
 						}
+						// : End
+						
+						// : Check if route and rate exists
+						
+						// Check and store route ID if exists
+						if (($_dataset ["location from town"] ["id"] != FALSE) && ($_dataset ["location to town"] ["id"] != FALSE)) {
+							$myQuery = preg_replace ( "@%f@", $_dataset ["location from town"] ["value"], $this->_myqueries [7] );
+							$myQuery = preg_replace ( "@%t@", $_dataset ["location to town"] ["value"], $myQuery );
+							$sqlResult = $this->queryDB ( $myQuery );
+							if (count ( $sqlResult ) != 0) {
+								$_dataset ["rate"] ["other"] = $sqlResult [0] ["ID"];
+							} else {
+								$_dataset ["rate"] ["other"] = NULL;
+							}
+						}
+						
+						// Check and store rate ID if exists
+						if (($_dataset ["rate"] ["other"] != FALSE)) {
+							// "select ID from udo_rates where route_id = %ro and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and model='%m' and businessUnit_id=%b and rateType_id=%ra;",
+							$myQuery = preg_replace ( "@%ro@", $_dataset ["rate"] ["other"], $this->_myqueries [8] );
+							$myQuery = preg_replace ( "@%ra@", $_dataset ["rate type"] ["id"], $myQuery );
+							$myQuery = preg_replace ( "@%g@", $_objectregistry_id, $myQuery );
+							$myQuery = preg_replace ( "@%c@", $_dataset ["customer"] ["id"], $myQuery );
+							$myQuery = preg_replace ( "@%d@", $_dataset ["truck type"] ["id"], $myQuery );
+							$myQuery = preg_replace ( "@%m@", $_dataset ["contribution model"] ["value"], $myQuery );
+							$myQuery = preg_replace ( "@%b@", $_dataset ["business unit"] ["id"], $myQuery );
+							$sqlResult = $this->queryDB ( $myQuery );
+							if (count ( $sqlResult ) != 0) {
+								$_dataset ["rate"] ["id"] = $sqlResult [0] ["ID"];
+							} else {
+								$_dataset ["rate"] ["id"] = NULL;
+							}
+						}
+						
 						// : End
 						
 						// : Check locations exist and create them if they dont
@@ -794,8 +849,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 									$this->assertElementPresent ( "xpath", "//*[@id='checkbox_udo_Customer-2_0_0_active-2']" );
 									$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 									
-									$this->_session->element ( "xpath", "//*[@id='udo_Customer-22_0_0_tradingName-22']" )->sendKeys ( $_dataset["offloading customer"] ["value"] );
-									$this->_session->element ( "xpath", "//*[@id='udo_Customer-12_0_0_legalName-12']" )->sendKeys ( $_dataset["offloading customer"] ["value"] );
+									$this->_session->element ( "xpath", "//*[@id='udo_Customer-22_0_0_tradingName-22']" )->sendKeys ( $_dataset ["offloading customer"] ["value"] );
+									$this->_session->element ( "xpath", "//*[@id='udo_Customer-12_0_0_legalName-12']" )->sendKeys ( $_dataset ["offloading customer"] ["value"] );
 									$this->_session->element ( "xpath", "//*[@id='udo_Customer-32_0_0_customerType_id-32[11]']" )->click ();
 									$this->_session->element ( "xpath", "//*[@id='checkbox_udo_Customer-2_0_0_active-2']" )->click ();
 									$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
@@ -814,17 +869,17 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								$this->assertElementPresent ( "xpath", "//*[@id='udo_OffloadingCustomers-6__0_offloadingCustomer_id-6']" );
 								$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 								
-								$this->_session->element ( "xpath", "//*[@id='udo_OffloadingCustomers-3__0_customer_id-3']/option[text()='" . $_dataset["customer"] ["value"] . "']" )->click ();
-								$this->_session->element ( "xpath", "//*[@id='udo_OffloadingCustomers-6__0_offloadingCustomer_id-6']/option[text()='" . $_dataset["offloading customer"] ["value"] . "']" )->click ();
+								$this->_session->element ( "xpath", "//*[@id='udo_OffloadingCustomers-3__0_customer_id-3']/option[text()='" . $_dataset ["customer"] ["value"] . "']" )->click ();
+								$this->_session->element ( "xpath", "//*[@id='udo_OffloadingCustomers-6__0_offloadingCustomer_id-6']/option[text()='" . $_dataset ["offloading customer"] ["value"] . "']" )->click ();
 								$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
 								
 								// : Create Business Unit Link for Offloading Customer Link
-								$myQuery = preg_replace ( "/%o/", $_dataset["offloading customer"] ["value"], $this->_myqueries [1] );
-								$myQuery = preg_replace ( "/%t/", $_dataset["customer"] ["value"], $myQuery );
+								$myQuery = preg_replace ( "/%o/", $_dataset ["offloading customer"] ["value"], $this->_myqueries [1] );
+								$myQuery = preg_replace ( "/%t/", $_dataset ["customer"] ["value"], $myQuery );
 								$sqlResult = $this->queryDB ( $myQuery );
 								if (count ( $sqlResult ) != 0) {
-									$_dataset["offloading customer"]["link"] = $sqlResult [0] ["ID"];
-									$this->_session->open ( $this->_maxurl . self::OFF_CUST_BU_URL . $_dataset["offloading customer"]["link"] );
+									$_dataset ["offloading customer"] ["link"] = $sqlResult [0] ["ID"];
+									$this->_session->open ( $this->_maxurl . self::OFF_CUST_BU_URL . $_dataset ["offloading customer"] ["link"] );
 									
 									// Wait for element = #subtabselector
 									$e = $w->until ( function ($session) {
@@ -846,7 +901,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 									$this->assertElementPresent ( "xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']" );
 									$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 									
-									$this->_session->element ( "xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']/option[text()='" . $_dataset["business unit"]["value"] . "']" )->click ();
+									$this->_session->element ( "xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']/option[text()='" . $_dataset ["business unit"] ["value"] . "']" )->click ();
 									$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
 									
 									// Wait for element = #button-create
@@ -854,7 +909,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 										return $session->element ( "xpath", "//div[@id='button-create']" );
 									} );
 								} else {
-									throw new Exception ( "Could not find offloading customer record: " . $_dataset["offloading customer"] ["value"] );
+									throw new Exception ( "Could not find offloading customer record: " . $_dataset ["offloading customer"] ["value"] );
 								}
 							}
 						} catch ( Exception $e ) {
@@ -862,47 +917,28 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						}
 						// : End
 						
-						// : Check if route and rate exists for customer
+						// : Check if route and rate exists for customer and create route and rate if they dont exist
 						
 						try {
-							
-							// Get all currently open windows
-							$_winAll = $this->_session->window_handles ();
-							// Set window focus to main window
-							$this->_session->focusWindow ( $_winAll [0] );
-							// If there is more than 1 window open then close all but main window
-							if (count ( $_winAll ) > 1) {
-								$this->clearWindows ();
-							}
-							
-							// : Get kms zone for this entry
-							$kms = preg_split ( "/kms Zone.*/", $pointname );
-							$kms = $kms [0];
-							// : End
-							// Load the MAX customer page
-							$this->_session->open ( $this->_maxurl . self::CUSTOMER_URL . $customer_id );
-							
-							// Wait for element = #subtabselector
-							$e = $w->until ( function ($session) {
-								return $session->element ( "css selector", "#subtabselector" );
-							} );
-							// Select Rates from the select box
-							$this->_session->element ( "xpath", "//*[@id='subtabselector']/select/option[text()='Rates']" )->click ();
-							
-							// : Run SQL Query to check if route and rate already has been created
-							$myQuery = preg_replace ( "/%f/", $point, $this->_myqueries [3] );
-							$myQuery = preg_replace ( "/%t/", $pointname, $myQuery );
-							$myQuery = preg_replace ( "/%g/", $objectregistry_id, $myQuery );
-							$myQuery = preg_replace ( "/%c/", $customer_id, $myQuery );
-							$myQuery = preg_replace ( "/%d/", $trucktype_id, $myQuery );
-							$myQuery = preg_replace ( "/%m/", $_contrib, $myQuery );
-							$myQuery = preg_replace ( "/%b/", $bunit_id, $myQuery );
-							$myQuery = preg_replace ( "/%r/", $rateType_id, $myQuery );
-							$result = $this->queryDB ( $myQuery );
-							
-							// : End
-							
-							if (count ( $result ) == 0) {
+							if ((! $_dataset ["rate"] ["id"])) {
+								// Get all currently open windows
+								$_winAll = $this->_session->window_handles ();
+								// Set window focus to main window
+								$this->_session->focusWindow ( $_winAll [0] );
+								// If there is more than 1 window open then close all but main window
+								if (count ( $_winAll ) > 1) {
+									$this->clearWindows ();
+								}
+								
+								// Load the MAX customer page
+								$this->_session->open ( $this->_maxurl . self::CUSTOMER_URL . $customer_id );
+								
+								// Wait for element = #subtabselector
+								$e = $w->until ( function ($session) {
+									return $session->element ( "css selector", "#subtabselector" );
+								} );
+								// Select Rates from the select box
+								$this->_session->element ( "xpath", "//*[@id='subtabselector']/select/option[text()='Rates']" )->click ();
 								
 								// Wait for element = #button-create
 								$e = $w->until ( function ($session) {
@@ -915,18 +951,23 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								$e = $w->until ( function ($session) {
 									return $session->element ( "xpath", "//*[@id='udo_Rates-31__0_route_id-31']" );
 								} );
-								// Assert element on page - link: Create Route
-								$this->assertElementPresent ( "link text", "Create Route" );
-								// Click element - link: Create Route
-								$this->_session->element ( "link text", "Create Route" )->click ();
-								// Select New Window
-								$_allWin = $this->_session->window_handles ();
-								if (count ( $_allWin > 1 )) {
-									$this->_session->focusWindow ( $_allWin [1] );
-								} else {
-									throw new Exception ( "ERROR: Window not present." );
-								}
-								try {
+								
+								// : Create route if it does not exist
+								if (! $_dataset ["rate"] ["other"]) {
+									// Concatenate string for route name
+									$_routeName = $_dataset ["location from town"] . " TO " . $_dataset ["location to town"];
+									
+									// Assert element on page - link: Create Route
+									$this->assertElementPresent ( "link text", "Create Route" );
+									// Click element - link: Create Route
+									$this->_session->element ( "link text", "Create Route" )->click ();
+									// Select New Window
+									$_allWin = $this->_session->window_handles ();
+									if (count ( $_allWin > 1 )) {
+										$this->_session->focusWindow ( $_allWin [1] );
+									} else {
+										throw new Exception ( "ERROR: Window not present." );
+									}
 									// Wait for element Page Heading
 									$e = $w->until ( function ($session) {
 										return $session->element ( "xpath", "//*[@id='udo_Route-6__0_locationFrom_id-6']" );
@@ -940,16 +981,18 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 									// : End
 									
 									try {
-										$this->_session->element ( "xpath", "//*[@id='udo_Route-6__0_locationFrom_id-6']/option[text()='$point']" )->click ();
+										$this->_session->element ( "xpath", "//*[@id='udo_Route-6__0_locationFrom_id-6']/option[text()='" . $_dataset ["location from town"] ["value"] . "']" )->click ();
 									} catch ( PHPWebDriver_NoSuchElementWebDriverError $e ) {
 										throw new Exception ( "ERROR: Could not find the location from on the create route page" . PHP_EOL . $e->getMessage () );
 									}
 									
-									$this->_session->element ( "xpath", "//*[@id='udo_Route-7__0_locationTo_id-7']/option[text()='" . $pointname . "']" )->click ();
-									$this->_session->element ( "xpath", "//*[@id='udo_Route-4_0_0_expectedKms-4']" )->sendKeys ( $kms );
-									// Calculate duration from kms value at 60K/H
-									$duration = strval ( number_format ( (floatval ( $kms ) / 80) * 60, 0, "", "" ) );
-									$this->_session->element ( "xpath", "//*[@id='udo_Route-3_0_0_duration-3']" )->sendKeys ( $duration );
+									$this->_session->element ( "xpath", "//*[@id='udo_Route-7__0_locationTo_id-7']/option[text()='" . $_dataset ["location to town"] ["value"] . "']" )->click ();
+									if ($_dataset ["expected kms"] ["value"] != FALSE) {
+										$this->_session->element ( "xpath", "//*[@id='udo_Route-4_0_0_expectedKms-4']" )->sendKeys ( $_dataset ["expected kms"] ["value"] );
+										// Calculate duration from kms value at 60K/H
+										$duration = strval ( number_format ( (floatval ( $_dataset ["expected kms"] ["value"] ) / 80) * 60, 0, "", "" ) );
+										$this->_session->element ( "xpath", "//*[@id='udo_Route-3_0_0_duration-3']" )->sendKeys ( $duration );
+									}
 									$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
 									
 									if (count ( $_allWin > 1 )) {
@@ -960,25 +1003,24 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 									$e = $w->until ( function ($session) {
 										return $session->element ( "xpath", "//*[@id='udo_Rates-31__0_route_id-31']" );
 									} );
-									
-									$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-30__0_rateType_id-30']" );
-									$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-4__0_businessUnit_id-4']" );
-									$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-36__0_truckDescription_id-36']" );
-									$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-20__0_model-20']" );
-									$this->assertElementPresent ( "xpath", "//*[@id='checkbox_udo_Rates-15_0_0_enabled-15']" );
-									$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-									
-									$this->_session->element ( "xpath", "//*[@id='udo_Rates-31__0_route_id-31']/option[text()='" . $point . " TO " . $pointname . "']" )->click ();
-									$this->_session->element ( "xpath", "//*[@id='udo_Rates-30__0_rateType_id-30']/option[text()='$_rateType']" )->click ();
-									$this->_session->element ( "xpath", "//*[@id='udo_Rates-4__0_businessUnit_id-4']/option[text()='" . $_bu . "']" )->click ();
-									$this->_session->element ( "xpath", "//*[@id='udo_Rates-36__0_truckDescription_id-36']/option[text()='$_truckType']" )->click ();
-									$this->_session->element ( "xpath", "//*[@id='udo_Rates-20__0_model-20']/option[text()='" . $_contrib . "']" )->click ();
-									$this->_session->element ( "xpath", "//*[@id='checkbox_udo_Rates-15_0_0_enabled-15']" )->click ();
-									$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
-								} catch ( Exception $e ) {
-									print ($e->getMessage () . PHP_EOL) ;
-									exit ();
 								}
+								// : End
+								
+								$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-30__0_rateType_id-30']" );
+								$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-4__0_businessUnit_id-4']" );
+								$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-36__0_truckDescription_id-36']" );
+								$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-20__0_model-20']" );
+								$this->assertElementPresent ( "xpath", "//*[@id='checkbox_udo_Rates-15_0_0_enabled-15']" );
+								$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+								
+								$this->_session->element ( "xpath", "//*[@id='udo_Rates-31__0_route_id-31']/option[text()='" . $_routeName . "']" )->click ();
+								$this->_session->element ( "xpath", "//*[@id='udo_Rates-30__0_rateType_id-30']/option[text()='" . $_dataset ["rate type"] ["value"] . "']" )->click ();
+								$this->_session->element ( "xpath", "//*[@id='udo_Rates-4__0_businessUnit_id-4']/option[text()='" . $_dataset ["business unit"] ["value"] . "']" )->click ();
+								$this->_session->element ( "xpath", "//*[@id='udo_Rates-36__0_truckDescription_id-36']/option[text()='" . $_dataset ["truck type"] ["value"] . "']" )->click ();
+								$this->_session->element ( "xpath", "//*[@id='udo_Rates-20__0_model-20']/option[text()='" . $_dataset ["contribution model"] ["value"] . "']" )->click ();
+								$this->_session->element ( "xpath", "//*[@id='checkbox_udo_Rates-15_0_0_enabled-15']" )->click ();
+								$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+								
 								// Wait for element = #button-create
 								try {
 									$e = $w->until ( function ($session) {
@@ -987,53 +1029,79 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								} catch ( PHPWebDriver_NoSuchElementWebDriverError $e ) {
 									throw new Exception ( "ERROR: Could not find the create button after post of create new rate process." . PHP_EOL . $e->getMessage () );
 								}
-								
-								// : Create Rate Value for Route
-								$myQuery = preg_replace ( "/%f/", $point, $this->_myqueries [3] );
-								$myQuery = preg_replace ( "/%t/", $pointname, $myQuery );
-								$myQuery = preg_replace ( "/%g/", $objectregistry_id, $myQuery );
-								$myQuery = preg_replace ( "/%c/", $customer_id, $myQuery );
-								$myQuery = preg_replace ( "/%d/", $trucktype_id, $myQuery );
-								$myQuery = preg_replace ( "/%m/", $_contrib, $myQuery );
-								$myQuery = preg_replace ( "/%b/", $bunit_id, $myQuery );
-								$myQuery = preg_replace ( "/%r/", $rateType_id, $myQuery );
-								$result = $this->queryDB ( $myQuery );
-								if (count ( $result ) != 0) {
-									$rate_id = $result [0] ["ID"];
-									$rateurl = preg_replace ( "/%s/", $rate_id, $this->_maxurl . self::RATEVAL_URL );
-									$this->_session->open ( $rateurl );
-									
-									// Wait for element = #button-create
-									$e = $w->until ( function ($session) {
-										return $session->element ( "css selector", "#button-create" );
-									} );
-									// Click element - #button-create
-									$this->_session->element ( "css selector", "#button-create" )->click ();
-									
-									// Wait for element = #button-create
-									$e = $w->until ( function ($session) {
-										return $session->element ( "xpath", "//*[contains(text(),'Create Date Range Values')]" );
-									} );
-									
-									$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" );
-									$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" );
-									$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-									
-									$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->clear ();
-									$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->sendKeys ( $_startDate );
-									$productname = preg_split ( "/^" . $kms . "kms Zone /", $pointname );
-									$ratevalue = strval ( (number_format ( floatval ( $routes [$kms] [$productname [1]] ), 2, ".", "" )) );
-									$this->_session->element ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" )->sendKeys ( $ratevalue );
-									$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+							}
+							// : End
+							
+							// : Check if route and rate exists
+							
+							// Check and store route ID if exists
+							if (($_dataset ["location from town"] ["id"] != FALSE) && ($_dataset ["location to town"] ["id"] != FALSE)) {
+								$myQuery = preg_replace ( "@%f@", $_dataset ["location from town"] ["value"], $this->_myqueries [7] );
+								$myQuery = preg_replace ( "@%t@", $_dataset ["location to town"] ["value"], $myQuery );
+								$sqlResult = $this->queryDB ( $myQuery );
+								if (count ( $sqlResult ) != 0) {
+									$_dataset ["rate"] ["other"] = $sqlResult [0] ["ID"];
 								} else {
-									throw new Exception ( "ERROR: Could not find newly created rate record." );
+									$_dataset ["rate"] ["other"] = NULL;
 								}
 							}
+							
+							// Check and store rate ID if exists
+							if (($_dataset ["rate"] ["other"] != FALSE)) {
+								// "select ID from udo_rates where route_id = %ro and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and model='%m' and businessUnit_id=%b and rateType_id=%ra;",
+								$myQuery = preg_replace ( "@%ro@", $_dataset ["rate"] ["other"], $this->_myqueries [8] );
+								$myQuery = preg_replace ( "@%ra@", $_dataset ["rate type"] ["id"], $myQuery );
+								$myQuery = preg_replace ( "@%g@", $_objectregistry_id, $myQuery );
+								$myQuery = preg_replace ( "@%c@", $_dataset ["customer"] ["id"], $myQuery );
+								$myQuery = preg_replace ( "@%d@", $_dataset ["truck type"] ["id"], $myQuery );
+								$myQuery = preg_replace ( "@%m@", $_dataset ["contribution model"] ["value"], $myQuery );
+								$myQuery = preg_replace ( "@%b@", $_dataset ["business unit"] ["id"], $myQuery );
+								$sqlResult = $this->queryDB ( $myQuery );
+								if (count ( $sqlResult ) != 0) {
+									$_dataset ["rate"] ["id"] = $sqlResult [0] ["ID"];
+								} else {
+									$_dataset ["rate"] ["id"] = NULL;
+								}
+							}
+							// : End
+							
+							// : Create rate value for route and rate
+							if (($_dataset ["rate"] ["id"]) && ($_dataset ["rate"] ["other"]) && ($_dataset["rate"]["value"])) {
+								// Prepare url string to load next
+								$rateurl = preg_replace ( "/%s/", $_dataset ["rate"] ["id"], $this->_maxurl . self::RATEVAL_URL );
+								// Load URL for route and rate databrowser page
+								$this->_session->open ( $rateurl );
+								
+								// Wait for element = #button-create
+								$e = $w->until ( function ($session) {
+									return $session->element ( "css selector", "#button-create" );
+								} );
+								// Click element - #button-create
+								$this->_session->element ( "css selector", "#button-create" )->click ();
+								
+								// Wait for element = #button-create
+								$e = $w->until ( function ($session) {
+									return $session->element ( "xpath", "//*[contains(text(),'Create Date Range Values')]" );
+								} );
+								
+								$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" );
+								$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" );
+								$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+								
+								$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->clear ();
+								$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->sendKeys ( date("Y-m-d 00:00:00") );
+								// Remove any currency symbols from rate value
+								$ratevalue = preg_replace ("@[Rr|\$]@", "", $_dataset["rate"]["value"]);
+								// Convert supplied rate value number format to => 2 decimal spaces, point decimal seperator, and no thousands comma seperator
+								$ratevalue = strval ( (number_format ( floatval ( $ratevalue ), 2, ".", "" )) );
+								$this->_session->element ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" )->sendKeys ( $ratevalue );
+								$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+							} else {
+								throw new Exception ( "ERROR: Could not find newly created rate record." );
+							}
+							// : End
 						} catch ( Exception $e ) {
-							$_msg = preg_replace ( "@/s@", "creating", self::PROCESS_FAIL );
-							$_msg = preg_replace ( "@/o@", "route and rate", $_msg );
-							$_msg = preg_replace ( "@/o@", "dummy data", $_msg );
-							throw new Exception ( $_msg );
+							// Add code here
 						}
 						
 						// : End
@@ -1047,7 +1115,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						$_erCount = count ( $this->_error );
 						$this->_error [$_erCount + 1] ["error"] = $e->getMessage ();
 						$this->_error [$_erCount + 1] ["record"] = $this->lastRecord;
-						$this->_error [$_erCount + 1] ["type"] = "Rate";
+						$this->_error [$_erCount + 1] ["type"] = "Route and Rate";
 					}
 				}
 				// : End
@@ -1076,7 +1144,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 			
 			// : If errors occured. Create xls of entries that failed.
 			if (count ( $this->_error ) != 0) {
-				$_xlsfilename = (dirname ( __FILE__ ) . $this->_errDir . self::DS . date ( "Y-m-d_His_" ) . "MAXLive_" . ".xlsx");
+				$_xlsfilename = (dirname ( __FILE__ ) . $this->_errDir . self::DS . date ( "Y-m-d_His_" ) . "MAXLive_Rates_Create_Script" . ".xlsx");
 				$this->writeExcelFile ( $_xlsfilename, $this->_error, $_xlsColumns );
 				if (file_exists ( $_xlsfilename )) {
 					print ("Excel error report written successfully to file: $_xlsfilename") ;
@@ -1336,6 +1404,13 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 					fclose ( $_handle );
 					
 					if (count ( $_data ) != 0) {
+						
+						foreach ( $_data as $_key => $_value ) {
+							foreach ( $_value as $_keyA => $_valueA ) {
+								$_data [$_key] [$_keyA] = $this->stringHypenFix ( $_valueA );
+							}
+						}
+						
 						return $_data;
 					} else {
 						$_msg = preg_replace ( "@%s@", $csvFile, self::FILE_EMPTY );
