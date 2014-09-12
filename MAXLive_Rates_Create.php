@@ -208,10 +208,10 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 				"customer",
 				"offloading customer",
 				"province from",
-				"location from town",
-				"location from point",
 				"province to",
+				"location from town",
 				"location to town",
+				"location from point",
 				"location to point",
 				"rate type",
 				"rate",
@@ -231,7 +231,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 				"id" => 0,
 				"value" => "",
 				"link" => 0,
-				"bulink" => 0 
+				"bulink" => 0,
+				"other" => ""
 		);
 		
 		$_dataset = array_fill_keys ( $_headers, $_keys );
@@ -298,7 +299,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 					// Load MAX home page
 					$this->_session->open ( $this->_maxurl );
 					// : Wait for page to load and for elements to be present on page
-					if ($this->_mode == "live") {
+					if ($this->_mode == "live" || $this->_mode == "test") {
 						$e = $w->until ( function ($session) {
 							return $session->element ( 'css selector', "#contentFrame" );
 						} );
@@ -318,12 +319,12 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 					$e = $this->_session->element ( 'css selector', 'input[name=submit][type=submit]' );
 					$e->click ();
 					// Switch out of frame
-					if ($this->_mode == "live") {
+					if ($this->_mode == "live" || $this->_mode == "test") {
 						$this->_session->switch_to_frame ();
 					}
 					
 					// : Wait for page to load and for elements to be present on page
-					if ($this->_mode == "live") {
+					if ($this->_mode == "live" || $this->_mode == "test") {
 						$e = $w->until ( function ($session) {
 							return $session->element ( 'css selector', "#contentFrame" );
 						} );
@@ -335,7 +336,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 					} );
 					$this->assertElementPresent ( "xpath", "//*[text()='" . $this->_welcome . "']" );
 					// Switch out of frame
-					if ($this->_mode == "live") {
+					if ($this->_mode == "live" || $this->_mode == "test") {
 						$this->_session->switch_to_frame ();
 					}
 				} catch ( Exception $e ) {
@@ -431,66 +432,93 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 							}
 						}
 						// : End
+						
+						// : Get IDS and fleet names for Zones
+						foreach($_dataset as $_dataKey => $_dataValues) {
+							if (strpos($_dataKey, "zone") !== FALSE) {
+								$myQuery = "select ID, fleet from udo_zone where name='" . $_dataset [$_dataKey] ["value"] . "';";
+								$sqlResult = $this->queryDB ( $myQuery );
+								if (count ( $sqlResult ) != 0) {
+									print("Zone query result. Query => " . $myQuery . PHP_EOL);
+									print_r($sqlResult);
+									print(PHP_EOL);
+									$_dataset [$_dataKey] ["id"] = intval ( $sqlResult [0] ["ID"] );
+									$_dataset [$_dataKey] ["other"] = $sqlResult [0] ["fleet"];
+								} else {
+									throw new Exception ( "Error: $_dataKey not found." );
+								}
+							}
+						}
+						// : End
+						
 						// : Check locations exist and create them if they dont
 						try {
+							$_locations = array ();
+							foreach($_dataset as $_dataKey => $_dataValues) {
+								$_result = strpos($_dataKey, "location");
+								if ($_result !== FALSE) {
+									$_locations[$_dataKey] = $_dataValues;
+								}
+							}
+
+							$_type = NULL;
+							$_load = NULL;
+							foreach ( $_locations as $_locKey => $_aLocation ) {
 							$_locationTree = "";
 							$_locationName = "";
 							$_parentId = "";
-							$_locations = array ();
-							$_locations [] = $_dataset ["location from town"];
-							$_locations [] = $_dataset ["location to town"];
-							$_locations [] = $_dataset ["location from point"];
-							$_locations [] = $_dataset ["location to point"];
-							$_type = NULL;
-							foreach ( $_locations as $_aLocation ) {
 								if (! $_aLocation ["id"]) {
-									// Store key value of array
-									$_locationKey = key ( $_aLocation );
-									print_r($_aLocation);
 									// : Determine type of location
-									if (((strpos ( $_locationKey , "town" )) != FALSE) && ((strpos ( $_locationKey, "from" )) != FALSE)) {
+									if (((strpos ( $_locKey , "town" )) != FALSE) && ((strpos ( $_locKey, "from" )) != FALSE)) {
+										$_load = "from";
 										$_type = "udo_City";
 										$_parentId = intval($_dataset["province from"]["id"]);
-										$_locationTree = $_dataset["province from"]["value"];
-									} else if (((strpos ( $_locationKey, "town" )) != FALSE) && ((strpos ( $_locationKey, "to" )) != FALSE)) {
+									} else if (((strpos ( $_locKey, "town" )) != FALSE) && ((strpos ( $_locKey, "to" )) != FALSE)) {
+										$_load = "to";
 										$_type = "udo_City";
 										$_parentId = intval($_dataset["province to"]["id"]);
-										$_locationTree = $_dataset["province to"]["value"];
-									} else if (((strpos ( $_locationKey, "point" )) != FALSE) && ((strpos ( $_locationKey, "from" )) != FALSE)) {
+									} else if (((strpos ( $_locKey, "point" )) != FALSE) && ((strpos ( $_locKey, "from" )) != FALSE)) {
+										$_load = "from";
 										$_type = "udo_Point";
 										$_parentId = intval($_dataset["location from town"]["id"]);
-										$_locationTree = $_dataset["location from town"]["value"];
-									} else if (((strpos ( $_locationKey, "point" )) != FALSE) && ((strpos ( $_locationKey, "to" )) != FALSE)) {
+									} else if (((strpos ( $_locKey, "point" )) != FALSE) && ((strpos ( $_locKey, "to" )) != FALSE)) {
 										$_type = "udo_Point";
+										$_load = "to";
 										$_parentId = intval($_dataset["location to town"]["id"]);
-										$_locationTree = $_dataset["location to town"]["value"];
 									}
-									print($_locationKey . PHP_EOL);
 									
 									// : End
 									// Build string for sql query like search for location
 									$_searchStr = "%" . preg_replace ( "@\s@", "%", $_aLocation ["value"] ) . "%";
 									$myQuery = "select ID from udo_location where name like '" . $_searchStr . "' and _type='" . $_type . "';";
 									$result = $this->queryDB ( $myQuery );
+									print("myQuery => " . $myQuery . PHP_EOL);
 									if (count ( $result ) != 0) {
-										$_dataset [$_locationKey] ["id"] = intval ( $result [0] ["ID"] );
+										$_dataset [$_locKey] ["id"] = intval ( $result [0] ["ID"] );
 									} else {
 										
 										// : Build location tree
-										while (!$_parentId != 0) {
+										$_treeCount = 0;
+										while ($_parentId != 0) {
 											$treeQuery = "select id, name, parent_id from udo_location where id=" . strval($_parentId) . ";";
 											print($treeQuery . PHP_EOL);
 											$result = $this->queryDB ( $treeQuery );
 											if (count ( $result ) != 0) {
 												$_parentId = intval($result [0] ["parent_id"]);
 												$_locationName = $result [0] ["name"];
-												$_locationTree = $_locationName . " -- " . $_locationTree;
+												switch($_treeCount) {
+													case 0:
+														$_locationTree = $_locationName;
+														break;
+													default:
+														$_locationTree = $_locationName . " -- " . $_locationTree;
+														break;
+												}
 											} else {
 												throw new Exception("Cannot find parent for location type: $_type, name: " . $_aLocation["value"]);
-											}											
+											}
+											$_treeCount++;											
 										}
-										print_r($_locationTree);
-										exit;
 										
 										// : End
 										
@@ -514,8 +542,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 												$this->assertElementPresent ( "css selector", "#checkbox_udo_City-2_0_0_active-2" );
 												$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 												
-												$this->_session->element ( "css selector", "#udo_City-14_0_0_name-14" )->sendKeys ( $city );
-												$this->_session->element ( "xpath", "//*[@id='udo_City-15__0_parent_id-15']/option[text()='" . self::PROVINCE . "']" )->click ();
+												$this->_session->element ( "css selector", "#udo_City-14_0_0_name-14" )->sendKeys ( $_aLocation["value"] );
+												$this->_session->element ( "xpath", "//*[@id='udo_City-15__0_parent_id-15']/option[text()='$_locationTree']" )->click ();
 												$this->_session->element ( "css selector", "#checkbox_udo_City-2_0_0_active-2" )->click ();
 												$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
 												
@@ -532,9 +560,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 												$this->assertElementPresent ( "css selector", "#udo_ZoneCity_link-5__0_zone_id-5" );
 												$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 												
-												$zone_id = preg_split ( "/kms.*/", $city );
-												
-												$this->_session->element ( "xpath", "//*[@id='udo_ZoneCity_link-5__0_zone_id-5']/option[text()='" . $zone_id [0] . "kms Zone " . $_contrib . "']" )->click ();
+												$this->_session->element ( "xpath", "//*[@id='udo_ZoneCity_link-5__0_zone_id-5']/option[text()='" . $_dataset["zone " . $_load]["value"] . " " . $_dataset["zone " . $_load]["other"] . "']" )->click ();
 												$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
 												
 												$e = $w->until ( function ($session) {
@@ -563,9 +589,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 												$this->assertElementPresent ( "css selector", "#udo_Point-15__0_parent_id-15" );
 												$this->assertElementPresent ( "css selector", "#checkbox_udo_Point-2_0_0_active-2" );
 												$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-												
-												$this->_session->element ( "css selector", "#udo_Point-14_0_0_name-14" )->sendKeys ( $city );
-												$this->_session->element ( "xpath", "//*[@id='udo_Point-15__0_parent_id-15']/option[text()='" . self::PROVINCE . "']" )->click ();
+												$this->_session->element ( "css selector", "#udo_Point-14_0_0_name-14" )->sendKeys ( $_aLocation["value"] );
+												$this->_session->element ( "xpath", "//*[@id='udo_Point-15__0_parent_id-15']/option[text()='$_locationTree']" )->click ();
 												$this->_session->element ( "css selector", "#checkbox_udo_Point-2_0_0_active-2" )->click ();
 												$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
 												
@@ -581,7 +606,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						} catch ( Exception $e ) {
 							// Add code here
 						}
-						exit;
+
 						// : End
 						
 						// : Check locations are linked to customer
@@ -596,9 +621,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								$this->clearWindows ();
 							}
 							
-							$recordExists = FALSE;
-							$pointname = preg_replace ( "/–/", "-", $pointname );
-							$this->lastRecord = $point . " (" . $pointname . ")";
+							$_locations = array();
+							
 							
 							// : Check if offloading customer and link exist and store result in $recordExists variable
 							$myQuery = preg_replace ( "/%s/", $point . " (" . $pointname . ")", $this->_myqueries [5] );
