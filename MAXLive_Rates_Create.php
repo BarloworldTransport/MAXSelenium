@@ -232,7 +232,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 				"value" => "",
 				"link" => 0,
 				"bulink" => 0,
-				"other" => ""
+				"other" => "" 
 		);
 		
 		$_dataset = array_fill_keys ( $_headers, $_keys );
@@ -380,9 +380,20 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						
 						// Get offloading customer ID
 						$myQuery = "select ID from udo_customer where tradingName='" . $_dataset ["offloading customer"] ["value"] . "' and primaryCustomer = 0 and useFandVContract = 0 and active = 1;";
-						$result = $this->queryDB ( $myQuery );
-						if (count ( $result ) != 0) {
-							$_dataset ["offloading customer"] ["id"] = intval ( $result [0] ["ID"] );
+						$sqlResultA = $this->queryDB ( $myQuery );
+						if (count ( $sqlResultA ) != 0) {
+							$_dataset ["offloading customer"] ["id"] = intval ( $sqlResultA [0] ["ID"] );
+							
+							// : If offloading customer does exist then check if offloading customer is linked to the customer and store the link ID
+							$myQuery = preg_replace ( "/%o/", $_dataset ["offloading customer"] ["value"], $this->_myqueries [1] );
+							$myQuery = preg_replace ( "/%t/", $_dataset ["customer"] ["value"], $myQuery );
+							$sqlResultB = $this->queryDB ( $myQuery );
+							if (count ( $sqlResultB ) != 0) {
+								$_dataset ["offloading customer"] ["link"] = intval ( $sqlResultB [0] ["ID"] );
+							} else {
+								$_dataset ["offloading customer"] ["link"] = NULL;
+							}
+							// : End
 						} else {
 							$_dataset ["offloading customer"] ["id"] = NULL;
 						}
@@ -424,9 +435,22 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						$_queries ["province to"] = "select ID from udo_location where name='" . $_dataset ["province to"] ["value"] . "' and _type='udo_Province';";
 						
 						foreach ( $_queries as $_sqlKey => $_sqlValue ) {
-							$result = $this->queryDB ( $_sqlValue );
-							if (count ( $result ) != 0) {
-								$_dataset [$_sqlKey] ["id"] = intval ( $result [0] ["ID"] );
+							$sqlResultA = $this->queryDB ( $_sqlValue );
+							if (count ( $sqlResultA ) != 0) {
+								$_dataset [$_sqlKey] ["id"] = intval ( $sqlResultA [0] ["ID"] );
+								
+								// : If location does exist then check if location is linked to the customer and store the ID of the customer location link
+								if (strpos ( $_sqlKey, "location" ) !== FALSE) {
+									$myQuery = preg_replace ( "/%n/", $_dataset [$_sqlKey] ["value"], $this->_myqueries [0] );
+									$myQuery = preg_replace ( "/%t/", $_dataset ["customer"] ["value"], $myQuery );
+									$sqlResultB = $this->queryDB ( $myQuery );
+									if (count ( $sqlResultB ) != 0) {
+										$_dataset [$_sqlKey] ["link"] = intval ( $sqlResultB [0] ["ID"] );
+									} else {
+										$_dataset [$_sqlKey] ["link"] = NULL;
+									}
+								}
+								// : End
 							} else {
 								$_dataset [$_sqlKey] ["id"] = NULL;
 							}
@@ -434,14 +458,14 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						// : End
 						
 						// : Get IDS and fleet names for Zones
-						foreach($_dataset as $_dataKey => $_dataValues) {
-							if (strpos($_dataKey, "zone") !== FALSE) {
+						foreach ( $_dataset as $_dataKey => $_dataValues ) {
+							if (strpos ( $_dataKey, "zone" ) !== FALSE) {
 								$myQuery = "select ID, fleet from udo_zone where name='" . $_dataset [$_dataKey] ["value"] . "';";
 								$sqlResult = $this->queryDB ( $myQuery );
 								if (count ( $sqlResult ) != 0) {
-									print("Zone query result. Query => " . $myQuery . PHP_EOL);
-									print_r($sqlResult);
-									print(PHP_EOL);
+									print ("Zone query result. Query => " . $myQuery . PHP_EOL) ;
+									print_r ( $sqlResult );
+									print (PHP_EOL) ;
 									$_dataset [$_dataKey] ["id"] = intval ( $sqlResult [0] ["ID"] );
 									$_dataset [$_dataKey] ["other"] = $sqlResult [0] ["fleet"];
 								} else {
@@ -454,37 +478,37 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						// : Check locations exist and create them if they dont
 						try {
 							$_locations = array ();
-							foreach($_dataset as $_dataKey => $_dataValues) {
-								$_result = strpos($_dataKey, "location");
+							foreach ( $_dataset as $_dataKey => $_dataValues ) {
+								$_result = strpos ( $_dataKey, "location" );
 								if ($_result !== FALSE) {
-									$_locations[$_dataKey] = $_dataValues;
+									$_locations [$_dataKey] = $_dataValues;
 								}
 							}
-
+							
 							$_type = NULL;
 							$_load = NULL;
 							foreach ( $_locations as $_locKey => $_aLocation ) {
-							$_locationTree = "";
-							$_locationName = "";
-							$_parentId = "";
+								$_locationTree = "";
+								$_locationName = "";
+								$_parentId = "";
 								if (! $_aLocation ["id"]) {
 									// : Determine type of location
-									if (((strpos ( $_locKey , "town" )) != FALSE) && ((strpos ( $_locKey, "from" )) != FALSE)) {
+									if (((strpos ( $_locKey, "town" )) != FALSE) && ((strpos ( $_locKey, "from" )) != FALSE)) {
 										$_load = "from";
 										$_type = "udo_City";
-										$_parentId = intval($_dataset["province from"]["id"]);
+										$_parentId = intval ( $_dataset ["province from"] ["id"] );
 									} else if (((strpos ( $_locKey, "town" )) != FALSE) && ((strpos ( $_locKey, "to" )) != FALSE)) {
 										$_load = "to";
 										$_type = "udo_City";
-										$_parentId = intval($_dataset["province to"]["id"]);
+										$_parentId = intval ( $_dataset ["province to"] ["id"] );
 									} else if (((strpos ( $_locKey, "point" )) != FALSE) && ((strpos ( $_locKey, "from" )) != FALSE)) {
 										$_load = "from";
 										$_type = "udo_Point";
-										$_parentId = intval($_dataset["location from town"]["id"]);
+										$_parentId = intval ( $_dataset ["location from town"] ["id"] );
 									} else if (((strpos ( $_locKey, "point" )) != FALSE) && ((strpos ( $_locKey, "to" )) != FALSE)) {
 										$_type = "udo_Point";
 										$_load = "to";
-										$_parentId = intval($_dataset["location to town"]["id"]);
+										$_parentId = intval ( $_dataset ["location to town"] ["id"] );
 									}
 									
 									// : End
@@ -492,32 +516,32 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 									$_searchStr = "%" . preg_replace ( "@\s@", "%", $_aLocation ["value"] ) . "%";
 									$myQuery = "select ID from udo_location where name like '" . $_searchStr . "' and _type='" . $_type . "';";
 									$result = $this->queryDB ( $myQuery );
-									print("myQuery => " . $myQuery . PHP_EOL);
+									print ("myQuery => " . $myQuery . PHP_EOL) ;
 									if (count ( $result ) != 0) {
 										$_dataset [$_locKey] ["id"] = intval ( $result [0] ["ID"] );
 									} else {
 										
 										// : Build location tree
 										$_treeCount = 0;
-										while ($_parentId != 0) {
-											$treeQuery = "select id, name, parent_id from udo_location where id=" . strval($_parentId) . ";";
-											print($treeQuery . PHP_EOL);
+										while ( $_parentId != 0 ) {
+											$treeQuery = "select id, name, parent_id from udo_location where id=" . strval ( $_parentId ) . ";";
+											print ($treeQuery . PHP_EOL) ;
 											$result = $this->queryDB ( $treeQuery );
 											if (count ( $result ) != 0) {
-												$_parentId = intval($result [0] ["parent_id"]);
+												$_parentId = intval ( $result [0] ["parent_id"] );
 												$_locationName = $result [0] ["name"];
-												switch($_treeCount) {
-													case 0:
+												switch ($_treeCount) {
+													case 0 :
 														$_locationTree = $_locationName;
 														break;
-													default:
+													default :
 														$_locationTree = $_locationName . " -- " . $_locationTree;
 														break;
 												}
 											} else {
-												throw new Exception("Cannot find parent for location type: $_type, name: " . $_aLocation["value"]);
+												throw new Exception ( "Cannot find parent for location type: $_type, name: " . $_aLocation ["value"] );
 											}
-											$_treeCount++;											
+											$_treeCount ++;
 										}
 										
 										// : End
@@ -542,7 +566,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 												$this->assertElementPresent ( "css selector", "#checkbox_udo_City-2_0_0_active-2" );
 												$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 												
-												$this->_session->element ( "css selector", "#udo_City-14_0_0_name-14" )->sendKeys ( $_aLocation["value"] );
+												$this->_session->element ( "css selector", "#udo_City-14_0_0_name-14" )->sendKeys ( $_aLocation ["value"] );
 												$this->_session->element ( "xpath", "//*[@id='udo_City-15__0_parent_id-15']/option[text()='$_locationTree']" )->click ();
 												$this->_session->element ( "css selector", "#checkbox_udo_City-2_0_0_active-2" )->click ();
 												$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
@@ -560,7 +584,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 												$this->assertElementPresent ( "css selector", "#udo_ZoneCity_link-5__0_zone_id-5" );
 												$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 												
-												$this->_session->element ( "xpath", "//*[@id='udo_ZoneCity_link-5__0_zone_id-5']/option[text()='" . $_dataset["zone " . $_load]["value"] . " " . $_dataset["zone " . $_load]["other"] . "']" )->click ();
+												$this->_session->element ( "xpath", "//*[@id='udo_ZoneCity_link-5__0_zone_id-5']/option[text()='" . $_dataset ["zone " . $_load] ["value"] . " " . $_dataset ["zone " . $_load] ["other"] . "']" )->click ();
 												$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
 												
 												$e = $w->until ( function ($session) {
@@ -570,7 +594,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 												$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 												$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
 												break;
-												// : End Case
+											// : End Case
 											case "udo_Point" :
 											case "default" :
 												// : Create Point
@@ -589,7 +613,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 												$this->assertElementPresent ( "css selector", "#udo_Point-15__0_parent_id-15" );
 												$this->assertElementPresent ( "css selector", "#checkbox_udo_Point-2_0_0_active-2" );
 												$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-												$this->_session->element ( "css selector", "#udo_Point-14_0_0_name-14" )->sendKeys ( $_aLocation["value"] );
+												$this->_session->element ( "css selector", "#udo_Point-14_0_0_name-14" )->sendKeys ( $_aLocation ["value"] );
 												$this->_session->element ( "xpath", "//*[@id='udo_Point-15__0_parent_id-15']/option[text()='$_locationTree']" )->click ();
 												$this->_session->element ( "css selector", "#checkbox_udo_Point-2_0_0_active-2" )->click ();
 												$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
@@ -598,7 +622,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 													return $session->element ( "css selector", "div.toolbar-cell-create" );
 												} );
 												break;
-												// : End Case
+											// : End Case
 										}
 									}
 								}
@@ -606,7 +630,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						} catch ( Exception $e ) {
 							// Add code here
 						}
-
+						
 						// : End
 						
 						// : Check locations are linked to customer
@@ -621,26 +645,30 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								$this->clearWindows ();
 							}
 							
-							$_locations = array();
-							
-							
-							// : Check if offloading customer and link exist and store result in $recordExists variable
-							$myQuery = preg_replace ( "/%s/", $point . " (" . $pointname . ")", $this->_myqueries [5] );
-							$myQuery = preg_replace ( "/%t/", "udo_Point", $myQuery );
-							$result = $this->queryDB ( $myQuery );
-							if (count ( $result ) != 0) {
-								$myQuery = preg_replace ( "/%n/", $point . " (" . $pointname . ")", $this->_myqueries [0] );
-								$myQuery = preg_replace ( "/%t/", $_customer, $myQuery );
-								$result = $this->queryDB ( $myQuery );
-								if (count ( $result ) != 0) {
-									$recordExists = TRUE;
-								} else {
-									$recordExists = FALSE;
+							foreach ( $_dataset as $_dataKey => $_dataValues ) {
+								$_linked = FALSE;
+								if (((! $_dataValues ["id"]) && (! $_dataValues ["link"])) || (($_dataValues ["id"]) && (! $_dataValues ["link"]))) {
+									if ((strpos ( $_dataKey, "location" ) !== FALSE) && (strpos ( $_dataKey, "point" ) !== FALSE)) {
+										// : Check if point exists and if so then check if point is linked to the customer
+										$myQuery = preg_replace ( "/%s/", $_dataValues ["value"], $this->_myqueries [5] );
+										$myQuery = preg_replace ( "/%t/", "udo_Point", $myQuery );
+										$sqlResultA = $this->queryDB ( $myQuery );
+										if (count ( $sqlResultA ) != 0) {
+											$myQuery = preg_replace ( "/%n/", $_dataValues ["value"], $this->_myqueries [0] );
+											$myQuery = preg_replace ( "/%t/", $_dataset ["customer"] ["value"], $myQuery );
+											$sqlResultB = $this->queryDB ( $myQuery );
+											if (count ( $sqlResultB ) != 0) {
+												$_linked = TRUE;
+											} else {
+												$recordExists = FALSE;
+											}
+										} else {
+											$recordExists = FALSE;
+										}
+										// : End
+									}
 								}
-							} else {
-								$recordExists = FALSE;
 							}
-							// : End
 							
 							// Load MAX customer page
 							if (! $recordExists) {
