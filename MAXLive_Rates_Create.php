@@ -204,6 +204,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 		// : Define local variables
 		$_dbStatus = FALSE;
 		$_match = 0;
+		$_process = (string) "";
 		$_objectregistry_id = ( int ) 0;
 		// Define array of keywords to validate data headers
 		$_headers = ( array ) array (
@@ -530,7 +531,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						
 						// : End
 						
-						// : Check locations exist and create them if they dont
+						// : Check locations exist and create them if they dont exist
 						try {
 							$_locations = array ();
 							foreach ( $_dataset as $_dataKey => $_dataValues ) {
@@ -543,6 +544,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 							$_type = NULL;
 							$_load = NULL;
 							foreach ( $_locations as $_locKey => $_aLocation ) {
+								$_currentLocation = $_locKey;
+								$_process = "query location";
 								$_locationTree = "";
 								$_locationName = "";
 								$_parentId = "";
@@ -605,6 +608,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 										switch ($_type) {
 											case "udo_City" :
 												// : Create City
+												$_process = "create location - city";
 												$this->_session->open ( $this->_maxurl . self::CITY_URL );
 												
 												$e = $w->until ( function ($session) {
@@ -653,6 +657,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 											case "udo_Point" :
 											case "default" :
 												// : Create Point
+												$_process = "create location - point";
 												$this->_session->open ( $this->_maxurl . self::POINT_URL );
 												
 												$e = $w->until ( function ($session) {
@@ -683,7 +688,10 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								}
 							}
 						} catch ( Exception $e ) {
-							// Add code here
+							$_erCount = count ( $this->_error );
+							$this->_error [$_erCount + 1] ["error"] = $e->getMessage ();
+							$this->_error [$_erCount + 1] ["record"] = $this->lastRecord . ". Object data that failed: " . $_currentLocation;
+							$this->_error [$_erCount + 1] ["type"] = $_process;
 						}
 						
 						// : End
@@ -706,6 +714,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								
 								if (((! $_dataValues ["id"]) && (! $_dataValues ["link"])) || (($_dataValues ["id"]) && (! $_dataValues ["link"]))) {
 									if ((strpos ( $_dataKey, "location" ) !== FALSE) && (strpos ( $_dataKey, "point" ) !== FALSE)) {
+										$_currentLocation = $_dataValues["value"];
 										if (! $_dataValues ["id"]) {
 											$myQuery = preg_replace ( "/%s/", $_dataValues ["value"], $this->_myqueries [5] );
 											$myQuery = preg_replace ( "/%t/", "udo_Point", $myQuery );
@@ -787,7 +796,10 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								}
 							}
 						} catch ( Exception $e ) {
-							// Add code here
+							$_erCount = count ( $this->_error );
+							$this->_error [$_erCount + 1] ["error"] = $e->getMessage ();
+							$this->_error [$_erCount + 1] ["record"] = $this->lastRecord . ". Object data that failed: " . $_currentLocation;
+							$this->_error [$_erCount + 1] ["type"] = $_process;
 						}
 						
 						// : End
@@ -913,7 +925,10 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								}
 							}
 						} catch ( Exception $e ) {
-							// Add code here
+							$_erCount = count ( $this->_error );
+							$this->_error [$_erCount + 1] ["error"] = $e->getMessage ();
+							$this->_error [$_erCount + 1] ["record"] = $this->lastRecord . ". Object data that failed: " . $_dataset["offloading customer"]["value"];
+							$this->_error [$_erCount + 1] ["type"] = $_process;
 						}
 						// : End
 						
@@ -921,6 +936,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						
 						try {
 							if ((! $_dataset ["rate"] ["id"])) {
+								$_process = "begin create rate process";
 								// Get all currently open windows
 								$_winAll = $this->_session->window_handles ();
 								// Set window focus to main window
@@ -954,6 +970,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								
 								// : Create route if it does not exist
 								if (! $_dataset ["rate"] ["other"]) {
+									$_process = "create route";
 									// Concatenate string for route name
 									$_routeName = $_dataset ["location from town"] . " TO " . $_dataset ["location to town"];
 									
@@ -1005,7 +1022,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 									} );
 								}
 								// : End
-								
+								$_process = "create rate";
 								$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-30__0_rateType_id-30']" );
 								$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-4__0_businessUnit_id-4']" );
 								$this->assertElementPresent ( "xpath", "//*[@id='udo_Rates-36__0_truckDescription_id-36']" );
@@ -1101,7 +1118,10 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 							}
 							// : End
 						} catch ( Exception $e ) {
-							// Add code here
+							$_erCount = count ( $this->_error );
+							$this->_error [$_erCount + 1] ["error"] = $e->getMessage ();
+							$this->_error [$_erCount + 1] ["record"] = $this->lastRecord;
+							$this->_error [$_erCount + 1] ["type"] = $_process;
 						}
 						
 						// : End
