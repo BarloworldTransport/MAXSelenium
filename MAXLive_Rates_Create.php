@@ -380,7 +380,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						}
 						// : End
 						
-						$this->lastRecord = "Customer: " . $_dataset["customer"]["value"] . ", Route: " . $_dataset["location from town"]["value"] . " TO " . $_dataset["location to town"] . ", Rate Value: " . $_dataset["rate"] ["value"];
+						$this->lastRecord = "Customer: " . $_dataset["customer"]["value"] . ", Route: " . $_dataset["location from town"]["value"] . " TO " . $_dataset["location to town"]["value"] . ", Rate Value: " . $_dataset["rate"] ["value"];
 						
 						// Get truck description ID
 						$myQuery = "select ID from udo_truckdescription where description='" . $_dataset ["truck type"] ["value"] . "';";
@@ -751,7 +751,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 											$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 											
 											// Select new location from select box
-											$this->_session->element ( "xpath", "//*[@id='udo_CustomerLocations-5__0_location_id-5']/option[text()='" . $_dataValues ["values"] . "']" )->click ();
+											$this->_session->element ( "xpath", "//*[@id='udo_CustomerLocations-5__0_location_id-5']/option[text()='" . $_dataValues ["value"] . "']" )->click ();
 											// Select offloading as type for new location from select box
 											$this->_session->element ( "xpath", "//*[@id='udo_CustomerLocations-8__0_type-8']/option[text()='Offloading']" )->click ();
 											// Click the submit button
@@ -947,7 +947,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								}
 								
 								// Load the MAX customer page
-								$this->_session->open ( $this->_maxurl . self::CUSTOMER_URL . $customer_id );
+								$this->_session->open ( $this->_maxurl . self::CUSTOMER_URL . $_dataset["customer"]["id"] );
 								
 								// Wait for element = #subtabselector
 								$e = $w->until ( function ($session) {
