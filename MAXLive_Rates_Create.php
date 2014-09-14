@@ -565,7 +565,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 									$_searchStr = "%" . preg_replace ( "@\s@", "%", $_aLocation ["value"] ) . "%";
 									$myQuery = "select ID from udo_location where name like '" . $_searchStr . "' and _type='" . $_type . "';";
 									$result = $this->queryDB ( $myQuery );
-									print ("myQuery => " . $myQuery . PHP_EOL) ;
+									
 									if (count ( $result ) != 0) {
 										$_dataset [$_locKey] ["id"] = intval ( $result [0] ["ID"] );
 									} else {
@@ -811,6 +811,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								}
 								// : Load customer data browser page for Customer
 								$this->_session->open ( $this->_maxurl . self::CUSTOMER_URL . $_dataset ["customer"] ["id"] );
+								print("Offloading Customer URL: " . $this->_maxurl . self::CUSTOMER_URL . $_dataset ["customer"] ["id"] . PHP_EOL);
+								$this->takeScreenshot();
 								
 								// Wait for element = Page heading
 								$e = $w->until ( function ($session) {
@@ -1067,6 +1069,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								$myQuery = preg_replace ( "@%m@", $_dataset ["contribution model"] ["value"], $myQuery );
 								$myQuery = preg_replace ( "@%b@", $_dataset ["business unit"] ["id"], $myQuery );
 								$sqlResult = $this->queryDB ( $myQuery );
+								print("SQL Query and result for rate: " .$myQuery . PHP_EOL);
+								print_r($sqlResult);
 								if (count ( $sqlResult ) != 0) {
 									$_dataset ["rate"] ["id"] = $sqlResult [0] ["ID"];
 								} else {
