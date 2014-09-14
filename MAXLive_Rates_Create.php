@@ -819,7 +819,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 									$this->clearWindows ();
 								}
 								// : Load customer data browser page for Customer
-								$this->_session->open ( $this->_maxurl . self::CUSTOMER_URL . $_dataset ["customer"] ["value"] );
+								$this->_session->open ( $this->_maxurl . self::CUSTOMER_URL . $_dataset ["customer"] ["id"] );
 								
 								// Wait for element = Page heading
 								$e = $w->until ( function ($session) {
@@ -936,7 +936,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						
 						try {
 							// Concatenate string for route name
-							$_routeName = $_dataset ["location from town"] . " TO " . $_dataset ["location to town"];
+							$_routeName = $_dataset ["location from town"]["value"] . " TO " . $_dataset ["location to town"]["value"];
 							
 							if ((! $_dataset ["rate"] ["id"])) {
 								
