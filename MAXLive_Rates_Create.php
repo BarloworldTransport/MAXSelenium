@@ -99,7 +99,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 			"select ID from udo_location where name='%s' and _type='%t';",
 			"select ID from udo_zone where name='%s';",
 			"select ID from udo_route where locationFrom_id IN (select ID from udo_location where name='%f') and locationTo_id IN (select ID from udo_location where name='%t');",
-			"select ID from udo_rates where route_id = %ro and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and model='%m' and businessUnit_id=%b and rateType_id=%ra;" 
+			"select ID from udo_rates where route_id=%ro and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and model='%m' and businessUnit_id=%b and rateType_id=%ra;" 
 	);
 	
 	// : Public functions
@@ -282,19 +282,6 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 				} else {
 					throw new Exception ( self::COULD_NOT_CONNECT_MYSQL );
 				}
-				// : End
-				
-				// : Get data from database to setup some variables before starting
-				
-				// Get objectregistry_id for udo_Customer
-				$myQuery = $this->_myqueries [4];
-				$result = $this->queryDB ( $myQuery );
-				if (count ( $result ) != 0) {
-					$objectregistry_id = $result [0] ["ID"];
-				} else {
-					throw new Exception ( "Error: Object registry record for udo_customer not found." );
-				}
-				
 				// : End
 				
 				// : Initiate Session
