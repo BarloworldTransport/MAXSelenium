@@ -438,15 +438,6 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 							throw new Exception ( "Error: Business unit not found. Please check and amend business unit name." );
 						}
 						
-						// Get contribution model ID
-						$myQuery = "select ID from udo_businessunit where name='" . $_dataset ["contribution model"] ["value"] . "';";
-						$result = $this->queryDB ( $myQuery );
-						if (count ( $result ) != 0) {
-							$_dataset ["contribution model"] ["id"] = intval ( $result [0] ["ID"] );
-						} else {
-							throw new Exception ( "Error: Contribution model not found." );
-						}
-						
 						// Get IDs for all locations
 						$_queries = array ();
 						$_queries ["location from town"] = "select ID from udo_location where name='" . $_dataset ["location from town"] ["value"] . "' and _type='udo_City';";
