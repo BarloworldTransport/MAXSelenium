@@ -494,7 +494,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 							// "select ID from udo_rates where route_id = %ro and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and model='%m' and businessUnit_id=%b and rateType_id=%ra;",
 							$myQuery = preg_replace ( "@%ro@", $_dataset ["rate"] ["other"], $this->_myqueries [8] );
 							$myQuery = preg_replace ( "@%ra@", $_dataset ["rate type"] ["id"], $myQuery );
-							$myQuery = preg_replace ( "@%g@", $_objectregistry_id, $myQuery );
+							$myQuery = preg_replace ( "@%g@", $objectregistry_id, $myQuery );
 							$myQuery = preg_replace ( "@%c@", $_dataset ["customer"] ["id"], $myQuery );
 							$myQuery = preg_replace ( "@%d@", $_dataset ["truck type"] ["id"], $myQuery );
 							$myQuery = preg_replace ( "@%m@", $_dataset ["contribution model"] ["value"], $myQuery );
@@ -1050,7 +1050,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								// "select ID from udo_rates where route_id = %ro and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and model='%m' and businessUnit_id=%b and rateType_id=%ra;",
 								$myQuery = preg_replace ( "@%ro@", $_dataset ["rate"] ["other"], $this->_myqueries [8] );
 								$myQuery = preg_replace ( "@%ra@", $_dataset ["rate type"] ["id"], $myQuery );
-								$myQuery = preg_replace ( "@%g@", $_objectregistry_id, $myQuery );
+								$myQuery = preg_replace ( "@%g@", $objectregistry_id, $myQuery );
 								$myQuery = preg_replace ( "@%c@", $_dataset ["customer"] ["id"], $myQuery );
 								$myQuery = preg_replace ( "@%d@", $_dataset ["truck type"] ["id"], $myQuery );
 								$myQuery = preg_replace ( "@%m@", $_dataset ["contribution model"] ["value"], $myQuery );
