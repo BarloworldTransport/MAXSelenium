@@ -740,7 +740,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 											$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
 											
 											// : Create Business Unit Link for Point Link
-											$myQuery = preg_replace ( "/%n/", $_dataValues ["values"], $this->_myqueries [0] );
+											$myQuery = preg_replace ( "/%n/", $_dataValues ["value"], $this->_myqueries [0] );
 											$myQuery = preg_replace ( "/%t/", $_dataset ["customer"] ["value"], $myQuery );
 											$sqlResult = $this->queryDB ( $myQuery );
 											if (count ( $sqlResult ) != 0) {
@@ -1106,13 +1106,14 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 									} );
 									
 									$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" );
-									$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" );
 									$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 									
 									$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->clear ();
 									$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->sendKeys ( date ( "Y-m-d 00:00:00" ) );
 									
 									if ($_drvKey != "Fleet") {
+										$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" );
+										
 										if ($_drvKey == "Rate") {
 											// Remove any currency symbols from rate value
 											$drv = preg_replace ( "@[Rr|\$]@", "", $_drvValue );
@@ -1125,6 +1126,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 										}
 										$this->_session->element ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" )->sendKeys ( $drv );
 									} else {
+										$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-20__0_value-20']" );
 										// If rate contribution value is fleet value then select the value from a select box
 										$this->_session->element ( "xpath", "//*[@id='DateRangeValue-20__0_value-20']/option[text()='$_drvValue']" )->click();
 									}
