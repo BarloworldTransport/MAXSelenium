@@ -1109,7 +1109,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 									$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 									
 									$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->clear ();
-									$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->sendKeys ( date ( "Y-m-d 00:00:00" ) );
+									$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->sendKeys ( date ( "Y-m-01 00:00:00" ) );
 									
 									if ($_drvKey != "Fleet") {
 										$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" );
@@ -1124,6 +1124,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 											// Convert supplied rate value number format to => 2 decimal spaces, point decimal seperator, and no thousands comma seperator
 											$drv = strval ( (number_format ( floatval ( $_drvValue ), 2, ".", "" )) );
 										}
+										$this->_session->element ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" )->clear();
 										$this->_session->element ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" )->sendKeys ( $drv );
 									} else {
 										$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-20__0_value-20']" );
