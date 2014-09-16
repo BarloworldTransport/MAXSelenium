@@ -371,7 +371,6 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						// : End
 						
 						$this->lastRecord = "Customer: " . $_dataset ["customer"] ["value"] . ", Route: " . $_dataset ["location from town"] ["value"] . " TO " . $_dataset ["location to town"] ["value"] . ", Rate Value: " . $_dataset ["rate"] ["value"] . ", Truck Description: " . $_dataset["truck type"]["value"];
-						print($this->lastRecord . PHP_EOL);
 						
 						// Get truck description ID
 						$myQuery = "select ID from udo_truckdescription where description='" . $_dataset ["truck type"] ["value"] . "';";
@@ -431,12 +430,12 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						
 						// Get IDs for all locations
 						$_queries = array ();
-						$_queries ["location from town"] = "select ID from udo_location where name='" . $_dataset ["location from town"] ["value"] . "' and _type='udo_City';";
-						$_queries ["location from point"] = "select ID from udo_location where name='" . $_dataset ["location from point"] ["value"] . "' and _type='udo_Point';";
-						$_queries ["location to town"] = "select ID from udo_location where name='" . $_dataset ["location to town"] ["value"] . "' and _type='udo_City';";
-						$_queries ["location to point"] = "select ID from udo_location where name='" . $_dataset ["location to point"] ["value"] . "' and _type='udo_Point';";
-						$_queries ["province from"] = "select ID from udo_location where name='" . $_dataset ["province from"] ["value"] . "' and _type='udo_Province';";
-						$_queries ["province to"] = "select ID from udo_location where name='" . $_dataset ["province to"] ["value"] . "' and _type='udo_Province';";
+						$_queries ["location from town"] = "select ID from udo_location where name='" . $_dataset ["location from town"] ["value"] . "' and _type='udo_City' and active=1';";
+						$_queries ["location from point"] = "select ID from udo_location where name='" . $_dataset ["location from point"] ["value"] . "' and _type='udo_Point' and active=1;";
+						$_queries ["location to town"] = "select ID from udo_location where name='" . $_dataset ["location to town"] ["value"] . "' and _type='udo_City' and active=1;";
+						$_queries ["location to point"] = "select ID from udo_location where name='" . $_dataset ["location to point"] ["value"] . "' and _type='udo_Point' and active=1;";
+						$_queries ["province from"] = "select ID from udo_location where name='" . $_dataset ["province from"] ["value"] . "' and _type='udo_Province' and active=1;";
+						$_queries ["province to"] = "select ID from udo_location where name='" . $_dataset ["province to"] ["value"] . "' and _type='udo_Province' and active=1;";
 						
 						foreach ( $_queries as $_sqlKey => $_sqlValue ) {
 							$sqlResultA = $this->queryDB ( $_sqlValue );
@@ -529,6 +528,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								$_locationName = "";
 								$_parentId = "";
 								if (! $_aLocation ["id"]) {
+									
 									// : Determine type of location
 									if (((strpos ( $_locKey, "town" )) != FALSE) && ((strpos ( $_locKey, "from" )) != FALSE)) {
 										$_load = "from";
@@ -551,12 +551,14 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 									// : End
 									// Build string for sql query like search for location
 									$_searchStr = preg_replace ( "@\s@", "%", $_aLocation ["value"] ) . "%";
-									$myQuery = "select ID, name from udo_location where name like '" . $_searchStr . "' and _type='" . $_type . "';";
+									$myQuery = "select ID, name from udo_location where name like '" . $_searchStr . "' and _type='" . $_type . "' and active=1;";
 									$result = $this->queryDB ( $myQuery );
 									
 									if (count ( $result ) != 0) {
 										$_dataset [$_locKey] ["id"] = intval ( $result [0] ["ID"] );
-										$_dataset [$_locKey] ["value"] = intval ( $result [0] ["name"] );
+										$_dataset [$_locKey] ["value"] = $result [0] ["name"];
+										// Update last record
+										$this->lastRecord = "Customer: " . $_dataset ["customer"] ["value"] . ", Route: " . $_dataset ["location from town"] ["value"] . " TO " . $_dataset ["location to town"] ["value"] . ", Rate Value: " . $_dataset ["rate"] ["value"] . ", Truck Description: " . $_dataset["truck type"]["value"];
 									} else {
 										
 										// : Build location tree
@@ -931,6 +933,20 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 							
 							if ((! $_dataset ["rate"] ["id"])) {
 								
+								// : If route does not exist from previous check, check again and store route ID if it exists
+								if (($_dataset ["location from town"] ["id"] != FALSE) && ($_dataset ["location to town"] ["id"] != FALSE) && (!$_dataset["rate"]["other"])) {
+									$_process = "check if route exists";
+									$myQuery = preg_replace ( "@%f@", $_dataset ["location from town"] ["value"], $this->_myqueries [7] );
+									$myQuery = preg_replace ( "@%t@", $_dataset ["location to town"] ["value"], $myQuery );
+									$sqlResult = $this->queryDB ( $myQuery );
+									if (count ( $sqlResult ) != 0) {
+										$_dataset ["rate"] ["other"] = $sqlResult [0] ["ID"];
+									} else {
+										$_dataset ["rate"] ["other"] = NULL;
+									}
+								}
+								// : End
+								
 								$_process = "begin create rate process";
 								// Get all currently open windows
 								$_winAll = $this->_session->window_handles ();
@@ -981,28 +997,28 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 									}
 									// Wait for element Page Heading
 									$e = $w->until ( function ($session) {
-										return $session->element ( "xpath", "//*[@id='udo_Route-6__0_locationFrom_id-6']" );
+										return $session->element ( "xpath", "//*[@name='udo_Route[0][locationFrom_id]']" );
 									} );
 									
 									// : Assert all elements on page
-									$this->assertElementPresent ( "xpath", "//*[@id='udo_Route-7__0_locationTo_id-7']" );
-									$this->assertElementPresent ( "xpath", "//*[@id='udo_Route-4_0_0_expectedKms-4']" );
-									$this->assertElementPresent ( "xpath", "//*[@id='udo_Route-3_0_0_duration-3']" );
+									$this->assertElementPresent ( "xpath", "//*[@name='udo_Route[0][locationTo_id]']" );
+									$this->assertElementPresent ( "xpath", "//*[@name='udo_Route[0][expectedKms]']" );
+									$this->assertElementPresent ( "xpath", "//*[@name='udo_Route[0][duration]']" );
 									$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 									// : End
 									
 									try {
-										$this->_session->element ( "xpath", "//*[@id='udo_Route-6__0_locationFrom_id-6']/option[text()='" . $_dataset ["location from town"] ["value"] . "']" )->click ();
+										$this->_session->element ( "xpath", "//*[@name='udo_Route[0][locationFrom_id]']/option[text()='" . $_dataset ["location from town"] ["value"] . "']" )->click ();
 									} catch ( PHPWebDriver_NoSuchElementWebDriverError $e ) {
 										throw new Exception ( "ERROR: Could not find the location from on the create route page" . PHP_EOL . $e->getMessage () );
 									}
 									
-									$this->_session->element ( "xpath", "//*[@id='udo_Route-7__0_locationTo_id-7']/option[text()='" . $_dataset ["location to town"] ["value"] . "']" )->click ();
+									$this->_session->element ( "xpath", "//*[@name='udo_Route[0][locationTo_id]']/option[text()='" . $_dataset ["location to town"] ["value"] . "']" )->click ();
 									if ($_dataset ["expected kms"] ["value"] != FALSE) {
-										$this->_session->element ( "xpath", "//*[@id='udo_Route-4_0_0_expectedKms-4']" )->sendKeys ( $_dataset ["expected kms"] ["value"] );
+										$this->_session->element ( "xpath", "//*[@name='udo_Route[0][expectedKms]']" )->sendKeys ( $_dataset ["expected kms"] ["value"] );
 										// Calculate duration from kms value at 60K/H
 										$duration = strval ( number_format ( (floatval ( $_dataset ["expected kms"] ["value"] ) / 80) * 60, 0, "", "" ) );
-										$this->_session->element ( "xpath", "//*[@id='udo_Route-3_0_0_duration-3']" )->sendKeys ( $duration );
+										$this->_session->element ( "xpath", "//*[@name='udo_Route[0][duration]']" )->sendKeys ( $duration );
 									}
 									$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
 									
