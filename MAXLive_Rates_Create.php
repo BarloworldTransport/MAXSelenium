@@ -370,7 +370,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						}
 						// : End
 						
-						$this->lastRecord = "Customer: " . $_dataset ["customer"] ["value"] . ", Route: " . $_dataset ["location from town"] ["value"] . " TO " . $_dataset ["location to town"] ["value"] . ", Rate Value: " . $_dataset ["rate"] ["value"];
+						$this->lastRecord = "Customer: " . $_dataset ["customer"] ["value"] . ", Route: " . $_dataset ["location from town"] ["value"] . " TO " . $_dataset ["location to town"] ["value"] . ", Rate Value: " . $_dataset ["rate"] ["value"] . ", Truck Description: " . $_dataset["truck type"]["value"];
+						print($this->lastRecord . PHP_EOL);
 						
 						// Get truck description ID
 						$myQuery = "select ID from udo_truckdescription where description='" . $_dataset ["truck type"] ["value"] . "';";
@@ -466,9 +467,6 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								$myQuery = "select ID, fleet from udo_zone where name='" . $_dataset [$_dataKey] ["value"] . "';";
 								$sqlResult = $this->queryDB ( $myQuery );
 								if (count ( $sqlResult ) != 0) {
-									print ("Zone query result. Query => " . $myQuery . PHP_EOL) ;
-									print_r ( $sqlResult );
-									print (PHP_EOL) ;
 									$_dataset [$_dataKey] ["id"] = intval ( $sqlResult [0] ["ID"] );
 									$_dataset [$_dataKey] ["other"] = $sqlResult [0] ["fleet"];
 								} else {
@@ -555,8 +553,6 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 									$_searchStr = preg_replace ( "@\s@", "%", $_aLocation ["value"] ) . "%";
 									$myQuery = "select ID, name from udo_location where name like '" . $_searchStr . "' and _type='" . $_type . "';";
 									$result = $this->queryDB ( $myQuery );
-									print("look for location if not found query" . PHP_EOL);
-									print_r($result);
 									
 									if (count ( $result ) != 0) {
 										$_dataset [$_locKey] ["id"] = intval ( $result [0] ["ID"] );
@@ -1079,8 +1075,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 								$myQuery = preg_replace ( "@%m@", $_dataset ["contribution model"] ["value"], $myQuery );
 								$myQuery = preg_replace ( "@%b@", $_dataset ["business unit"] ["id"], $myQuery );
 								$sqlResult = $this->queryDB ( $myQuery );
-								print ("SQL Query and result for rate: " . $myQuery . PHP_EOL) ;
-								print_r ( $sqlResult );
+
 								if (count ( $sqlResult ) != 0) {
 									$_dataset ["rate"] ["id"] = $sqlResult [0] ["ID"];
 								} else {
