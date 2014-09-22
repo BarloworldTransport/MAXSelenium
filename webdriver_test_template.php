@@ -54,7 +54,7 @@ class web_driver_template_for_max_tests extends PHPUnit_Framework_TestCase {
 	 * Class constructor
 	 */
 	public function __construct() {
-		$ini = dirname ( realpath ( __FILE__ ) ) . self::DS . "ini" . self::DS . "user_data.ini";
+		$ini = dirname ( realpath ( __FILE__ ) ) . self::DS . self::INI_FILE;
 
 		if (is_file ( $ini ) === FALSE) {
 			echo "No " . self::INI_FILE . " file found. Please create it and populate it with the following data: username=x@y.com, password=`your password`, your name shown on MAX the welcome page welcome=`Joe Soap` and mode=`test` or `live`" . PHP_EOL;
