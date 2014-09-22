@@ -928,8 +928,6 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 						// : Check if route and rate exists for customer and create route and rate if they dont exist
 						
 						try {
-							// Concatenate string for route name
-							$_routeName = $_dataset ["location from town"] ["value"] . " TO " . $_dataset ["location to town"] ["value"];
 							
 							if ((! $_dataset ["rate"] ["id"])) {
 								
@@ -946,6 +944,9 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase {
 									}
 								}
 								// : End
+								
+								// Concatenate string for route name
+								$_routeName = $_dataset ["location from town"] ["value"] . " TO " . $_dataset ["location to town"] ["value"];
 								
 								$_process = "begin create rate process";
 								// Get all currently open windows
