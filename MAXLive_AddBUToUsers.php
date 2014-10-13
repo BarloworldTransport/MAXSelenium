@@ -117,6 +117,16 @@ class web_driver_template_for_max_tests extends PHPUnit_Framework_TestCase {
 		$w = new PHPWebDriver_WebDriverWait ( $session );
 		
 		try {
+			/* Before running any automation we need a list of users and their corresponding ID's to access their
+			 * data from the database, so that we can loop an array containing all the users and related data for
+			 * each user and process each and update according to a CSV file. Either this list needs to be compiled
+			 * or this needs to be determined within the script or a seperate class needs to be written to get
+			 * all users that do not have BU groups linked to them and then have the imported file amended to
+			 * define which groups are to be added to each user. The automation side is going to be quick and easy.
+			 * Quick and easy will be get user ID, load URL using ID and add groups to user. The list of users and
+			 * the BU groups to link to each is the real job here.
+			 */
+			
 			// Load MAX home page
 			$this->_session->open ( $this->_maxurl );
 			
