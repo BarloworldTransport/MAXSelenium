@@ -32,6 +32,7 @@ class web_driver_template_for_max_tests extends PHPUnit_Framework_TestCase {
 	const TEST_URL = "http://max.mobilize.biz";
 	const INI_FILE = "user_data.ini";
 	const PB_URL = "/Planningboard";
+	const USER_PERSONAL_GROUP = "/DataBrowser?browsePrimaryObject=324&browsePrimaryInstance=";
 	
 	// : Variables
 	protected static $driver;
@@ -54,7 +55,7 @@ class web_driver_template_for_max_tests extends PHPUnit_Framework_TestCase {
 	 * Class constructor
 	 */
 	public function __construct() {
-		$ini = dirname ( realpath ( __FILE__ ) ) . self::DS . self::INI_FILE;
+		$ini = dirname ( realpath ( __FILE__ ) ) . self::DS . "/ini" . self::DS . self::INI_FILE;
 
 		if (is_file ( $ini ) === FALSE) {
 			echo "No " . self::INI_FILE . " file found. Please create it and populate it with the following data: username=x@y.com, password=`your password`, your name shown on MAX the welcome page welcome=`Joe Soap` and mode=`test` or `live`" . PHP_EOL;
@@ -180,6 +181,46 @@ class web_driver_template_for_max_tests extends PHPUnit_Framework_TestCase {
 		$e = $w->until ( function ($session) {
 			return $session->element ( "xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]" );
 		} );
+		// : End
+		
+		// : Main Loop
+		
+		$this->_session->open($this->_maxurl . self::USER_PERSONAL_GROUP . "2767");
+		$e = $w->until ( function ($session) {
+			return $session->element ( "xpath", "//div[contains(text(),'Abel Marimuthu')]" );
+		} );
+		
+		$this->assertElementPresent('css selector', 'div#button-create');
+		$this->_session->element('css selector', 'div#button-create')->click();
+		
+		$_tempArray = (array) array(
+			"BU - Dedicated",
+			"BU - Freight",
+			"BU - Timber 24",
+			"BU - Manline Mega",
+			"BU - Ecosse",
+			"BU - Energy"
+		);
+		
+		$_arrayPos = rand(0, (count($_tempArray) - 1));
+		
+		$e = $w->until ( function ($session) {
+			return $session->element ("xpath", "//*[contains(text(),'Add a member to a group')]");
+		} );
+		
+		$this->assertElementPresent("xpath", "//*[@name='Group_Role_Link[0][played_by_group_id]']");
+		$this->assertElementPresent("xpath", "//*[@name='Group_Role_Link[0][group_id]']");
+		$this->assertElementPresent("xpath", "//*[@name='Group_Role_Link[0][role_id]']");
+		$this->assertElementPresent("css selector", "input[name=save][type=submit]");
+		
+		$this->_session->element("xpath", "//*[@name='Group_Role_Link[0][group_id]']/option[contains(text(), '{$_tempArray[$_arrayPos]}')]")->click();
+		$this->_session->element("css selector", "input[name=save][type=submit]")->click();
+
+		$e = $w->until ( function ($session) {
+			return $session->element ("xpath", "//div[contains(text(),'Abel Marimuthu')]");
+		} );
+		
+		$this->assertElementPresent("xpath", "//a/nobr[contains(text(), '{$_tempArray[$_arrayPos]}')]");
 		// : End
 		
 		// : Tear Down
