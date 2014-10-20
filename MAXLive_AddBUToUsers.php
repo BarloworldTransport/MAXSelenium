@@ -3,6 +3,7 @@ include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriver.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverWait.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
+include_once 'Archive/FileParser.php';
 
 /**
  * web_driver_template_for_max_tests.php
