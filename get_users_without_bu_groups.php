@@ -4,7 +4,7 @@ error_reporting ( E_ALL );
 
 // : Includes
 // MySQL query pull and return data class
-include_once dirname ( __FILE__ ) . '/PullDataFromMySQLQuery.php';
+require dirname ( __FILE__ ) . '/PullDataFromMySQLQuery.php';
 // : End
 
 /**
@@ -41,12 +41,14 @@ class get_users_without_bu_groups {
 	const FILE_EMPTY = "The following file is empty: %s";
 	const COLUMN_VALIDATION_FAIL = "Not all columns are present in the following file %s";
 	const DIR_NOT_FOUND = "The directory path was not found: %s.";
-	const DB_HOST = "192.168.1.19"; 
+	const DB_HOST = "192.168.1.19";
 	
 	// : Variables
 	protected $_fileName;
 	protected $_errors;
 	protected $_data;
+	protected $_bugroups;
+	protected $_bu;
 	
 	// : Public functions
 	// : Accessors
@@ -59,6 +61,32 @@ class get_users_without_bu_groups {
 	public function getError() {
 		if (! empty ( $this->_errors )) {
 			return $this->_errors;
+		} else {
+			return FALSE;
+		}
+	}
+	
+	/**
+	 * get_users_without_bu_groups::getBU()
+	 *
+	 * @param string: $this->_errors;
+	 */
+	public function getBU() {
+		if (! empty ( $this->_bu )) {
+			return $this->_bu;
+		} else {
+			return FALSE;
+		}
+	}
+	
+	/**
+	 * get_users_without_bu_groups::getBUGroups()
+	 *
+	 * @param string: $this->_bugroups;
+	 */
+	public function getBUGroups() {
+		if (! empty ( $this->_bugroups )) {
+			return $this->_bugroups;
 		} else {
 			return FALSE;
 		}
@@ -89,7 +117,8 @@ class get_users_without_bu_groups {
 			$_queries = array (
 					"select pu.id, p.first_name, p.last_name, p.email, pu.personal_group_id, pu.status from person as p left join permissionuser as pu on (pu.person_id=p.id) where pu.status = 1 order by pu.id asc;",
 					"select grl.id, gr.name from group_role_link as grl left join `group` as gr on (gr.id=grl.group_id) where grl.played_by_group_id = %s and grl.group_id IN (%g) order by grl.id asc;",
-					"select id, name from `group` where name like 'bu%-%';" 
+					"select id, name from `group` where name like 'bu%-%' order by id asc;",
+					"select id, name from udo_businessunit;" 
 			);
 			
 			// Create new SQL Query class object
@@ -97,17 +126,63 @@ class get_users_without_bu_groups {
 			$_maxUsersWithNoBU = ( array ) array ();
 			$_buGroups = ( array ) array ();
 			$_grpList = ( string ) "";
+			// : Build List of Business Units by pulling them from MAX
+			$_result = $_mysqlQueryMAX->getDataFromQuery ( $_queries [3] );
+			if ($_result) {
+				foreach ( $_result as $key => $value ) {
+					if (array_key_exists ( "name", $value )) {
+						$this->_bu [] = $value ["name"];
+					}
+				}
+			}
+			// : End
+			
+			// : Build string for regexp that will be used to find BU groups on MAX
+			$_group_regexp = ( string ) "";
+			foreach ( $this->_bu as $key => $value ) {
+				
+				$_1 = substr ( $value, 0, 1 );
+				$_part = substr ( $value, - (count ( $value ) - 2) );
+				$_detect2Names = preg_split ( "/\s/", $_part );
+				if ($_detect2Names) {
+					if (count ( $_detect2Names ) > 1) {
+						foreach ( $_detect2Names as $_key => $_value ) {
+							if ($_value) {
+								if (! $_key) {
+									$_part = $_value;
+								} else {
+									$_part .= "\s" . ucfirst ( strtolower ( $_value ) );
+								}
+							}
+						}
+					}
+				}
+				
+				$_buname = "[" . strtoupper ( $_1 ) . strtolower ( $_1 ) . $_part . "]";
+				
+				if (! $_group_regexp) {
+					$_group_regexp = $_buname;
+				} else {
+					$_group_regexp .= "|$_buname";
+				}
+			}
+			// : End
+			
 			$_buGroups = $_mysqlQueryMAX->getDataFromQuery ( $_queries [2] );
 			if (! $_buGroups) {
 				throw new Exception ( "No business unit groups found in groups table on MAX using the following query:\n{$_queries[2]}" );
 			} else {
 				foreach ( $_buGroups as $key => $value ) {
-					preg_match ( '/^BU.+-.+([Ff]reight|[Dd]edicated|[Mm]anline\s[Mm]ega|[Tt]imber\s24|[Ee]cosse|[Ee]nergy)$/', $value ["name"], $_pregResults );
+					preg_match ("/^BU.+-.+$_group_regexp$/", $value ["name"], $_pregResults);
 					if (! empty ( $_pregResults )) {
+						
+						// Save BU Group to class property
+						$this->_bugroups[] = $value;
+						
 						if (empty ( $_grpList )) {
 							$_grpList = $value ["id"];
 						} else {
-							$_grpList .= ",{$value["id"]}";
+							$_grpList .= ",{$value["id"]}";	
 						}
 					}
 				}
@@ -143,9 +218,9 @@ class get_users_without_bu_groups {
 			// Close database connection
 			unset ( $_mysqlQueryMAX );
 			
-			$_csvfile = dirname(__FILE__) . self::DS . "Data" . self::DS . $_file;
+			$_csvfile = dirname ( __FILE__ ) . self::DS . "Data" . self::DS . $_file;
 			
-			$this->ExportToCSV($_csvfile, $_maxUsersWithNoBU);
+			$this->ExportToCSV ( $_csvfile, $_maxUsersWithNoBU );
 			
 			// Return result
 			if (empty ( $_maxUsersWithNoBU )) {

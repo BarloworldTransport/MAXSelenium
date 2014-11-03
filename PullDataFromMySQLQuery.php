@@ -29,7 +29,7 @@ class PullDataFromMySQLQuery {
 			PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 			PDO::ATTR_PERSISTENT => true 
 	);
-	protected $_inifile = "report_data.ini";
+	protected $_inifile = "/ini/report_data.ini";
 	protected $_errors = array ();
 	
 	// : Public functions
@@ -151,7 +151,9 @@ class PullDataFromMySQLQuery {
 			if ($_tenant && $_host) {
 				$_inifile = dirname ( __FILE__ ) . self::DS . $this->_inifile;
 				if (file_exists ( $_inifile )) {
+					
 					$data = parse_ini_file ( $_inifile );
+
 					if ((array_key_exists ( "dbdsn", $data )) && (array_key_exists ( "dbuser", $data )) && (array_key_exists ( "dbpwd", $data ))) {
 						$_dsn = preg_replace ( "/%s/", $_tenant, $data ["dbdsn"] );
 						$_dsn = preg_replace ( "/%h/", $_host, $_dsn );

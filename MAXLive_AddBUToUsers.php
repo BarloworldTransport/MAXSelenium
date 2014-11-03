@@ -4,21 +4,11 @@ error_reporting ( E_ALL );
 
 // : Includes
 
-// : Get Parent of Script Parent Directory
-$_curpath = DIRNAME ( __FILE__ );
-$_dirsplit = preg_split ( '/\//', $_curpath );
-$_x = (count ( $_dirsplit ) - 2);
-$_newpath = ( string ) "";
-for($x = 1; $x <= $_x; $x ++) {
-	$_newpath .= DIRECTORY_SEPARATOR . $_dirsplit [$x];
-}
-// : End
-
-include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriver.php';
-include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverWait.php';
-include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
-include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
-include_once "$_newpath/MAXreporting/get_users_bu_from_list.php";
+require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriver.php';
+require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverWait.php';
+require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
+require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
+require_once dirname ( __FILE__ ) . '/get_users_bu_from_list.php';
 
 // : End
 
@@ -67,6 +57,8 @@ class web_driver_template_for_max_tests extends PHPUnit_Framework_TestCase {
 	protected $_datadir;
 	protected $_errdir;
 	protected $_scrdir;
+	protected $_tmpVar;
+	protected $_errors = array();
 	
 	// : Public Functions
 	// : Accessors
@@ -139,7 +131,7 @@ class web_driver_template_for_max_tests extends PHPUnit_Framework_TestCase {
 	 * web_driver_template_for_max_tests::testFunctionTemplate
 	 * This is a function description for a selenium test function
 	 */
-	public function testFunctionTemplate() {
+	public function testAddBUToUsers() {
 		// Create new object for included class to import data
 		$_file1 = $this->_datadir . self::DS . $this->_file1;
 		$_file2 = $this->_datadir . self::DS . $this->_file2;
@@ -151,9 +143,10 @@ class web_driver_template_for_max_tests extends PHPUnit_Framework_TestCase {
 			// Get the predefined list of Buiness Units
 			$_bu = $_users_bu_script->getBUList ();
 			// Get all users that were not found in the staff employee list
-			$_nomatch = $_users_bu_script->getUsersWithNoMatch();
-			print_r($_nomatch);
-			exit;
+			$_nomatch = $_users_bu_script->getNoMatch ();
+			$_users_bu_script->exportData ( "users_data.csv" );
+			$_users_bu_script->exportNoMatch ( "users_not_found.csv" );
+			
 			if ($_data) {
 				// Initialize session
 				$session = $this->_session;
@@ -207,7 +200,7 @@ class web_driver_template_for_max_tests extends PHPUnit_Framework_TestCase {
 					// Switch out of frame
 					$this->_session->switch_to_frame ();
 				} catch ( Exception $e ) {
-					throw new Exception ( "Error: Failed to log into MAX." . PHP_EOL . $e->getMessage () );
+					throw new Exception ( "ERROR: Failed to log into MAX." . PHP_EOL . $e->getMessage () );
 				}
 				
 				// : Load Planningboard to rid of iframe loading on every page from here on
@@ -219,36 +212,63 @@ class web_driver_template_for_max_tests extends PHPUnit_Framework_TestCase {
 				
 				// : Main Loop
 				foreach ( $_data as $key => $value ) {
-					$this->_session->open ( $this->_maxurl . self::USER_PERSONAL_GROUP . $value ["personalgroupid"] );
-					$e = $w->until ( function ($session) {
-						return $session->element ( "xpath", "//div[contains(text(),'{$value["firstnames"]} {$value["surname"]}')]" );
-					} );
-					
-					foreach ( $value ["bugroups"] as $bugroup ) {
-						
-						$this->assertElementPresent ( 'css selector', 'div#button-create' );
-						$this->_session->element ( 'css selector', 'div#button-create' )->click ();
-						
+					try {
+						$this->_session->open ( $this->_maxurl . self::USER_PERSONAL_GROUP . $value ["personalgroupid"] );
+						$this->_tmpVar = "{$value["firstnames"]} {$value["surname"]}";
 						$e = $w->until ( function ($session) {
-							return $session->element ( "xpath", "//*[contains(text(),'Add a member to a group')]" );
+							return $session->element ( "xpath", "//div[contains(text(),'{$this->_tmpVar}')]" );
 						} );
 						
-						$this->assertElementPresent ( "xpath", "//*[@name='Group_Role_Link[0][played_by_group_id]']" );
-						$this->assertElementPresent ( "xpath", "//*[@name='Group_Role_Link[0][group_id]']" );
-						$this->assertElementPresent ( "xpath", "//*[@name='Group_Role_Link[0][role_id]']" );
-						$this->assertElementPresent ( "css selector", "input[name=save][type=submit]" );
-						
-						$this->_session->element ( "xpath", "//*[@name='Group_Role_Link[0][group_id]']/option[contains(text(), '{$_bu[$_bugroup]}')]" )->click ();
-						$this->_session->element ( "css selector", "input[name=save][type=submit]" )->click ();
-						
-						$e = $w->until ( function ($session) {
-							return $session->element ( "xpath", "//div[contains(text(),'{$value["firstnames"]} {$value["surname"]}')]" );
-						} );
-						
-						$this->assertElementPresent ( "xpath", "//a/nobr[contains(text(), '{$_bu[$_bugroup]}')]" );
-						// : End
+						foreach ( $value ["bugroups"] as $_bugroup ) {
+							try {
+							$this->assertElementPresent ( 'css selector', 'div#button-create' );
+							$this->_session->element ( 'css selector', 'div#button-create' )->click ();
+							
+							$e = $w->until ( function ($session) {
+								return $session->element ( "xpath", "//*[contains(text(),'Add a member to a group')]" );
+							} );
+							
+							$this->assertElementPresent ( "xpath", "//*[@name='Group_Role_Link[0][played_by_group_id]']" );
+							$this->assertElementPresent ( "xpath", "//*[@name='Group_Role_Link[0][group_id]']" );
+							$this->assertElementPresent ( "xpath", "//*[@name='Group_Role_Link[0][role_id]']" );
+							$this->assertElementPresent ( "css selector", "input[name=save][type=submit]" );
+							
+							$this->_session->element ( "xpath", "//*[@name='Group_Role_Link[0][group_id]']/option[contains(text(), '{$_bu[$_bugroup]}')]" )->click ();
+							$this->_session->element ( "css selector", "input[name=save][type=submit]" )->click ();
+							
+							$e = $w->until ( function ($session) {
+								return $session->element ( "xpath", "//div[contains(text(),'{$this->_tmpVar}')]" );
+							} );
+							
+							$this->assertElementPresent ( "xpath", "//a/nobr[contains(text(), '{$_bu[$_bugroup]}')]" );
+							
+							} catch ( Exception $e ) {
+								$_err_cnt = count($this->_errors);
+								$this->_errors[$_err_cnt + 1]["firstnames"] = $value["firstnames"];
+								$this->_errors[$_err_cnt + 1]["surname"] = $value["surname"];
+								$this->_errors[$_err_cnt + 1]["bu_group"] = $_bu[$_bugroup];
+								$this->_errors[$_err_cnt + 1]["err_msg"] = $e->getMessage();
+								$this->takeScreenshot($this->_session);
+							} 
+						}
+					} catch ( Exception $e ) {
+						$_err_cnt = count($this->_errors);
+						$this->_errors[$_err_cnt + 1]["firstnames"] = $value["firstnames"];
+						$this->_errors[$_err_cnt + 1]["surname"] = $value["surname"];
+						$this->_errors[$_err_cnt + 1]["bu_group"] = "";
+						$this->_errors[$_err_cnt + 1]["err_msg"] = $e->getMessage();		
+						$this->takeScreenshot($this->_session);
 					}
+					// : End
 				}
+				// : Report errors if any occured
+				if ($this->_errors) {
+					$_errfile = date("Y-m-d H:i:s") . "_error_report_addbutousers_script.csv";
+					$this->ExportToCSV($_errfile, $this->_errors);
+					echo "Exported error report to the following path and file: " . dirname(__FILE__) . $_errfile;
+				}
+				// : End
+				
 				// : Tear Down
 				// Click the logout link
 				$this->_session->element ( 'xpath', "//*[contains(@href,'/logout')]" )->click ();
@@ -260,11 +280,12 @@ class web_driver_template_for_max_tests extends PHPUnit_Framework_TestCase {
 				// Terminate session
 				$this->_session->close ();
 				// : End
+				
 			} else {
-				throw new Exception ( "No data imported using get_users_bu_from_list script. Quitting..." );
+				throw new Exception ( "ERROR: No data imported using get_users_bu_from_list script. Quitting..." );
 			}
 		} else {
-			throw new Exception ("FATAL ERROR: File1 and/or File2 not found given in the user_data.ini config file for this script. Please check that these files exist.");
+			throw new Exception ( "ERROR: File1 and/or File2 not found given in the user_data.ini config file for this script. Please check that these files exist." );
 		}
 	}
 	
@@ -298,6 +319,31 @@ class web_driver_template_for_max_tests extends PHPUnit_Framework_TestCase {
 	private function assertElementPresent($_using, $_value) {
 		$e = $this->_session->element ( $_using, $_value );
 		$this->assertEquals ( count ( $e ), 1 );
+	}
+	
+	/**
+	 * web_driver_template_for_max_tests::ExportToCSV($csvFile, $arr)
+	 * From supplied csv file save data into multidimensional array
+	 *
+	 * @param string: $csvFile
+	 * @param array: $_arr
+	 */
+	private function ExportToCSV($csvFile, $_arr) {
+		try {
+			$_data = ( array ) array ();
+			if (file_exists ( dirname ( $csvFile ) )) {
+				$_handle = fopen ( $csvFile, 'w' );
+				foreach ( $_arr as $key => $value ) {
+					fputcsv ( $_handle, $value );
+				}
+				fclose ( $_handle );
+			} else {
+				$_msg = preg_replace ( "@%s@", $csvFile, self::DIR_NOT_FOUND );
+				throw new Exception ( $_msg );
+			}
+		} catch ( Exception $e ) {
+			return FALSE;
+		}
 	}
 	
 	// : End
