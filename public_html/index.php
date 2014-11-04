@@ -1,5 +1,5 @@
 <?php
-//include login.php;
+include "login.php";
 ?>
 <!DOCTYPE html>
 <html>
@@ -23,6 +23,7 @@
 		<input id="user_pwd" name="user_pwd" type="password" placeholder="**********">
 		<input name="submit" type="submit" value="login">
 		</form>
+		<?=$_error?>
 	</section>
 </section>
 </body>
