@@ -161,9 +161,12 @@ class MAXLive_NCP_Rates_Update extends PHPUnit_Framework_TestCase {
 				"Rates",
 				"Script" 
 		);
+		// Build file path string
+		$_file = dirname ( __FILE__ ) . $this->_dataDir . self::DS . $this->_xls;
+
 		// : Pull data from correctly formatted xls spreadsheet
-		if ($cPR = new RatesReadXLSData ( dirname ( __FILE__ ) . $this->_dataDir . self::DS . $this->_xls, $_sheetnames )) {
-			// Get cities and save in correct naming format standard as per Meryle instruction
+		if ($cPR = new RatesReadXLSData ( $_file, $_sheetnames )) {
+			// Get cities and save in correct naming format standard as per Meryle Moodley's instruction
 			$cities = $cPR->getCities ();
 			// Get script data settings
 			$settings = $cPR->getSettings ();
