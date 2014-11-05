@@ -51,6 +51,20 @@ class get_users_without_bu_groups {
 	protected $_bu;
 	
 	// : Public functions
+	
+	/**
+	 * get_users_without_bu_groups::exportData()
+	 *
+	 * @param string: $this->_errors;
+	 */
+	public function exportData($_file) {
+		if (! empty ( $this->_errors )) {
+			return $this->_errors;
+		} else {
+			return FALSE;
+		}
+	}
+	
 	// : Accessors
 	
 	/**
@@ -123,7 +137,7 @@ class get_users_without_bu_groups {
 			
 			// Create new SQL Query class object
 			$_mysqlQueryMAX = new PullDataFromMySQLQuery ( self::MAXDB, self::DB_HOST );
-			$_maxUsersWithNoBU = ( array ) array ();
+			$this->_data = ( array ) array ();
 			$_buGroups = ( array ) array ();
 			$_grpList = ( string ) "";
 			// : Build List of Business Units by pulling them from MAX
@@ -191,7 +205,7 @@ class get_users_without_bu_groups {
 			$_maxUsers = ( array ) array ();
 			$_maxUsers = $_mysqlQueryMAX->getDataFromQuery ( $_queries [0] );
 			// Add headers to the array
-			$_maxUsersWithNoBU [] = array (
+			$this->_data [] = array (
 					"ID",
 					"Firstnames",
 					"Surname",
@@ -205,9 +219,9 @@ class get_users_without_bu_groups {
 					$_aQuery = preg_replace ( "/%g/", $_grpList, $_aQuery );
 					$_result = $_mysqlQueryMAX->getDataFromQuery ( $_aQuery );
 					if (empty ( $_result )) {
-						if (! array_key_exists ( $value ["first_name"] . " " . $value ["last_name"], $_maxUsersWithNoBU )) {
+						if (! array_key_exists ( $value ["first_name"] . " " . $value ["last_name"], $this->_data )) {
 							foreach ( $value as $aKey => $aValue ) {
-								$_maxUsersWithNoBU [$value ["first_name"] . " " . $value ["last_name"]] [$aKey] = $aValue;
+								$this->_data [$value ["first_name"] . " " . $value ["last_name"]] [$aKey] = $aValue;
 							}
 						}
 					}
@@ -220,10 +234,8 @@ class get_users_without_bu_groups {
 			
 			$_csvfile = dirname ( __FILE__ ) . self::DS . "Data" . self::DS . $_file;
 			
-			$this->ExportToCSV ( $_csvfile, $_maxUsersWithNoBU );
-			
 			// Return result
-			if (empty ( $_maxUsersWithNoBU )) {
+			if (empty ( $this->_data )) {
 				return FALSE;
 			} else {
 				return TRUE;
