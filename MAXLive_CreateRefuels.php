@@ -8,6 +8,7 @@ require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriver.php';
 require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverWait.php';
 require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
 require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
+require_once 'PullDataFromMySQLQuery.php';
 require_once 'FileParser.php';
 
 // : End
@@ -42,6 +43,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	const PB_URL = "/Planningboard";
 	const FILE_NOT_FOUND = "ERROR: File not found. Please check the path and that the file exists and try again: %s";
 	const LOGIN_FAIL = "ERROR: Log into %h was unsuccessful. Please see the following error message relating to the problem: %s";
+	const DB_ERROR = "ERROR: There was a problem connecting to the database. See error message: %s";
 	
 	// : Variables
 	protected static $driver;
@@ -55,18 +57,20 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	protected $_browser;
 	protected $_file1;
 	protected $_data = array ();
+	protected $_config = array ();
 	protected $_datadir;
 	protected $_errdir;
 	protected $_scrdir;
 	protected $_tmpVar;
 	protected $_errors = array ();
+	protected $_tmp;
 	
 	// : Public Functions
 	
 	/**
 	 * MAXLive_CreateRefuels::getErrorReportFileName()
 	 * Get the scriptname and return the filename without the file extension
-	 * 
+	 *
 	 * @return string: $_thisScriptName
 	 */
 	public function getScriptName() {
@@ -88,7 +92,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	/**
 	 * MAXLive_CreateRefuels::getErrorReportFileName()
 	 * Use script name and date to build filename for the error report
-	 * 
+	 *
 	 * @return string: $_file
 	 */
 	public function getErrorReportFileName() {
@@ -106,14 +110,14 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	 * Class constructor
 	 */
 	public function __construct() {
-		$ini = dirname ( realpath ( __FILE__ ) ) . self::DS . "/ini" . self::DS . self::INI_FILE;
+		$ini = dirname ( realpath ( __FILE__ ) ) . self::DS . "ini" . self::DS . self::INI_FILE;
 		
 		if (is_file ( $ini ) === FALSE) {
 			echo "No " . self::INI_FILE . " file found. Please create it and populate it with the following data: username=x@y.com, password=`your password`, your name shown on MAX the welcome page welcome=`Joe Soap` and mode=`test` or `live`" . PHP_EOL;
 			return FALSE;
 		}
 		$data = parse_ini_file ( $ini );
-		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
+		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "file2", $data ) && $data ["file2"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
 			$this->_username = $data ["username"];
 			$this->_password = $data ["password"];
 			$this->_welcome = $data ["welcome"];
@@ -125,6 +129,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			$this->_scrdir = $data ["screenshotdir"];
 			$this->_errdir = $data ["errordir"];
 			$this->_file1 = $data ["file1"];
+			$this->_file2 = $data ["file2"];
 			switch ($this->_mode) {
 				case "live" :
 					$this->_maxurl = self::LIVE_URL;
@@ -169,27 +174,69 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	public function testCreateRefuels() {
 		// Create new object for included class to import data
 		
+		// : Connect to SQL Server
+		if (! $_sqldb = new PullDataFromMySQLQuery ( "max2", "192.168.1.19" )) {
+			$_dberr = $_sqldb->getErrors ();
+			$_errmsg = ( string ) "";
+			if (! $_dberr) {
+				foreach ( $_dberr as $key => $value ) {
+					$_errmsg .= $value . PHP_EOL;
+				}
+				if ($_errmsg) {
+					$_err = preg_replace ( "/%s/", $_errmsg, self::DB_ERROR );
+				}
+			} else {
+				$_err = self::DB_ERROR;
+			}
+			throw new Exception ( $_err );
+		}
+		// : End
+		
+		// : Queries to run throughout script
+		$_queries = ( array ) array (
+				"select f.name from udo_fleetrucklink as ftl left join udo_truck as t on (t.id=ftl.truck_id) left join udo_fleet as f on (f.id=ftl.fleet_id) where t.fleetnum='%s';",
+				"select id, fleetnum from udo_truck where fleetnum='%s';" 
+		);
+		// : End
+		
 		// Build file path string
 		$_file1 = dirname ( __FILE__ ) . self::DS . $this->_datadir . self::DS . $this->_file1;
+		$_file2 = dirname ( __FILE__ ) . self::DS . $this->_datadir . self::DS . $this->_file2;
 		
-		// : Import CSV file data
+		// : Import CSV files data
 		if (file_exists ( $_file1 )) {
 			$_csvfile = new FileParser ( $_file1 );
 			$_refuelData = $_csvfile->parseFile ();
 			unset ( $_csvfile );
 		}
+		
+		if (file_exists ( $_file2 )) {
+			$_csvfile = new FileParser ( $_file2 );
+			$_refuelConfig = $_csvfile->parseFile ();
+			unset ( $_csvfile );
+		}
 		// : End
 		
+		// : Prepare data to be processed
 		if ($_refuelData) {
 			$_count = count ( $_refuelData [0] ) - 1;
 			foreach ( $_refuelData as $key => $value ) {
 				if ($key != 0) {
 					for($x = 1; $x < $_count; $x ++) {
-						$this->_data[$value[0]][$_refuelData[0][$x]] = $value[$x];
+						$this->_data [$value [0]] [$_refuelData [0] [$x]] = $value [$x];
 					}
 				}
 			}
 		}
+		
+		if ($_refuelConfig) {
+			foreach ( $_refuelConfig as $key => $value ) {
+				$this->_config [$value [0]] = $value [1];
+			}
+		}
+		unset ( $_refuelConfig );
+		unset ( $_refuelData );
+		// : End
 		
 		try {
 			
@@ -253,16 +300,42 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		// : End
 		
 		// : Main Loop
-		
-		$e = $w->until ( function ($session) {
-			return $session->element ( "xpath", "//*[@id='fplanningboard']/table/tbody/tr[2]/td[1]/select/option[contains(text(),'Timber24')]" );
-		} );
-		
-		$this->_session->element ( "xpath", "//*[@id='fplanningboard']/table/tbody/tr[2]/td[1]/select/option[contains(text(),'Timber24')]" )->click ();
-		
-		$e = $w->until ( function ($session) {
-			return $session->element ( "xpath", "//*[@id='planningBoardLabels']/table/tr[2]/td[1][contains(text(),'T002')]" );
-		} );
+		foreach ( $this->_data as $truckkey => $value ) {
+			foreach ( $value as $datekey => $odovalue ) {
+				$_truckid = "";
+				$_fleetname = "";
+				$_query = preg_replace ( "/%s/", $truckkey, $_queries [1] );
+				$_result = $_sqldb->getDataFromQuery ( $_query );
+				if ($_result) {
+					$_query = preg_replace ( "/%s/", $truckkey, $_queries [0] );
+					$_result2 = $_sqldb->getDataFromQuery ( $_query );
+					if ($_result2) {
+						$_truckid = $_result [0] ["id"];
+						$_fleetname = $_result2 [0] ["name"];
+					}
+				}
+				
+				if ($_truckid && $_fleetname) {
+					try {
+					$this->_tmp = $_fleetname;
+					// Load the fleet to which the truck is linked too
+					$e = $w->until ( function ($session) {
+						return $session->element ( "xpath", "//*[@id='fplanningboard']/table/tbody/tr[2]/td[1]/select/option[contains(text(),'{$this->_tmp}')]" );
+					} );
+					
+					$this->_session->element ( "xpath", "//*[@id='fplanningboard']/table/tbody/tr[2]/td[1]/select/option[contains(text(),'{$_fleetname}')]" )->click ();
+					
+					$this->_tmp = $truckkey;
+					$e = $w->until ( function ($session) {
+						return $session->element ( "xpath", "//*[@id='planningBoardLabels']/table/tr[2]/td[1][contains(text(),'{$this->_tmp}')]" );
+					} );
+					
+					
+					} catch (Exception $e) {
+						
+					}
+			}
+		}
 		
 		// : Report errors if any occured
 		if ($this->_errors) {
