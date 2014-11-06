@@ -54,27 +54,28 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	protected $_proxyip;
 	protected $_browser;
 	protected $_file1;
-	protected $_file2;
+	protected $_data = array ();
 	protected $_datadir;
 	protected $_errdir;
 	protected $_scrdir;
 	protected $_tmpVar;
-	protected $_errors = array (); 
+	protected $_errors = array ();
 	
 	// : Public Functions
 	
 	/**
 	 * MAXLive_CreateRefuels::getErrorReportFileName()
 	 * Get the scriptname and return the filename without the file extension
+	 * 
 	 * @return string: $_thisScriptName
 	 */
 	public function getScriptName() {
-		$_thisScriptName = preg_split("/\./", __FILE__);
+		$_thisScriptName = preg_split ( "/\./", __FILE__ );
 		if ($_thisScriptName) {
-			if ($_thisScriptName[1] === "php") {
-				$_thisScriptName = $_thisScriptName[0];
+			if ($_thisScriptName [1] === "php") {
+				$_thisScriptName = $_thisScriptName [0];
 			} else {
-				unset($_thisScriptName);
+				unset ( $_thisScriptName );
 			}
 		}
 		if ($_thisScriptName) {
@@ -87,12 +88,13 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	/**
 	 * MAXLive_CreateRefuels::getErrorReportFileName()
 	 * Use script name and date to build filename for the error report
+	 * 
 	 * @return string: $_file
 	 */
 	public function getErrorReportFileName() {
 		$_file = "error_report_";
-		$_scriptName = $this->getScriptName();
-		$_file .= $_scriptName . date("Y-m-d H:i:s");
+		$_scriptName = $this->getScriptName ();
+		$_file .= $_scriptName . date ( "Y-m-d H:i:s" );
 		return $_file;
 	}
 	// : Accessors
@@ -104,7 +106,6 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	 * Class constructor
 	 */
 	public function __construct() {
-
 		$ini = dirname ( realpath ( __FILE__ ) ) . self::DS . "/ini" . self::DS . self::INI_FILE;
 		
 		if (is_file ( $ini ) === FALSE) {
@@ -112,7 +113,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			return FALSE;
 		}
 		$data = parse_ini_file ( $ini );
-		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "file2", $data ) && $data ["file2"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
+		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
 			$this->_username = $data ["username"];
 			$this->_password = $data ["password"];
 			$this->_welcome = $data ["welcome"];
@@ -124,7 +125,6 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			$this->_scrdir = $data ["screenshotdir"];
 			$this->_errdir = $data ["errordir"];
 			$this->_file1 = $data ["file1"];
-			$this->_file2 = $data ["file2"];
 			switch ($this->_mode) {
 				case "live" :
 					$this->_maxurl = self::LIVE_URL;
@@ -168,8 +168,28 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	 */
 	public function testCreateRefuels() {
 		// Create new object for included class to import data
-		$_file1 = $this->_datadir . self::DS . $this->_file1;
-		$_file2 = $this->_datadir . self::DS . $this->_file2;
+		
+		// Build file path string
+		$_file1 = dirname ( __FILE__ ) . self::DS . $this->_datadir . self::DS . $this->_file1;
+		
+		// : Import CSV file data
+		if (file_exists ( $_file1 )) {
+			$_csvfile = new FileParser ( $_file1 );
+			$_refuelData = $_csvfile->parseFile ();
+			unset ( $_csvfile );
+		}
+		// : End
+		
+		if ($_refuelData) {
+			$_count = count ( $_refuelData [0] ) - 1;
+			foreach ( $_refuelData as $key => $value ) {
+				if ($key != 0) {
+					for($x = 1; $x < $_count; $x ++) {
+						$this->_data[$value[0]][$_refuelData[0][$x]] = $value[$x];
+					}
+				}
+			}
+		}
 		
 		try {
 			
@@ -223,14 +243,13 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			$e = $w->until ( function ($session) {
 				return $session->element ( "xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]" );
 			} );
-			
 		} catch ( Exception $e ) {
 			$_errmsg = preg_replace ( "/%h/", $this->_maxurl, self::LOGIN_FAIL );
 			$_errmsg = preg_replace ( "/%h/", $e->getMessage (), $_errmsg );
 			throw new Exception ( $_errmsg );
 			unset ( $_errmsg );
 		}
-
+		
 		// : End
 		
 		// : Main Loop
@@ -239,18 +258,16 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			return $session->element ( "xpath", "//*[@id='fplanningboard']/table/tbody/tr[2]/td[1]/select/option[contains(text(),'Timber24')]" );
 		} );
 		
-		$this->_session->element( "xpath", "//*[@id='fplanningboard']/table/tbody/tr[2]/td[1]/select/option[contains(text(),'Timber24')]" )->click();
-		
+		$this->_session->element ( "xpath", "//*[@id='fplanningboard']/table/tbody/tr[2]/td[1]/select/option[contains(text(),'Timber24')]" )->click ();
 		
 		$e = $w->until ( function ($session) {
 			return $session->element ( "xpath", "//*[@id='planningBoardLabels']/table/tr[2]/td[1][contains(text(),'T002')]" );
 		} );
 		
-		
 		// : Report errors if any occured
 		if ($this->_errors) {
-			$_errfile = dirname(__FILE__) . $this->_datadir . self::DS . $this->getErrorReportFileName() . ".csv";
-			$this->ExportToCSV ($_errfile, $this->_errors );
+			$_errfile = dirname ( __FILE__ ) . $this->_datadir . self::DS . $this->getErrorReportFileName () . ".csv";
+			$this->ExportToCSV ( $_errfile, $this->_errors );
 			echo "Exported error report to the following path and file: " . $_errfile;
 		}
 		// : End
