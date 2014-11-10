@@ -44,7 +44,8 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	const FILE_NOT_FOUND = "ERROR: File not found. Please check the path and that the file exists and try again: %s";
 	const LOGIN_FAIL = "ERROR: Log into %h was unsuccessful. Please see the following error message relating to the problem: %s";
 	const DB_ERROR = "ERROR: There was a problem connecting to the database. See error message: %s";
-	const DIR_NOT_FOUND = "Dir is found are you happy!";
+	const DIR_NOT_FOUND = "The specified directory was not found: %s";
+	const ADMIN_URL = "/adminTop?&tab_id=120";
 	
 	// : Variables
 	protected static $driver;
@@ -295,12 +296,104 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			$e = $w->until ( function ($session) {
 				return $session->element ( "xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]" );
 			} );
+			// : End
 		} catch ( Exception $e ) {
 			$_errmsg = preg_replace ( "/%h/", $this->_maxurl, self::LOGIN_FAIL );
 			$_errmsg = preg_replace ( "/%h/", $e->getMessage (), $_errmsg );
 			throw new Exception ( $_errmsg );
 			unset ( $_errmsg );
 		}
+		
+		// : Turn off refuel update actions
+		try {
+			$this->_session->open ( $this->_maxurl . self::ADMIN_URL );
+			$e = $w->until ( function ($session) {
+				return $session->element ( "xpath", "//a[text()='Refuel ']" );
+			} );
+			
+			$this->_session->element ( "xpath", "//a[text()='Refuel ']" )->click ();
+			
+			$e = $w->until ( function ($session) {
+				return $session->element ( "xpath", "//*[@id='toolbar']/div[contains(text(),'Refuel')]" );
+			} );
+			
+			// : Update errorOdo_maximum refuel update action
+			$this->assertElementPresent ( "xpath", "//*[@id='subtabselector']/select" );
+			$this->_session->element ( "xpath", "//*[@id='subtabselector']/select/option[text()='Update']" )->click ();
+			
+			$e = $w->until ( function ($session) {
+				return $session->element ( "xpath", "//a[contains(@href,'/process?handle=ObjectCrudActionError_update__Process__20050101090000&ObjectRegistry=641&ObjectCrudActionError_id=40&ObjectRegistry_id=403') and @class='edit' and @title='Update']" );
+			} );
+			
+			$this->_session->element ( "xpath", "//a[contains(@href,'/process?handle=ObjectCrudActionError_update__Process__20050101090000&ObjectRegistry=641&ObjectCrudActionError_id=40&ObjectRegistry_id=403') and @class='edit' and @title='Update']" )->click ();
+			
+			$e = $w->until ( function ($session) {
+				return $session->element ( "xpath", "//*[contains(text(),'Update Object Crud Action Error')]" );
+			} );
+			
+			$this->assertElementPresent ( "xpath", "//*[@id='ObjectCrudActionError-8_0_0_name-8']" );
+			$this->assertElementPresent ( "xpath", "//*[@id='ObjectCrudActionError-12__0_stage-12']" );
+			$this->assertElementPresent ( "xpath", "//*[@id='ObjectCrudActionError-10__0_operation-10']" );
+			$this->assertElementPresent ( "xpath", "//*[@id='checkbox_ObjectCrudActionError-4_0_0_enabled-4']" );
+			$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+			
+			// : Check if we are updating the correct refuel update action
+			$e = $w->until ( function ($session) {
+				$this->_session->element ( "xpath", "//input[@id='ObjectCrudActionError-8_0_0_name-8' and @value='errorOdo_maximum']" );
+			} );
+			// : End
+			
+			$_actStage = $this->_session->element ( "xpath", "//*[@id='ObjectCrudActionError-12__0_stage-12']" )->selected ()->text ();
+			$_actOp = $this->_session->element ( "xpath", "//*[@id='ObjectCrudActionError-10__0_operation-10']" )->selected ()->text ();
+			$_actStatus = $this->_session->element ( "xpath", "//*[@id='checkbox_ObjectCrudActionError-4_0_0_enabled-4']" )->enabled ();
+			if ($_actStage == "Pre" && $_actOp == "Update" && $_actStatus) {
+				$this->_session->element ( "xpath", "//*[@id='checkbox_ObjectCrudActionError-4_0_0_enabled-4']" )->click ();
+			}
+			$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+			// : End
+			
+			// : Update errorOdo_previous refuel update action
+			$e = $w->until ( function ($session) {
+				return $session->element ( "xpath", "//a[contains(@href,'process?handle=ObjectCrudActionError_update__Process__20050101090000&ObjectRegistry=641&ObjectCrudActionError_id=42&ObjectRegistry_id=403&returnurl=/DataBrowser') and @class='edit' and @title='Update']" );
+			} );
+			
+			$this->_session->element ( "xpath", "//a[contains(@href,'process?handle=ObjectCrudActionError_update__Process__20050101090000&ObjectRegistry=641&ObjectCrudActionError_id=42&ObjectRegistry_id=403&returnurl=/DataBrowser') and @class='edit' and @title='Update']" )->click ();
+			
+			$e = $w->until ( function ($session) {
+				return $session->element ( "xpath", "//*[contains(text(),'Update Object Crud Action Error')]" );
+			} );
+			
+			$this->assertElementPresent ( "xpath", "//*[@id='ObjectCrudActionError-8_0_0_name-8']" );
+			$this->assertElementPresent ( "xpath", "//*[@id='ObjectCrudActionError-12__0_stage-12']" );
+			$this->assertElementPresent ( "xpath", "//*[@id='ObjectCrudActionError-10__0_operation-10']" );
+			$this->assertElementPresent ( "xpath", "//*[@id='checkbox_ObjectCrudActionError-4_0_0_enabled-4']" );
+			$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+			
+			// : Check if we are updating the correct refuel update action
+			$e = $w->until ( function ($session) {
+				$this->_session->element ( "xpath", "//input[@id='ObjectCrudActionError-8_0_0_name-8' and @value='errorOdo_previous']" );
+			} );
+			// : End
+			
+			$_actStage = $this->_session->element ( "xpath", "//*[@id='ObjectCrudActionError-12__0_stage-12']" )->selected ()->text ();
+			$_actOp = $this->_session->element ( "xpath", "//*[@id='ObjectCrudActionError-10__0_operation-10']" )->selected ()->text ();
+			$_actStatus = $this->_session->element ( "xpath", "//*[@id='checkbox_ObjectCrudActionError-4_0_0_enabled-4']" )->enabled ();
+			if ($_actStage == "Pre" && $_actOp == "Update" && $_actStatus) {
+				$this->_session->element ( "xpath", "//*[@id='checkbox_ObjectCrudActionError-4_0_0_enabled-4']" )->click ();
+			}
+			$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+			// : End
+			
+			// : Load Planningboard to rid of iframe loading on every page from here on
+			$this->_session->open ( $this->_maxurl . self::PB_URL );
+			$e = $w->until ( function ($session) {
+				return $session->element ( "xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]" );
+			} );
+			// : End
+		} catch ( Exception $e ) {
+			throw new Exception ( "Could not continue. Failed to update Refuel Update Actions before starting to run the script." );
+		}
+		// : End
 		
 		// : End
 		
@@ -312,7 +405,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 				$_fleetname = "";
 				// : End
 				
-				// Set main window to default and close all windows if there is more than one open
+				// : Set main window to default and close all windows if there is more than one open
 				$_winAll = $this->_session->window_handles ();
 				// Set window focus to main window
 				$this->_session->focusWindow ( $_winAll [0] );
@@ -375,26 +468,124 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 							$e = $w->until ( function ($session) {
 								return $session->element ( "xpath", "//*[contains(text(),'Initial Refuel Capture')]" );
 							} );
-							$this->assertElementPresent ("xpath", "//*[@id='udo_Refuel-29__0_refuelPoint-29']");
-							$this->assertElementPresent ("xpath", "//*[@id='udo_Refuel-19__0_truck_id-19']");
-							$this->assertElementPresent ("xpath", "//*[@id='udo_Refuel-6__0_driver_id-6']");
-							$this->assertElementPresent ("xpath", "//*[@id='udo_Refuel-8_0_0_fillDateTime-8']");
-							$this->assertElementPresent ("xpath", "//*[@id='formfield']/textarea");					
-							$this->assertElementPresent ("css selector", "input[type=submit][name=save]");
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-29__0_refuelPoint-29']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-19__0_truck_id-19']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-6__0_driver_id-6']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-8_0_0_fillDateTime-8']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='formfield']/textarea" );
+							$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 							
-							$this->element ("xpath", "//*[@id='udo_Refuel-29__0_refuelPoint-29']/option[text()='{}']");
-							//$_selectedTruck = $this->element ("xpath", "//*[@id='udo_Refuel-19__0_truck_id-19']")->active()->text();
-							$this->element ("xpath", "//*[@id='udo_Refuel-6__0_driver_id-6']/select/option[text()='']");
-							$this->element ("xpath", "//*[@id='udo_Refuel-8_0_0_fillDateTime-8']")->clear();
-							$this->element ("xpath", "//*[@id='udo_Refuel-8_0_0_fillDateTime-8']")->sendKeys();
-							$this->element ("xpath", "//*[@id='formfield']/textarea")->clear();
-							$this->element ("xpath", "//*[@id='formfield']/textarea")->sendKeys("This refuel was created by an automated script.");
-							$this->element ("css selector", "input[type=submit][name=save]")->click();
+							$this->element ( "xpath", "//*[@id='udo_Refuel-29__0_refuelPoint-29']/option[text()='{}']" );
 							
-							// Select Parent Window
+							// : Get selected truck if defaulted selected truck is not correct truck
+							$_selecttruck = $this->_session->element ( "xpath", "//*[@id='udo_Refuel-19__0_truck_id-19']" )->selected ()->text ();
+							if (! $_selecttruck || $_selecttruck !== $truckkey) {
+								$this->_session->element ( "xpath", "//*[@id='udo_Refuel-19__0_truck_id-19']/select/option[text()='{$truckkey}']" )->click ();
+							}
+							// : End
+							
+							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-6__0_driver_id-6']/select/option[text()='']" );
+							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-8_0_0_fillDateTime-8']" )->clear ();
+							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-8_0_0_fillDateTime-8']" )->sendKeys ( $datekey );
+							$this->_session->element ( "xpath", "//*[@id='formfield']/textarea" )->clear ();
+							$this->_session->element ( "xpath", "//*[@id='formfield']/textarea" )->sendKeys ( "This refuel was created by an automated script." );
+							$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+							
+							// : Select Parent Window
 							if (count ( $_winAll > 1 )) {
 								$this->_session->focusWindow ( $_winAll [0] );
 							}
+							// : End
+							
+							// : Check for the presence of the truck on the Planningboard
+							$this->_tmp = $_truckid;
+							$e = $w->until ( function ($session) {
+								return $session->element ( "xpath", "//a[contains(@href,'truck_id={$this->_tmp}') and contains(@href,'refuel{$this->_tmp}') and contains(@href, 'ObjectRegistry=udo_Refuel')]" );
+							} );
+							// : End
+							
+							// : Get the refuel F link style color
+							$_fStatus = $this->_session->element ( "xpath", "//a[contains(@href,'truck_id={$_truckid}') and contains(@href,'refuel{$_truckid}') and contains(@href, 'ObjectRegistry=udo_Refuel')]/span[2]" )->attribute ( 'style' );
+							preg_match ( "/red|green/", $_fStatus, $_matches );
+							if ($_matches) {
+								$_fStatus = $_matches [0];
+							}
+							
+							// If style color for F refuel link is red then continue
+							if ($_fStatus === "red") {
+								// : Clear all extra windows and select main window again
+								$_winAll = $this->_session->window_handles ();
+								// Set window focus to main window
+								$this->_session->focusWindow ( $_winAll [0] );
+								// If there is more than 1 window open then close all but main window
+								if (count ( $_winAll ) > 1) {
+									$this->clearWindows ();
+								}
+								// : End
+								
+								$this->_session->element ( "xpath", "//a[contains(@href,'truck_id={$_truckid}') and contains(@href,'refuel{$_truckid}') and contains(@href, 'ObjectRegistry=udo_Refuel')]" )->click ();
+								
+								// : Select New Window
+								$_winAll = $this->_session->window_handles ();
+								if (count ( $_winAll > 1 )) {
+									$this->_session->focusWindow ( $_winAll [1] );
+								} else {
+									throw new Exception ( "ERROR: Window not present" );
+								}
+								// : End
+							}
+						}
+						
+						if ($_fStatus === "red") {
+							$e = $w->until ( function ($session) {
+								return $session->element ( "xpath", "//*[contains(text(),'Complete Refuel Capture')]" );
+							} );
+							// : Confirm refuel order is for the correct truck and order by confirming the details
+							try {
+								$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-19_0_0_truck_id-19']/tbody/tr/td[text()='{$truckkey}']" );
+								$this->assertElementPresent ( "xpath", ".//*[@id='udo_Refuel-8_0_0_fillDateTime-8']/tbody/tr/td[text()='{$datekey}']" );
+							} catch ( Exception $e ) {
+								throw new Exception ( "Could not confirm that the order been completed was the correct order. Error message: " . $e->getMessage () );
+							}
+							// : End
+							
+							// : Check all elements for entering and selecting values to complete refuel are present
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-15_0_0_odo-15']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-12_0_0_litres-12']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-3_0_0_cost-3']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-9__0_full_or_Partial-9']" );
+							$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+							// : End
+							
+							// Store the refuel order number
+							$_refuelOrder = $this->_session->element ( "xpath", "//*[@id='udo_Refuel-18_0_0_refuelOrderNumber_id-18']/tbody/tr/td[1]" )->text ();
+							
+							// : Enter values into the Complete Refuel form
+							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-15_0_0_odo-15']" )->clear ();
+							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-15_0_0_odo-15']" )->sendKeys ( $odovalue );
+							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-12_0_0_litres-12']" )->clear ();
+							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-12_0_0_litres-12']" )->sendKeys ();
+							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-3_0_0_cost-3']" )->clear ();
+							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-3_0_0_cost-3']" )->sendKeys ();
+							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-9__0_full_or_Partial-9']/select/option[text()='Partial']" );
+							$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+							// : End
+							
+							// : Construct array data to add refuel order number and status of each refuel create process
+							// : End
+							
+							// : Select Parent Window
+							if (count ( $_winAll > 1 )) {
+								$this->_session->focusWindow ( $_winAll [0] );
+							}
+							// : End
+							
+							// : Check F refuel link for truck exists and that is style color has changed to green
+							$this->_tmp = $_truckid;
+							$e = $w->until ( function ($session) {
+								return $session->element ( "xpath", "//a[contains(@href,'truck_id={$this->_tmp}') and contains(@href,'refuel{$this->_tmp}') and contains(@href, 'ObjectRegistry=udo_Refuel')]/span[contains(@style,'green')]" );
+							} );
+							// : End
 						}
 					} catch ( Exception $e ) {
 						// : Add details of record when error occured to error array
@@ -407,6 +598,91 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 					}
 				}
 			}
+			
+			// : Turn on refuel update actions
+			try {
+				$this->_session->open ( $this->_maxurl . self::ADMIN_URL );
+				$e = $w->until ( function ($session) {
+					return $session->element ( "xpath", "//a[text()='Refuel ']" );
+				} );
+				
+				$this->_session->element ( "xpath", "//a[text()='Refuel ']" )->click ();
+				
+				$e = $w->until ( function ($session) {
+					return $session->element ( "xpath", "//*[@id='toolbar']/div[contains(text(),'Refuel')]" );
+				} );
+				
+				// : Update errorOdo_maximum refuel update action to enable
+				$this->assertElementPresent ( "xpath", "//*[@id='subtabselector']/select" );
+				$this->_session->element ( "xpath", "//*[@id='subtabselector']/select/option[text()='Update']" )->click ();
+				
+				$e = $w->until ( function ($session) {
+					return $session->element ( "xpath", "//a[contains(@href,'/process?handle=ObjectCrudActionError_update__Process__20050101090000&ObjectRegistry=641&ObjectCrudActionError_id=40&ObjectRegistry_id=403') and @class='edit' and @title='Update']" );
+				} );
+				
+				$this->_session->element ( "xpath", "//a[contains(@href,'/process?handle=ObjectCrudActionError_update__Process__20050101090000&ObjectRegistry=641&ObjectCrudActionError_id=40&ObjectRegistry_id=403') and @class='edit' and @title='Update']" )->click ();
+				
+				$e = $w->until ( function ($session) {
+					return $session->element ( "xpath", "//*[contains(text(),'Update Object Crud Action Error')]" );
+				} );
+				
+				$this->assertElementPresent ( "xpath", "//*[@id='ObjectCrudActionError-8_0_0_name-8']" );
+				$this->assertElementPresent ( "xpath", "//*[@id='ObjectCrudActionError-12__0_stage-12']" );
+				$this->assertElementPresent ( "xpath", "//*[@id='ObjectCrudActionError-10__0_operation-10']" );
+				$this->assertElementPresent ( "xpath", "//*[@id='checkbox_ObjectCrudActionError-4_0_0_enabled-4']" );
+				$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+				
+				// : Check if we are updating the correct refuel update action
+				$e = $w->until ( function ($session) {
+					$this->_session->element ( "xpath", "//input[@id='ObjectCrudActionError-8_0_0_name-8' and @value='errorOdo_maximum']" );
+				} );
+				// : End
+				
+				$_actStage = $this->_session->element ( "xpath", "//*[@id='ObjectCrudActionError-12__0_stage-12']" )->selected ()->text ();
+				$_actOp = $this->_session->element ( "xpath", "//*[@id='ObjectCrudActionError-10__0_operation-10']" )->selected ()->text ();
+				$_actStatus = $this->_session->element ( "xpath", "//*[@id='checkbox_ObjectCrudActionError-4_0_0_enabled-4']" )->enabled ();
+				if ($_actStage == "Pre" && $_actOp == "Update" && !$_actStatus) {
+					$this->_session->element ( "xpath", "//*[@id='checkbox_ObjectCrudActionError-4_0_0_enabled-4']" )->click ();
+				}
+				$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+				// : End
+				
+				// : Update errorOdo_previous refuel update action to enable
+				$e = $w->until ( function ($session) {
+					return $session->element ( "xpath", "//a[contains(@href,'process?handle=ObjectCrudActionError_update__Process__20050101090000&ObjectRegistry=641&ObjectCrudActionError_id=42&ObjectRegistry_id=403&returnurl=/DataBrowser') and @class='edit' and @title='Update']" );
+				} );
+				
+				$this->_session->element ( "xpath", "//a[contains(@href,'process?handle=ObjectCrudActionError_update__Process__20050101090000&ObjectRegistry=641&ObjectCrudActionError_id=42&ObjectRegistry_id=403&returnurl=/DataBrowser') and @class='edit' and @title='Update']" )->click ();
+				
+				$e = $w->until ( function ($session) {
+					return $session->element ( "xpath", "//*[contains(text(),'Update Object Crud Action Error')]" );
+				} );
+				
+				$this->assertElementPresent ( "xpath", "//*[@id='ObjectCrudActionError-8_0_0_name-8']" );
+				$this->assertElementPresent ( "xpath", "//*[@id='ObjectCrudActionError-12__0_stage-12']" );
+				$this->assertElementPresent ( "xpath", "//*[@id='ObjectCrudActionError-10__0_operation-10']" );
+				$this->assertElementPresent ( "xpath", "//*[@id='checkbox_ObjectCrudActionError-4_0_0_enabled-4']" );
+				$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+				
+				// : Check if we are updating the correct refuel update action
+				$e = $w->until ( function ($session) {
+					$this->_session->element ( "xpath", "//input[@id='ObjectCrudActionError-8_0_0_name-8' and @value='errorOdo_previous']" );
+				} );
+				// : End
+				
+				$_actStage = $this->_session->element ( "xpath", "//*[@id='ObjectCrudActionError-12__0_stage-12']" )->selected ()->text ();
+				$_actOp = $this->_session->element ( "xpath", "//*[@id='ObjectCrudActionError-10__0_operation-10']" )->selected ()->text ();
+				$_actStatus = $this->_session->element ( "xpath", "//*[@id='checkbox_ObjectCrudActionError-4_0_0_enabled-4']" )->enabled ();
+				if ($_actStage == "Pre" && $_actOp == "Update" && !$_actStatus) {
+					$this->_session->element ( "xpath", "//*[@id='checkbox_ObjectCrudActionError-4_0_0_enabled-4']" )->click ();
+				}
+				$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+				// : End
+				
+			} catch ( Exception $e ) {
+				throw new Exception ( "Could not continue. Failed to update Refuel Update Actions after running the script." );
+			}
+			// : End
 			
 			// : Report errors if any occured
 			if ($this->_errors) {
