@@ -44,6 +44,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	const FILE_NOT_FOUND = "ERROR: File not found. Please check the path and that the file exists and try again: %s";
 	const LOGIN_FAIL = "ERROR: Log into %h was unsuccessful. Please see the following error message relating to the problem: %s";
 	const DB_ERROR = "ERROR: There was a problem connecting to the database. See error message: %s";
+	const DIR_NOT_FOUND = "Dir is found are you happy!";
 	
 	// : Variables
 	protected static $driver;
@@ -194,7 +195,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		
 		// : Queries to run throughout script
 		$_queries = ( array ) array (
-				"select f.name from udo_fleetrucklink as ftl left join udo_truck as t on (t.id=ftl.truck_id) left join udo_fleet as f on (f.id=ftl.fleet_id) where t.fleetnum='%s';",
+				"select f.name from udo_fleettrucklink as ftl left join udo_truck as t on (t.id=ftl.truck_id) left join udo_fleet as f on (f.id=ftl.fleet_id) where t.id=%s;",
 				"select id, fleetnum from udo_truck where fleetnum='%s';" 
 		);
 		// : End
@@ -239,6 +240,10 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		// : End
 		
 		try {
+			// Initialize session
+			$session = $this->_session;
+			$this->_session->setPageLoadTimeout ( 60 );
+			$w = new PHPWebDriver_WebDriverWait ( $session );
 			
 			// Load MAX home page
 			$this->_session->open ( $this->_maxurl );
@@ -302,60 +307,127 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		// : Main Loop
 		foreach ( $this->_data as $truckkey => $value ) {
 			foreach ( $value as $datekey => $odovalue ) {
+				// : Reset variables
 				$_truckid = "";
 				$_fleetname = "";
+				// : End
+				
+				// Set main window to default and close all windows if there is more than one open
+				$_winAll = $this->_session->window_handles ();
+				// Set window focus to main window
+				$this->_session->focusWindow ( $_winAll [0] );
+				// If there is more than 1 window open then close all but main window
+				if (count ( $_winAll ) > 1) {
+					$this->clearWindows ();
+				}
+				// : End
+				
+				// : Run SQL Query to check whether truck exists on MAX
 				$_query = preg_replace ( "/%s/", $truckkey, $_queries [1] );
 				$_result = $_sqldb->getDataFromQuery ( $_query );
 				if ($_result) {
-					$_query = preg_replace ( "/%s/", $truckkey, $_queries [0] );
+					// : Check if truck is linked to a fleet and if so get the first fleet returned in the query results
+					$_truckid = $_result [0] ["id"];
+					$_query = preg_replace ( "/%s/", $_truckid, $_queries [0] );
 					$_result2 = $_sqldb->getDataFromQuery ( $_query );
 					if ($_result2) {
-						$_truckid = $_result [0] ["id"];
 						$_fleetname = $_result2 [0] ["name"];
 					}
+					// : End
 				}
+				// : End
 				
 				if ($_truckid && $_fleetname) {
 					try {
-					$this->_tmp = $_fleetname;
-					// Load the fleet to which the truck is linked too
-					$e = $w->until ( function ($session) {
-						return $session->element ( "xpath", "//*[@id='fplanningboard']/table/tbody/tr[2]/td[1]/select/option[contains(text(),'{$this->_tmp}')]" );
-					} );
-					
-					$this->_session->element ( "xpath", "//*[@id='fplanningboard']/table/tbody/tr[2]/td[1]/select/option[contains(text(),'{$_fleetname}')]" )->click ();
-					
-					$this->_tmp = $truckkey;
-					$e = $w->until ( function ($session) {
-						return $session->element ( "xpath", "//*[@id='planningBoardLabels']/table/tr[2]/td[1][contains(text(),'{$this->_tmp}')]" );
-					} );
-					
-					
-					} catch (Exception $e) {
+						$this->_tmp = $_fleetname;
+						// : Load the fleet to which the truck is linked too
+						$e = $w->until ( function ($session) {
+							return $session->element ( "xpath", "//*[@id='fplanningboard']/table/tbody/tr[2]/td[1]/select/option[contains(text(),'{$this->_tmp}')]" );
+						} );
+						$this->_session->element ( "xpath", "//*[@id='fplanningboard']/table/tbody/tr[2]/td[1]/select/option[contains(text(),'{$_fleetname}')]" )->click ();
+						// : End
 						
+						// : Check for the presence of the truck on the Planningboard
+						$this->_tmp = $_truckid;
+						$e = $w->until ( function ($session) {
+							return $session->element ( "xpath", "//a[contains(@href,'truck_id={$this->_tmp}') and contains(@href,'refuel{$this->_tmp}') and contains(@href, 'ObjectRegistry=udo_Refuel')]" );
+						} );
+						// : End
+						
+						// Click the F for refuel
+						$_fStatus = $this->_session->element ( "xpath", "//a[contains(@href,'truck_id={$_truckid}') and contains(@href,'refuel{$_truckid}') and contains(@href, 'ObjectRegistry=udo_Refuel')]/span[2]" )->attribute ( 'style' );
+						preg_match ( "/red|green/", $_fStatus, $_matches );
+						if ($_matches) {
+							$_fStatus = $_matches [0];
+						}
+						
+						$this->_session->element ( "xpath", "//a[contains(@href,'truck_id={$_truckid}') and contains(@href,'refuel{$_truckid}') and contains(@href, 'ObjectRegistry=udo_Refuel')]" )->click ();
+						
+						// Select New Window
+						$_winAll = $this->_session->window_handles ();
+						if (count ( $_winAll > 1 )) {
+							$this->_session->focusWindow ( $_winAll [1] );
+						} else {
+							throw new Exception ( "ERROR: Window not present" );
+						}
+						
+						if ($_fStatus !== "red") {
+							$e = $w->until ( function ($session) {
+								return $session->element ( "xpath", "//*[contains(text(),'Initial Refuel Capture')]" );
+							} );
+							$this->assertElementPresent ("xpath", "//*[@id='udo_Refuel-29__0_refuelPoint-29']");
+							$this->assertElementPresent ("xpath", "//*[@id='udo_Refuel-19__0_truck_id-19']");
+							$this->assertElementPresent ("xpath", "//*[@id='udo_Refuel-6__0_driver_id-6']");
+							$this->assertElementPresent ("xpath", "//*[@id='udo_Refuel-8_0_0_fillDateTime-8']");
+							$this->assertElementPresent ("xpath", "//*[@id='formfield']/textarea");					
+							$this->assertElementPresent ("css selector", "input[type=submit][name=save]");
+							
+							$this->element ("xpath", "//*[@id='udo_Refuel-29__0_refuelPoint-29']/option[text()='{}']");
+							//$_selectedTruck = $this->element ("xpath", "//*[@id='udo_Refuel-19__0_truck_id-19']")->active()->text();
+							$this->element ("xpath", "//*[@id='udo_Refuel-6__0_driver_id-6']/select/option[text()='']");
+							$this->element ("xpath", "//*[@id='udo_Refuel-8_0_0_fillDateTime-8']")->clear();
+							$this->element ("xpath", "//*[@id='udo_Refuel-8_0_0_fillDateTime-8']")->sendKeys();
+							$this->element ("xpath", "//*[@id='formfield']/textarea")->clear();
+							$this->element ("xpath", "//*[@id='formfield']/textarea")->sendKeys("This refuel was created by an automated script.");
+							$this->element ("css selector", "input[type=submit][name=save]")->click();
+							
+							// Select Parent Window
+							if (count ( $_winAll > 1 )) {
+								$this->_session->focusWindow ( $_winAll [0] );
+							}
+						}
+					} catch ( Exception $e ) {
+						// : Add details of record when error occured to error array
+						$_num = count ( $this->_errors ) + 1;
+						$this->_errors [$_num] ["truck"] = $truckkey;
+						$this->_errors [$_num] ["date"] = $datekey;
+						$this->_errors [$_num] ["odo"] = $odovalue;
+						$this->_errors [$_num] ["errormsg"] = $e->getMessage ();
+						// : End
 					}
+				}
 			}
+			
+			// : Report errors if any occured
+			if ($this->_errors) {
+				$_errfile = dirname ( __FILE__ ) . $this->_datadir . self::DS . $this->getErrorReportFileName () . ".csv";
+				$this->ExportToCSV ( $_errfile, $this->_errors );
+				echo "Exported error report to the following path and file: " . $_errfile;
+			}
+			// : End
+			
+			// : Tear Down
+			// Click the logout link
+			$this->_session->element ( 'xpath', "//*[contains(@href,'/logout')]" )->click ();
+			// Wait for page to load and for elements to be present on page
+			$e = $w->until ( function ($session) {
+				return $session->element ( 'css selector', 'input[id=identification]' );
+			} );
+			$this->assertElementPresent ( 'css selector', 'input[id=identification]' );
+			// Terminate session
+			$this->_session->close ();
+			// : End
 		}
-		
-		// : Report errors if any occured
-		if ($this->_errors) {
-			$_errfile = dirname ( __FILE__ ) . $this->_datadir . self::DS . $this->getErrorReportFileName () . ".csv";
-			$this->ExportToCSV ( $_errfile, $this->_errors );
-			echo "Exported error report to the following path and file: " . $_errfile;
-		}
-		// : End
-		
-		// : Tear Down
-		// Click the logout link
-		$this->_session->element ( 'xpath', "//*[contains(@href,'/logout')]" )->click ();
-		// Wait for page to load and for elements to be present on page
-		$e = $w->until ( function ($session) {
-			return $session->element ( 'css selector', 'input[id=identification]' );
-		} );
-		$this->assertElementPresent ( 'css selector', 'input[id=identification]' );
-		// Terminate session
-		$this->_session->close ();
-		// : End
 	}
 	
 	// : Private Functions
