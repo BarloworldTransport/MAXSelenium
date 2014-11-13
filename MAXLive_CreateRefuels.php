@@ -433,6 +433,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 				// : End
 				
 				if ($_truckid && $_fleetname) {
+					$_initial = FALSE;
 					$this->_tmp = $_fleetname;
 					// : Load the fleet to which the truck is linked too
 					$e = $w->until ( function ($session) {
@@ -468,6 +469,46 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 					if ($_fStatus) {
 						try {
 							
+							$e = $w->until ( function ($session) {
+								return $session->element ( "xpath", "//*[contains(text(),'Initial Refuel Capture')]" );
+							} );
+							$_initial = TRUE;
+						} catch ( Exception $e ) {
+							try {
+								// : Check if the refuel stage is complete refuel process
+								$e = $w->until ( function ($session) {
+									return $session->element ( "xpath", "//*[contains(text(),'Complete Refuel Capture')]" );
+								} );
+							} catch ( Exception $e ) {
+								try {
+									// : Click continue on Display Order Number page
+									$e = $w->until ( function ($session) {
+										return $session->element ( "xpath", "//*[contains(text(),'Display Order Number')]" );
+									} );
+									$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+									$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+									$_initial = TRUE;
+									// : End
+								} catch ( Exception $e ) {
+									try {
+										// : Click Save & Continue to complete the refuel on the Memo page
+										$e = $w->until ( function ($session) {
+											return $session->element ( "xpath", "//*[contains(text(),'Memo')]" );
+										} );
+										$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+										$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+										$_initial = TRUE;
+										// : End
+									} catch ( Exception $e ) {
+										throw new Exception ( "F is red and cannot find determine initial or complete stage of refuel process.\n{$e->getMessage()}" );
+									}
+								}
+							}
+						}
+					}
+					
+					if ($_initial) {
+						try {
 							$e = $w->until ( function ($session) {
 								return $session->element ( "xpath", "//*[contains(text(),'Initial Refuel Capture')]" );
 							} );
@@ -535,32 +576,11 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 									return $session->element ( "xpath", "//*[contains(text(),'Complete Refuel Capture')]" );
 								} );
 							} catch ( Exception $e ) {
-								try {
-									// : Click continue on Display Order Number page
-									$e = $w->until ( function ($session) {
-										return $session->element ( "xpath", "//*[contains(text(),'Display Order Number')]" );
-									} );
-									$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-									$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
-									// : End
-								} catch ( Exception $e ) {
-									try {
-										// : Click Save & Continue to complete the refuel on the Memo page
-										$e = $w->until ( function ($session) {
-											return $session->element ( "xpath", "//*[contains(text(),'Memo')]" );
-										} );
-										$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
-										$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
-										// : End
-									} catch ( Exception $e ) {
-										throw new Exception ( "F is red and cannot find determine initial or complete stage of refuel process.\n{$e->getMessage()}" );
-									}
-								}
+								$_initial = FALSE;
 							}
 						}
 					}
-					
-					if ($_fStatus == "red") {
+					else if ($_fStatus == "red" && !$_initial) {
 						$e = $w->until ( function ($session) {
 							return $session->element ( "xpath", "//*[contains(text(),'Complete Refuel Capture')]" );
 						} );
