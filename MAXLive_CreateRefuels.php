@@ -580,7 +580,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 							}
 						}
 					}
-					else if ($_fStatus == "red" && !$_initial) {
+					if ($_fStatus == "red") {
 						$e = $w->until ( function ($session) {
 							return $session->element ( "xpath", "//*[contains(text(),'Complete Refuel Capture')]" );
 						} );
