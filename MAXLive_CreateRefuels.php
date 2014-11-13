@@ -535,7 +535,27 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 									return $session->element ( "xpath", "//*[contains(text(),'Complete Refuel Capture')]" );
 								} );
 							} catch ( Exception $e ) {
-								throw new Exception ( "F is red and cannot find determine initial or complete stage of refuel process.\n{$e->getMessage()}" );
+								try {
+									// : Click continue on Display Order Number page
+									$e = $w->until ( function ($session) {
+										return $session->element ( "xpath", "//*[contains(text(),'Display Order Number')]" );
+									} );
+									$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+									$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+									// : End
+								} catch ( Exception $e ) {
+									try {
+										// : Click Save & Continue to complete the refuel on the Memo page
+										$e = $w->until ( function ($session) {
+											return $session->element ( "xpath", "//*[contains(text(),'Memo')]" );
+										} );
+										$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+										$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+										// : End
+									} catch ( Exception $e ) {
+										throw new Exception ( "F is red and cannot find determine initial or complete stage of refuel process.\n{$e->getMessage()}" );
+									}
+								}
 							}
 						}
 					}
@@ -617,7 +637,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 					$this->_errors [$_num] [$key] = $value;
 				}
 				$this->_errors [$_num] ["errormsg"] = $e->getMessage ();
-				$this->takeScreenshot($this->_session);
+				$this->takeScreenshot ( $this->_session );
 				// : End
 			}
 		}
@@ -743,7 +763,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		// : Report all successful completed refuel orders
 		$_orders = ( array ) array ();
 		foreach ( $this->_data as $key => $value ) {
-			$_orders [$key]["id"] = $key;
+			$_orders [$key] ["id"] = $key;
 			if (array_key_exists ( "OrderNumber", $value )) {
 				$_orders [$key] = $value;
 			}
@@ -780,7 +800,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	private function takeScreenshot($_session) {
 		$_img = $_session->screenshot ();
 		$_data = base64_decode ( $_img );
-		$_file = dirname ( __FILE__ ) .  $this->_scrdir . self::DS . date ( "Y-m-d_His" ) . $this->getReportFileName();
+		$_file = dirname ( __FILE__ ) . $this->_scrdir . self::DS . date ( "Y-m-d_His" ) . $this->getReportFileName ();
 		$_success = file_put_contents ( $_file, $_data );
 		if ($_success) {
 			return $_file;
