@@ -181,7 +181,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 				"select f.name from udo_fleettrucklink as ftl left join udo_truck as t on (t.id=ftl.truck_id) left join udo_fleet as f on (f.id=ftl.fleet_id) where t.id=%s;",
 				"select id, fleetnum from udo_truck where fleetnum='%s';",
 				"select d.nickname, CONCAT(p.first_name, ' ', p.last_name) as fullname, d.staffNumber from udo_driver as d left join person as p on (p.id=d.person_id) where d.staffNumber = '%s';",
-				"select r.id, ron.orderNumber from udo_refuel as r left join udo_refuelordernumber as ron on (ron.id=r.refuelOrderNumber_id) where ron.orderNumber=%s;"
+				"select r.id, ron.orderNumber from udo_refuel as r left join udo_refuelordernumber as ron on (ron.id=r.refuelOrderNumber_id) where ron.orderNumber=%s;" 
 		);
 		// : End
 		
@@ -377,62 +377,62 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		
 		// : Main Loop
 		foreach ( $this->_data as $recKey => $recVal ) {
-			// : Reset variables
-			$_truckid = "";
-			$_fleetname = "";
-			// : End
-			
-			// : Set main window to default and close all windows if there is more than one open
-			$_winAll = $this->_session->window_handles ();
-			// Set window focus to main window
-			$this->_session->focusWindow ( $_winAll [0] );
-			// If there is more than 1 window open then close all but main window
-			if (count ( $_winAll ) > 1) {
-				$this->clearWindows ();
-			}
-			// : End
-			
-			// : If record missing information then throw exception and skip record
-			if (! $recVal ["Truck"] || ! $recVal ["Odo"] || ! $recVal ["Location"] || ! $recVal ["Date"] || ! $recVal ["Litres"]) {
-				$_recErr = "Record#: {$recKey}, Truck: {$recVal["Truck"]}, Odo: {$recVal["Odo"]}, Location: {$recVal["Location"]}, Date: {$recVal["Date"]}, Litres: {$recVal["Litres"]}";
-				throw new Exception ( "Incomplete date for record:" . $_recErr );
-			}
-			// : End
-			
-			// : Run SQL Query to check whether truck exists on MAX
-			$_query = preg_replace ( "/%s/", $recVal ["Truck"], $_queries [1] );
-			$_result = $_sqldb->getDataFromQuery ( $_query );
-			if ($_result) {
-				// : Check if truck is linked to a fleet and if so get the first fleet returned in the query results
-				$_truckid = $_result [0] ["id"];
-				$_query = preg_replace ( "/%s/", $_truckid, $_queries [0] );
-				$_result2 = $_sqldb->getDataFromQuery ( $_query );
-				if ($_result2) {
-					$_fleetname = $_result2 [0] ["name"];
-				}
+			try {
+				// : Reset variables
+				$_truckid = "";
+				$_fleetname = "";
 				// : End
-			}
-			
-			$_query = preg_replace("/%s/", $recVal["Driver"], $_queries[2]);
-			$_result = $_sqldb->getDataFromQuery($_query);
-			if ($_result) {
-				$_driver = "{$_result[0]["nickname"]} [{$_result[0]["fullname"]}]";
-				$_staffNo = intval($_result[0]["staffNumber"]);
 				
-				// : Kaluma defaults to STAFFNUMBER value if in driver select box for refuel page when staffNumber <> int value
-				if (!$_staffNo) {
-					$_staffNo = "STAFFNUMBER";
+				// : Set main window to default and close all windows if there is more than one open
+				$_winAll = $this->_session->window_handles ();
+				// Set window focus to main window
+				$this->_session->focusWindow ( $_winAll [0] );
+				// If there is more than 1 window open then close all but main window
+				if (count ( $_winAll ) > 1) {
+					$this->clearWindows ();
 				}
 				// : End
 				
-				$_driver .= " [{$_staffNo}]";
-			} else {
-				$_driver = "Unknown Driver [Unknown Driver] [STAFFNUMBER]";
-			}
-			// : End
-			
-			if ($_truckid && $_fleetname) {
-				try {
+				// : If record missing information then throw exception and skip record
+				if (! $recVal ["Truck"] || ! $recVal ["Odo"] || ! $recVal ["Location"] || ! $recVal ["Date"] || ! $recVal ["Litres"]) {
+					$_recErr = "Record#: {$recKey}, Truck: {$recVal["Truck"]}, Odo: {$recVal["Odo"]}, Location: {$recVal["Location"]}, Date: {$recVal["Date"]}, Litres: {$recVal["Litres"]}";
+					throw new Exception ( "Incomplete date for record:" . $_recErr );
+				}
+				// : End
+				
+				// : Run SQL Query to check whether truck exists on MAX
+				$_query = preg_replace ( "/%s/", $recVal ["Truck"], $_queries [1] );
+				$_result = $_sqldb->getDataFromQuery ( $_query );
+				if ($_result) {
+					// : Check if truck is linked to a fleet and if so get the first fleet returned in the query results
+					$_truckid = $_result [0] ["id"];
+					$_query = preg_replace ( "/%s/", $_truckid, $_queries [0] );
+					$_result2 = $_sqldb->getDataFromQuery ( $_query );
+					if ($_result2) {
+						$_fleetname = $_result2 [0] ["name"];
+					}
+					// : End
+				}
+				
+				$_query = preg_replace ( "/%s/", $recVal ["Driver"], $_queries [2] );
+				$_result = $_sqldb->getDataFromQuery ( $_query );
+				if ($_result) {
+					$_driver = "{$_result[0]["nickname"]} [{$_result[0]["fullname"]}]";
+					$_staffNo = intval ( $_result [0] ["staffNumber"] );
+					
+					// : Kaluma defaults to STAFFNUMBER value if in driver select box for refuel page when staffNumber <> int value
+					if (! $_staffNo) {
+						$_staffNo = "STAFFNUMBER";
+					}
+					// : End
+					
+					$_driver .= " [{$_staffNo}]";
+				} else {
+					$_driver = "Unknown Driver [Unknown Driver] [STAFFNUMBER]";
+				}
+				// : End
+				
+				if ($_truckid && $_fleetname) {
 					$this->_tmp = $_fleetname;
 					// : Load the fleet to which the truck is linked too
 					$e = $w->until ( function ($session) {
@@ -507,7 +507,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 								return $session->element ( "xpath", "//a[contains(@href,'truck_id={$this->_tmp}') and contains(@href,'refuel{$this->_tmp}') and contains(@href, 'ObjectRegistry=udo_Refuel')]" );
 							} );
 							// : End
-
+							
 							// : Get the refuel F link style color
 							$_fStatus = $this->_session->element ( "xpath", "//a[contains(@href,'truck_id={$_truckid}') and contains(@href,'refuel{$_truckid}') and contains(@href, 'ObjectRegistry=udo_Refuel')]/span[2]" )->attribute ( 'style' );
 							preg_match ( "/red|green/", $_fStatus, $_matches );
@@ -547,7 +547,6 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 						// : Confirm refuel order is for the correct truck and order by confirming the details
 						try {
 							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-19_0_0_truck_id-19']/tbody/tr/td[text()='{$recVal["Truck"]}']" );
-							$this->assertElementPresent ( "xpath", ".//*[@id='udo_Refuel-8_0_0_fillDateTime-8']/tbody/tr/td[text()='{$recVal["Date"]}']" );
 						} catch ( Exception $e ) {
 							throw new Exception ( "Could not confirm that the order been completed was the correct order. Error message: " . $e->getMessage () );
 						}
@@ -610,15 +609,16 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 						} );
 						// : End
 					}
-				} catch ( Exception $e ) {
-					// : Add details of record when error occured to error array
-					$_num = count ( $this->_errors ) + 1;
-					foreach ( $recVal as $key => $value ) {
-						$this->_errors [$_num] [$key] = $value;
-					}
-					$this->_errors [$_num] ["errormsg"] = $e->getMessage ();
-					// : End
 				}
+			} catch ( Exception $e ) {
+				// : Add details of record when error occured to error array
+				$_num = count ( $this->_errors ) + 1;
+				foreach ( $recVal as $key => $value ) {
+					$this->_errors [$_num] [$key] = $value;
+				}
+				$this->_errors [$_num] ["errormsg"] = $e->getMessage ();
+				$this->takeScreenshot($this->_session);
+				// : End
 			}
 		}
 		
@@ -741,10 +741,11 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		// : End
 		
 		// : Report all successful completed refuel orders
-		$_orders = (array) array();
-		foreach($this->_data as $key => $value) {
-			if (array_key_exists("OrderNumber", $value)) {
-				$_orders[$key] = $value;
+		$_orders = ( array ) array ();
+		foreach ( $this->_data as $key => $value ) {
+			$_orders [$key]["id"] = $key;
+			if (array_key_exists ( "OrderNumber", $value )) {
+				$_orders [$key] = $value;
 			}
 		}
 		
@@ -779,7 +780,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	private function takeScreenshot($_session) {
 		$_img = $_session->screenshot ();
 		$_data = base64_decode ( $_img );
-		$_file = dirname ( __FILE__ ) . self::DS . date ( "Y-m-d_His" ) . "_WebDriver.png";
+		$_file = dirname ( __FILE__ ) .  $this->_scrdir . self::DS . date ( "Y-m-d_His" ) . $this->getReportFileName();
 		$_success = file_put_contents ( $_file, $_data );
 		if ($_success) {
 			return $_file;
