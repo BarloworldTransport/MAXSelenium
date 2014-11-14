@@ -821,7 +821,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	private function takeScreenshot($_session, $_filename) {
 		$_img = $_session->screenshot ();
 		$_data = base64_decode ( $_img );
-		$_file = dirname ( __FILE__ ) . $this->_scrdir . self::DS . date ( "Y-m-d_His" ) . $_filename ();
+		$_file = dirname ( __FILE__ ) . $this->_scrdir . self::DS . date ( "Y-m-d_His" ) . $_filename;
 		$_success = file_put_contents ( $_file, $_data );
 		if ($_success) {
 			return $_file;
