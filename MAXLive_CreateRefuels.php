@@ -657,7 +657,8 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 					$this->_errors [$_num] [$key] = $value;
 				}
 				$this->_errors [$_num] ["errormsg"] = $e->getMessage ();
-				$this->takeScreenshot ( $this->_session );
+				$_scrshotfn = dirname(__FILE__) . $this->_scrdir . self::DS . date("Y-m-d_H:i:s") . $recVal["Truck"] . substr($e->getMessage(), 1, 10);
+				$this->takeScreenshot ( $this->_session, $_scrshotfn );
 				// : End
 			}
 		}
@@ -817,10 +818,10 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	 *
 	 * @param object: $_session        	
 	 */
-	private function takeScreenshot($_session) {
+	private function takeScreenshot($_session, $_filename) {
 		$_img = $_session->screenshot ();
 		$_data = base64_decode ( $_img );
-		$_file = dirname ( __FILE__ ) . $this->_scrdir . self::DS . date ( "Y-m-d_His" ) . $this->getReportFileName ();
+		$_file = dirname ( __FILE__ ) . $this->_scrdir . self::DS . date ( "Y-m-d_His" ) . $_filename ();
 		$_success = file_put_contents ( $_file, $_data );
 		if ($_success) {
 			return $_file;
