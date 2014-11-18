@@ -101,7 +101,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			return FALSE;
 		}
 		$data = parse_ini_file ( $ini );
-		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "file2", $data ) && $data ["file2"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
+		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
 			$this->_username = $data ["username"];
 			$this->_password = $data ["password"];
 			$this->_welcome = $data ["welcome"];
@@ -113,7 +113,6 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			$this->_scrdir = $data ["screenshotdir"];
 			$this->_errdir = $data ["errordir"];
 			$this->_file1 = $data ["file1"];
-			$this->_file2 = $data ["file2"];
 			switch ($this->_mode) {
 				case "live" :
 					$this->_maxurl = self::LIVE_URL;
@@ -187,7 +186,6 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		
 		// Build file path string
 		$_file1 = dirname ( __FILE__ ) . self::DS . $this->_datadir . self::DS . $this->_file1;
-		$_file2 = dirname ( __FILE__ ) . self::DS . $this->_datadir . self::DS . $this->_file2;
 		
 		// : Import CSV files data
 		if (file_exists ( $_file1 )) {
