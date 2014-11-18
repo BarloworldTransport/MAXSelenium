@@ -161,8 +161,8 @@ class MAXLive_UpdateTruckPrimaryFleet extends PHPUnit_Framework_TestCase {
 		try {
 			// Initialize session
 			$session = $this->_session;
-			$this->_session->setPageLoadTimeout ( 60 );
-			$w = new PHPWebDriver_WebDriverWait ( $session, 10 );
+			$this->_session->setPageLoadTimeout ( 15 );
+			$w = new PHPWebDriver_WebDriverWait ( $session, 15 );
 			
 			// : Log into MAX
 			// Load MAX home page
@@ -228,11 +228,12 @@ class MAXLive_UpdateTruckPrimaryFleet extends PHPUnit_Framework_TestCase {
 		foreach ( $this->_data as $key => $value ) {
 			try {
 				if (array_key_exists ( "truck_id", $value )) {
-					$this->_session->url ( $this->_maxurl . self::TRUCK_URL . $value ["truck_id"] );
+					$this->_session->open ( $this->_maxurl . self::TRUCK_URL . $value ["truck_id"] );
 					
 					// Look for truck fleetnum in div title
+					$this->_tmp = $value["truck_id"];
 					$e = $w->until ( function ($session) {
-						return $session->element ( 'xpath', "//div[@class='detail-title' AND contains(text(), '{$value['Truck']}')" );
+						return $session->element ( 'xpath', "//*[contains(text(), '{$this->_tmp}')]" );
 					} );
 					
 					$this->assertElementPresent ( "css selector", "div.toolbar-cell-update" );
@@ -243,12 +244,17 @@ class MAXLive_UpdateTruckPrimaryFleet extends PHPUnit_Framework_TestCase {
 					} );
 					
 					$this->assertElementPresent ( "xpath", "//*[@id='udo_Truck-19__0_primaryFleet_id-19']" );
+					$this->assertElementPresent( "css selector", "input[type=submit][name=save]");
+					
 					$this->_session->element ( "xpath", "//*[@id='udo_Truck-19__0_primaryFleet_id-19']/option[text()='{$value['Fleet']}']" )->click ();
+					$this->_session->element ("css selector", "input[type=submit][name=save]")->click();
+					
 					
 					// Look for truck fleetnum in div title
 					$e = $w->until ( function ($session) {
-						return $session->element ( 'xpath', "//div[@class='detail-title' AND contains(text(), '{$value['Truck']}')" );
+						return $session->element ( 'xpath', "//*[contains(text(), '{$this->_tmp}')]" );
 					} );
+					
 				} else {
 					throw new Exception ( "No truck id provided in csv file for line item no: $key" );
 				}
@@ -264,7 +270,7 @@ class MAXLive_UpdateTruckPrimaryFleet extends PHPUnit_Framework_TestCase {
 		
 		// : Report errors if any occured
 		if ($this->_errors) {
-			$_errfile = dirname ( __FILE__ ) . $this->_errdir . self::DS . "error_report_" . $this->getReportFileName () . ".csv";
+			$_errfile = dirname ( __FILE__ ) . $this->_errdir . self::DS . "error_report_" . date("Y-m-d_His") . ".csv";
 			$this->ExportToCSV ( $_errfile, $this->_errors );
 			echo "Exported error report to the following path and file: " . $_errfile;
 		}
