@@ -134,7 +134,7 @@ class MAXTest_LoginLogout extends PHPUnit_Framework_TestCase {
 	 * MAXTest_LoginLogout::testFunctionTemplate
 	 * This is a function description for a selenium test function
 	 */
-	public function testCreateRefuels() {
+	public function testLoginLogout() {
 		try {
 			// Initialize session
 			$session = $this->_session;
@@ -196,7 +196,7 @@ class MAXTest_LoginLogout extends PHPUnit_Framework_TestCase {
 			// : End
 		} catch ( Exception $e ) {
 			$_errmsg = preg_replace ( "/%h/", $this->_maxurl, self::LOGIN_FAIL );
-			$_errmsg = preg_replace ( "/%h/", $e->getMessage (), $_errmsg );
+			$_errmsg = preg_replace ( "/%s/", $e->getMessage (), $_errmsg );
 			throw new Exception ( $_errmsg );
 			unset ( $_errmsg );
 		}
@@ -225,7 +225,7 @@ class MAXTest_LoginLogout extends PHPUnit_Framework_TestCase {
 	private function takeScreenshot($_session, $_filename) {
 		$_img = $_session->screenshot ();
 		$_data = base64_decode ( $_img );
-		$_file = dirname ( __FILE__ ) . $this->_scrdir . self::DS . date ( "Y-m-d_His" ) . $_filename;
+		$_file = dirname ( __FILE__ ) . $this->_scrdir . self::DS . date ( "Y-m-d_His" ) . $_filename . "png";
 		$_success = file_put_contents ( $_file, $_data );
 		if ($_success) {
 			return $_file;
