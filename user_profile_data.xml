@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Users>
+	<User_Profiles>
+		<User_Profile ID="0" Firstnames="" Surname="" Email=""
+			Profile_Name="FleetController"></User_Profile>
+		<User_Profile ID="1" Firstnames="" Surname="" Email=""
+			Profile_Name="TraderUser"></User_Profile>
+		<User_Profile ID="2" Firstnames="" Surname="" Email=""
+			Profile_Name="DebriefUser"></User_Profile>
+		<User_Profile ID="3" Firstnames="" Surname="" Email=""
+			Profile_Name="FleetManager"></User_Profile>
+		<User_Profile ID="4" Firstnames="" Surname="" Email=""
+			Profile_Name="Manager"></User_Profile>
+		<User_Profile ID="5" Firstnames="" Surname="" Email=""
+			Profile_Name="PortalUser"></User_Profile>
+		<User_Profile ID="6" Firstnames="" Surname="" Email=""
+			Profile_Name="TrackerUser"></User_Profile>
+		<User_Profile ID="7" Firstnames="" Surname="" Email=""
+			Profile_Name="Administrator"></User_Profile>
+		<User_Profile ID="8" Firstnames="" Surname="" Email=""
+			Profile_Name="RefuelAdministrator"></User_Profile>
+		<User_Profile ID="9" Firstnames="" Surname="" Email=""
+			Profile_Name="RatesAdministrator"></User_Profile>
+		<User_Profile ID="10" Firstnames="" Surname="" Email=""
+			Profile_Name="TruckAdministrator"></User_Profile>
+	</User_Profiles>
+	<Groups>
+	<Group ID="0" Name="BU - Freight"></Group>
+	<Group ID="1" Name="BU - Dedicated"></Group>
+	<Group ID="2" Name="BU - Timber 24"></Group>
+	<Group ID="3" Name="BU - Manline Mega"></Group>
+	<Group ID="4" Name="BU - Specialised"></Group>
+	<Group ID="5" Name="BU - Energy"></Group>
+	<Group ID="6" Name="BU - Ecosse"></Group>
+	<Group ID="7" Name="BU - Kumkani"></Group>
+	<Group ID="8" Name="BU - Barloworld Cranes"></Group>
+	<Group ID="9" Name="Manline"></Group>
+	<Group ID="10" Name="Tracker"></Group>
+	<Group ID="11" Name="WorkshopAdmin"></Group>
+	<Group ID="12" Name="Trip Search"></Group>
+	<Group ID="13" Name="TripManagers"></Group>
+	<Group ID="14" Name="Reports"></Group>
+	<Group ID="15" Name="Income Report Viewer"></Group>
+	<Group ID="16" Name="Ocr Processor"></Group>
+	<Group ID="17" Name="Ocr Viewer"></Group>
+	<Group ID="18" Name="Trader"></Group>
+	<Group ID="19" Name="Debrief Tracker"></Group>
+	<Group ID="20" Name="Syspro Orders"></Group>
+	<Group ID="21" Name="Fleet"></Group>
+	<Group ID="22" Name="Refuel Capturer"></Group>
+	<Group ID="23" Name="Refuel Admin"></Group>
+	<Group ID="24" Name="Admin"></Group>
+	<Group ID="25" Name="Orders"></Group>
+	<Group ID="26" Name="Order Deleting"></Group>
+	<Group ID="27" Name="Planner"></Group>
+	<Group ID="28" Name="Queue Admin"></Group>
+	<Group ID="29" Name="Rates Admin"></Group>
+	<Group ID="30" Name="Proposal"></Group>
+	<Group ID="31" Name="Proposal Approver"></Group>
+	<Group ID="32" Name="Proposal Creator"></Group>
+	<Group ID="33" Name="Rates Viewer"></Group>
+	<Group ID="34" Name="Team Admin"></Group>
+	<Group ID="35" Name="Envelopes Admin"></Group>
+	<Group ID="36" Name="Finance Admin"></Group>
+	<Group ID="37" Name="Fleet Manager"></Group>
+	<Group ID="38" Name="Locations"></Group>
+	<Group ID="39" Name="Manager"></Group>
+	<Group ID="40" Name="ManualPositionsManager"></Group>
+	<Group ID="41" Name="Contrib Report Viewer"></Group>
+</Groups>
+	<Profile_Groups>
+		<Profile_Group ID="0" User_Profile_ID="0" Group_ID="0"></Profile_Group>
+		<Profile_Group ID="1" User_Profile_ID="0" Group_ID="1"></Profile_Group>
+		<Profile_Group ID="2" User_Profile_ID="0" Group_ID="9"></Profile_Group>
+		<Profile_Group ID="3" User_Profile_ID="0" Group_ID="27"></Profile_Group>
+		<Profile_Group ID="4" User_Profile_ID="0" Group_ID="22"></Profile_Group>
+		<Profile_Group ID="5" User_Profile_ID="0" Group_ID="11"></Profile_Group>
+		<Profile_Group ID="6" User_Profile_ID="0" Group_ID="12"></Profile_Group>
+		<Profile_Group ID="7" User_Profile_ID="0" Group_ID="14"></Profile_Group>
+		<Profile_Group ID="8" User_Profile_ID="1" Group_ID="0"></Profile_Group>
+		<Profile_Group ID="9" User_Profile_ID="1" Group_ID="1"></Profile_Group>
+		<Profile_Group ID="10" User_Profile_ID="1" Group_ID="9"></Profile_Group>
+		<Profile_Group ID="11" User_Profile_ID="1" Group_ID="18"></Profile_Group>
+		<Profile_Group ID="12" User_Profile_ID="2" Group_ID="0"></Profile_Group>
+		<Profile_Group ID="13" User_Profile_ID="2" Group_ID="1"></Profile_Group>
+		<Profile_Group ID="14" User_Profile_ID="2" Group_ID="9"></Profile_Group>
+		<Profile_Group ID="15" User_Profile_ID="2" Group_ID="16"></Profile_Group>
+		<Profile_Group ID="16" User_Profile_ID="2" Group_ID="19"></Profile_Group>
+		<Profile_Group ID="17" User_Profile_ID="2" Group_ID="12"></Profile_Group>
+		<Profile_Group ID="18" User_Profile_ID="3" Group_ID="0"></Profile_Group>
+		<Profile_Group ID="19" User_Profile_ID="3" Group_ID="1"></Profile_Group>
+		<Profile_Group ID="20" User_Profile_ID="3" Group_ID="9"></Profile_Group>
+		<Profile_Group ID="21" User_Profile_ID="3" Group_ID="37"></Profile_Group>
+		<Profile_Group ID="22" User_Profile_ID="3" Group_ID="15"></Profile_Group>
+		<Profile_Group ID="23" User_Profile_ID="3" Group_ID="40"></Profile_Group>
+		<Profile_Group ID="24" User_Profile_ID="4" Group_ID="0"></Profile_Group>
+		<Profile_Group ID="25" User_Profile_ID="4" Group_ID="9"></Profile_Group>
+		<Profile_Group ID="26" User_Profile_ID="4" Group_ID="39"></Profile_Group>
+		<Profile_Group ID="27" User_Profile_ID="4" Group_ID="15"></Profile_Group>
+		<Profile_Group ID="28" User_Profile_ID="4" Group_ID="41"></Profile_Group>
+	</Profile_Groups>
+</Users>

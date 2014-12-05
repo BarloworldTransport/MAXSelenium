@@ -63,31 +63,9 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 	protected $_scrdir;
 	protected $_errors = array ();
 	protected $_tmp;
+	protected $_xml;
 	
 	// : Public Functions
-	public function _autoload($_classname) {
-		// : Setup path variables
-		$_path = get_include_path();
-		$_insPath = preg_replace("/\//", "\/",self::WEBDRIVER_PATH);
-		// : End
-		
-		// : Check if webdriver path exists in include path - if not then add it
-		preg_match("/{$_insPath}/", $_path, $_matches);
-		if (!$_matches) {
-			$_path .= PATH_SEPARATOR . self::WEBDRIVER_PATH;
-			set_include_path($_path);
-		}
-		
-		preg_match("/\:Classes/", $_path, $_matches);
-		if (!$_matches) {
-			$_path .= PATH_SEPARATOR . "Classes";
-			set_include_path($_path);
-		}
-		// : End
-
-		
-		spl_autoload($_classname . ".php");
-	}
 	// : Accessors
 	// : End
 	
@@ -98,9 +76,6 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 	 */
 	public function __construct() {
 		
-		spl_autoload_extensions(".php");
-		spl_autoload_register("self::_autoload");
-		
 		$ini = dirname ( realpath ( __FILE__ ) ) . self::DS . "ini" . self::DS . self::INI_FILE;
 		
 		if (is_file ( $ini ) === FALSE) {
@@ -108,7 +83,7 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			return FALSE;
 		}
 		$data = parse_ini_file ( $ini );
-		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
+		if ((array_key_exists ( "xml", $data ) && $data ["xml"]) && (array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
 			$this->_username = $data ["username"];
 			$this->_password = $data ["password"];
 			$this->_welcome = $data ["welcome"];
@@ -119,6 +94,7 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			$this->_datadir = $data ["datadir"];
 			$this->_scrdir = $data ["screenshotdir"];
 			$this->_errdir = $data ["errordir"];
+			$this->_xml = $data["xml"];
 			switch ($this->_mode) {
 				case "live" :
 					$this->_maxurl = self::LIVE_URL;
@@ -130,6 +106,13 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			echo "The correct data is not present in user_data.ini. Please confirm. Fields are username, password, welcome and mode" . PHP_EOL;
 			return FALSE;
 		}
+		$_xmlFile = dirname(__FILE__) . self::DS . $this->_xml;
+		if (file_exists($_xmlFile)) {
+			$_xmlData = simplexml_load_file($_xmlFile);
+			print_r($_xmlData);
+			exit;
+		}
+		
 	}
 	
 	/**
