@@ -32,7 +32,6 @@ require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
  *       You should have received a copy of the GNU General Public License
  *       along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 	// : Constants
 	const DS = DIRECTORY_SEPARATOR;
@@ -75,7 +74,6 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 	 * Class constructor
 	 */
 	public function __construct() {
-		
 		$ini = dirname ( realpath ( __FILE__ ) ) . self::DS . "ini" . self::DS . self::INI_FILE;
 		
 		if (is_file ( $ini ) === FALSE) {
@@ -94,7 +92,7 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			$this->_datadir = $data ["datadir"];
 			$this->_scrdir = $data ["screenshotdir"];
 			$this->_errdir = $data ["errordir"];
-			$this->_xml = $data["xml"];
+			$this->_xml = $data ["xml"];
 			switch ($this->_mode) {
 				case "live" :
 					$this->_maxurl = self::LIVE_URL;
@@ -106,13 +104,13 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			echo "The correct data is not present in user_data.ini. Please confirm. Fields are username, password, welcome and mode" . PHP_EOL;
 			return FALSE;
 		}
-		$_xmlFile = dirname(__FILE__) . self::DS . $this->_xml;
-		if (file_exists($_xmlFile)) {
-			$_xmlData = simplexml_load_file($_xmlFile);
-			print_r($_xmlData);
-			exit;
+		$_xmlFile = dirname ( __FILE__ ) . self::DS . $this->_xml;
+		if (file_exists ( $_xmlFile )) {
+			$_xmlData = simplexml_load_file ( $_xmlFile );
 		}
-		
+		$_xmlArray1 = (array) $this->_runArrayRecur($_xmlData);
+		var_dump($_xmlArray1);
+		exit ();
 	}
 	
 	/**
@@ -124,6 +122,15 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 		unset ( $this );
 	}
 	// : End
+	public function _runArrayRecur($_xmlObject, $_instCnt = 0) {
+		$_array = array();
+		foreach ( (array) $_xmlObject as $_index => $_node) {
+			if ($_instCnt < 100) {
+				$_array[$_index] = is_object($_node) ? $this->_runArrayRecur($_node, $_instCnt++) : $_node;
+			} 
+		}
+		return $_array;
+	}
 	
 	public function setUp() {
 		// This would be the url of the host running the server-standalone.jar
