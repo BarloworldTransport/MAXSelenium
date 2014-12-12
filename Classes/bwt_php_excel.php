@@ -2,6 +2,28 @@
 
 require_once "../../Classes/PHPExcel.php";
 
+/**
+ * bwt_php_excel.php
+ *
+ * @package bwt_php_excel
+ * @author Clinton Wright <cwright@bwtrans.co.za>
+ * @copyright 2013 onwards Barloworld Transport (Pty) Ltd
+ * @license GNU GPL
+ * @link http://www.gnu.org/licenses/gpl.html
+ *       * This program is free software: you can redistribute it and/or modify
+ *       it under the terms of the GNU General Public License as published by
+ *       the Free Software Foundation, either version 3 of the License, or
+ *       (at your option) any later version.
+ *      
+ *       This program is distributed in the hope that it will be useful,
+ *       but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *       GNU General Public License for more details.
+ *      
+ *       You should have received a copy of the GNU General Public License
+ *       along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 class bwt_php_excel {
     
     // : Variables
@@ -58,7 +80,7 @@ class bwt_php_excel {
         
         // : If any errors occured then add error to class error array property else return TRUE
         if ($_error) {
-            $this->_errors[] = $_error;
+            $this->_errors[] = __FUNCTION__ . $_error;
         } else {
             return TRUE;
         }
@@ -75,7 +97,6 @@ class bwt_php_excel {
      */
     public function validateFileInput($_file) {
     
-        preg_split("/\./");
     }
     
     /**
@@ -85,7 +106,12 @@ class bwt_php_excel {
      */
     public function getFileExtension($_file) {
         
-            preg_split("/\./");
+            $_fileSplit = preg_split("/\\./", $_file);
+            if (count($_fileSplit) >= 2) {
+                return $_fileSplit[count($_fileSplit) -1]; 
+            } else {
+                $this->_errors[] = __FUNCTION__ . ": Not a valid filename string";
+            }
     }
     
     // : Magic
