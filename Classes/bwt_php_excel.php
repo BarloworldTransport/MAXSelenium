@@ -1,5 +1,4 @@
 <?php
-
 require_once "../../Classes/PHPExcel.php";
 
 /**
@@ -10,7 +9,7 @@ require_once "../../Classes/PHPExcel.php";
  * @copyright 2013 onwards Barloworld Transport (Pty) Ltd
  * @license GNU GPL
  * @link http://www.gnu.org/licenses/gpl.html
- *       * This program is free software: you can redistribute it and/or modify
+ *       This program is free software: you can redistribute it and/or modify
  *       it under the terms of the GNU General Public License as published by
  *       the Free Software Foundation, either version 3 of the License, or
  *       (at your option) any later version.
@@ -23,12 +22,16 @@ require_once "../../Classes/PHPExcel.php";
  *       You should have received a copy of the GNU General Public License
  *       along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-class bwt_php_excel {
+class bwt_php_excel
+{
     
     // : Variables
     protected $_defaultReader = "Excel5";
+
+    protected $_objPHPExcel = NULL;
+
     protected $_errors = array();
+
     protected $_readerTypes = array(
         0 => "Excel5",
         1 => "Excel2007",
@@ -36,40 +39,40 @@ class bwt_php_excel {
         3 => "OOCalc",
         4 => "SYLK",
         5 => "Gnumeric",
-        6 => "CSV",
+        6 => "CSV"
     );
     
     // : Getters
     /**
-     * bwt_php_excel_lib::getReaderTypes()
+     * bwt_php_excel::getReaderTypes()
      * Excel reader object types getter method
-     *
      */
-    public function getReaderTypes() {
+    public function getReaderTypes()
+    {
         return $this->_readerTypes;
     }
 
     /**
-     * bwt_php_excel_lib::getDefaultReader()
+     * bwt_php_excel::getDefaultReader()
      * Excel reader object set default type getter method
-     *
      */
-    public function getDefaultReader() {
+    public function getDefaultReader()
+    {
         return $this->_defaultReader;
-    }    
+    }
     
     // : Setters
     /**
-     * bwt_php_excel_lib::setReaderType()
+     * bwt_php_excel::setReaderType()
      * Set the default reader object type setter method
-     *
      */
-    public function setReaderType($_readerType) {
+    public function setReaderType($_readerType)
+    {
         $_error = "";
         // Check that given argument is a string an contains only alphanumeric values
         if (ctype_alnum($_readerType) && is_string($_readerType)) {
             // Check that given argument value is found in defined list of reader objects
-            if(preg_match("/$_readerType/", $this->_readerTypes )) {
+            if (preg_match("/$_readerType/", $this->_readerTypes)) {
                 $this->_defaultReader = $_readerType;
             } else {
                 $_error = "The supplied value for the PHP Excel Object name does not exist. User getReaderTypes to get a list of reader types available.";
@@ -85,49 +88,54 @@ class bwt_php_excel {
             return TRUE;
         }
         // : End
-    }    
-    
-    
-    // : Public Methods
-
-    /**
-     * bwt_php_excel_lib::validateFileInput($_file)
-     * Get filename file extension
-     *
-     */
-    public function validateFileInput($_file) {
-    
     }
     
+    // : Public Methods
+    
     /**
-     * bwt_php_excel_lib::getFileExtension($_file)
-     * Get filename file extension
-     *
+     * bwt_php_excel::validateFileInput($_file)
+     * Validate filename string
      */
-    public function getFileExtension($_file) {
-        
-            $_fileSplit = preg_split("/\\./", $_file);
-            if (count($_fileSplit) >= 2) {
-                return $_fileSplit[count($_fileSplit) -1]; 
-            } else {
-                $this->_errors[] = __FUNCTION__ . ": Not a valid filename string";
-            }
+    public function validateFileInput($_file)
+    {
+        if (preg_match("/[^a-zA-Z0-9\\_\\.\\-\\,\\(\\)]/", $_file)) {
+            $this->_errors[] = __FUNCTION__ . "Invalid filename string. Please check that your filename only contains alphanumeric characters and no special characters.";
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+    }
+
+    /**
+     * bwt_php_excel::getFileExtension($_file)
+     * Get filename file extension
+     */
+    public function getFileExtension($_file)
+    {
+        $_fileSplit = preg_split("/\\./", $_file);
+        if (count($_fileSplit) >= 2) {
+            return $_fileSplit[count($_fileSplit) - 1];
+        } else {
+            $this->_errors[] = __FUNCTION__ . ": Not a valid filename string";
+        }
     }
     
     // : Magic
-
+    
     /**
-     * bwt_php_excel_lib::__construct($_file, $_mode = 0, $_readerType)
+     * bwt_php_excel::__construct($_file, $_readerType)
      * Constructor method
-     *
      */
-    public function __construct($_file, $_mode = 0, $_readerType = NULL) {
+    public function __construct($_file, $_mode, $_readerType = NULL, $_readDataOnly = TRUE, array $_sheets = NULL)
+    {
         
         /*
+         * Parameter config:
+         *
          * $_mode
-         * 0 - auto detect filetype and load appropriate reader object
-         * 1 - Do not auto detect filetype but specify reader object type
-         * 
+         * r = read
+         * w = write
+         *
          * $_readerType = Accepted values
          * Excel5
          * Excel2007
@@ -136,54 +144,152 @@ class bwt_php_excel {
          * SYLK
          * Gnumeric
          * CSV
+         *
+         * $_readDataOnly
+         * TRUE = Exclude cell formatting and include cell data
+         * FALSE = Include cell formatting and data
+         *
+         * $_sheets
+         * Filter the name of sheets to load into memory. Provide in comma seperated string or array (indice per sheet)
          */
-        
-        
-        
+        try {
+            if ($this->validateFileInput($_file)) {
+                
+                // : If mode is read then prepare given input from arguments
+                if ($_mode === 'r') {
+                    
+                    // : Check if user wants to filter sheets that will be loaded into memory else all sheets will be loaded
+                    if ($_sheets || is_string($_sheets) || is_array($_sheets)) {
+                        $_sheeterr = (array) array();
+                        if (is_string($_sheets)) {
+                            $_sheets = explode(',', $_sheets);
+                        }
+                        
+                        $_sheeterr[] = "Sheets variable must be an array or a comma seperated string with the names of the sheets.";
+                        if ($_sheeterr) {
+                            $_sheets = NULL;
+                        }
+                    } else {
+                        $_sheets = NULL;
+                    }
+                    // : End
+                    
+                    // : If readerType is not given then automatically detect filetype and load file else load specified reader and load file
+                    switch ($_readerType) {
+                        case ! NULL:
+                            {
+                                $this->setReaderType($_readerType);
+                                $objReader = PHPExcel_IOFactory::createReader($_readerType);
+                                break;
+                            }
+                        case NULL:
+                        default:
+                            {
+                                $_filetype = PHPExcel_IOFactory::identify($_file);
+                                $objReader = PHPExcel_IOFactory::createReader($_filetype);
+                                break;
+                            }
+                    }
+                    if (! $this->_errors && isset($objReader)) {
+                        try {
+                            // : If sheets variable is not null then load specified sheets only else load all worksheets
+                            if ($_sheets !== NULL) {
+                                $objReader->setLoadSheetsOnly($_sheets);
+                            } else {
+                                $objReader->setLoadAllSheets();
+                            }
+                            // : End
+                            $this->_objPHPExcel = $objReader->load($_file);
+                        } catch (Exception $e) {
+                            $this->_errors[] = $e->getMessage();
+                        }
+                    }
+                    // : End
+                } else if ($_mode !== 'w' or $_mode !== 'r') {
+                        throw new Exception("Invalid mode given. Please provide one of the following mode settings: mode = 'r, w'");
+                }
+                // : End
+            } else {
+                return FALSE;
+            }
+        } catch (Exception $e) {
+            $this->_errors[] = $e->getMessage();
+            return FALSE;
+        }
+        return TRUE;
     }
-    
+
     /**
-     * bwt_php_excel_lib::readExcelFile($excelFile, $sheetName)
-     * Read a spreadsheet into memory containing F and V Contract data
-     * and arrange into a multidimensional array
-     *
-     * @param $excelFile, $sheetName
+     * bwt_php_excel::verifySheetName($_sheets)
+     * Validate characters in a given single dimension array to be valid for a sheetname and return result
      */
-    public function parse_excel_file($excelFile, $sheetname) {
+    private function verifySheetName($_sheets)
+    {
+        $_tmp = (array) array();
+        if (is_array($_sheets)) {
+            foreach ($_sheets as $_key => $_value) {
+                if (! preg_match("#[^a-zA-Z0-9\\-\\_/]#", $_value) && ! is_array($_value)) {
+                    $_tmp[$_key] = $_value;
+                }
+            }
+            if ($_tmp) {
+                if (! array_diff($_sheets, $_tmp)) {
+                    return TRUE;
+                } else {
+                    return FALSE;
+                }
+            } else {
+                return FALSE;
+            }
+        } else {
+            return FALSE;
+        }
+    }
+
+    /**
+     * bwt_php_excel::readExcelFile($excelFile, $sheetName)
+     * Read a spreadsheet into memory and return array with data of spreadsheet
+     *
+     * @param $excelFile, $sheetName            
+     */
+    public function parse_excel_file()
+    {
         try {
             // Type cast necessary variables
-            $_data = ( array ) array ();
+            $_data = (array) array();
             // Create PHPExcel Reader Object
             $inputFileType = PHPExcel_IOFactory::identify($excelFile);
             $objReader = PHPExcel_IOFactory::createReader($inputFileType);
             $objReader->setReadDataOnly(true);
             $objPHPExcel = $objReader->load($excelFile); // Load worksheet into memory
             $worksheet = $objPHPExcel->getSheetByName($sheetname);
-            	
+            
             // Read spreadsheet data and store into array
             foreach ($worksheet->getRowIterator() as $row) {
                 $cellIterator = $row->getCellIterator();
                 $cellIterator->setIterateOnlyExistingCells(true);
                 foreach ($cellIterator as $cell) {
                     if ($cell->getRow() != 1) {
-                        $data[$objPHPExcel->getActiveSheet()->getCell($cell->getColumn() . "1")->getValue()] [$cell->getRow() - 1] = $cell->getValue();
+                        $data[$objPHPExcel->getActiveSheet()
+                            ->getCell($cell->getColumn() . "1")
+                            ->getValue()][$cell->getRow() - 1] = $cell->getValue();
                     }
                 }
             }
             return $data;
-        } catch ( Exception $e ) {
-            echo "Caught exception: ", $e->getMessage (), "\n";
+        } catch (Exception $e) {
+            echo "Caught exception: ", $e->getMessage(), "\n";
             return false;
         }
     }
-    
+
     /**
-     * bwt_php_excel_lib::writeExcelFile($excelFile, $excelData)
+     * bwt_php_excel::writeExcelFile($excelFile, $excelData)
      * Create, Write and Save Excel Spreadsheet from collected data obtained from the variance report
      *
      * @param $excelFile, $excelData            
      */
-    public function write_excel_file($excelFile, $excelData, $columns)
+    public function write_excel_file($_data, $_columns)
     {
         try {
             // Check data validility
