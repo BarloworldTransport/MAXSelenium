@@ -1,0 +1,16 @@
+<?php
+// HTTP requests have no restriction on the fields they contain. Client side validation is never sufficient.
+
+// Array used to store filtered data
+$_cleanParam = (array) array();
+
+switch ($_POST['pickcolor']) {
+	case 'red' : 
+	case 'green' :
+	case 'blue' :
+		$_cleanParam['color'] =  $_POST['pickcolor'];
+		break;
+	default :
+		/* ERROR */
+	break;
+}

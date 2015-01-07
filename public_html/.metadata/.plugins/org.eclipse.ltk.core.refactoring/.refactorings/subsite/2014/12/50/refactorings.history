@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename source module &apos;classes.pwd_admin.php&apos; to &apos;pwd_tools.php&apos;&#x0A;- Original element: &apos;classes\pwd_admin.php&apos;&#x0A;- Renamed element: &apos;classes\pwd_tools.php&apos;" description="Rename source module &apos;pwd_admin.php&apos;" flags="589830" id="org.eclipse.dltk.ui.rename.sourcemodule" input="/&lt;classes{pwd_admin.php" name="pwd_tools.php" stamp="1418064330025" version="1.0"/>
+</session>
