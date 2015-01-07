@@ -1,8 +1,8 @@
 <?php
 error_reporting(E_ALL);
 ini_set("display_errors", "1");
-// comment
 include "PullDataFromMySQLQuery.php";
+
 if (empty($_POST)) {
     $_fleettrucklink_data = (array) array();
 } else {
@@ -10,6 +10,28 @@ if (empty($_POST)) {
 }
 
 try {
+	function get_fleets_for_truck($_truck_id, $_query) {
+		$_data = (array) array();
+		global $_fleets, $_dbh;
+		$_sql = preg_replace("/%s/", $_truck_id, $_query);
+		$_result = $_dbh->getDataFromQuery($_sql);
+	
+		if ($_result) {
+			foreach($_result as $_value) {
+				var_dump($_value);
+				if (array_key_exists("truck_id", $_value) && array_key_exists("fleet_id", $_value)) {
+					$_data[$_value["fleet_id"]]= $_fleets[$_value["fleet_id"]];
+					return $_data;
+				} else {
+					return FALSE;
+				}
+	
+			}
+		} else {
+			return FALSE;
+		}
+	}
+	
     $_queries = array(
         "SELECT id, name FROM udo_fleet ORDER BY name ASC;",
         "SELECT id, fleetnum FROM udo_truck ORDER BY fleetnum ASC;",
@@ -41,21 +63,12 @@ try {
     }
     // : End
     
+    $_itrucks = array_keys($_trucks);
     
-    // : Run query to get all fleet trucks to which the first truck record belongs too from MAX DB
     if ($_trucks && $_fleets) {
-        $_fleets_by_truck = (array) array();
-        $_sql = preg_replace("/%s/", $_trucks[0], $_queries[2]);
-        //$_sql = mysql_real_escape_string($_sql);
-        $_result = $_dbh->getDataFromQuery($_sql);
-        if ($_result) {
-            foreach($_result as $_value) {
-                if (array_key_exists("truck_id", $_value) && array_key_exists("fleet_id", $_value)) {
-                    $_fleets_by_truck[$_value["fleet_id"]]= $_fleets[$_value["fleet_id"]];
-                }
-            }
-        }
+    	$_fleets_by_truck = get_fleets_for_truck($_itrucks[0], $_queries[2]);
     }
+    var_dump($_fleets_by_truck);
     // : End 
     
 } catch (Exception $e) {
@@ -105,7 +118,7 @@ try {
 		var chkboxCount = <?php echo count($_fleets);?>;
 
 	    // : Change label of button
-		if (chkboxState === true) {
+		if (chkboxState == true) {
 			btnLabel.innerHTML = "Deselect All";
 		} else {
 			btnLabel.innerHTML = "Select All";
@@ -121,38 +134,58 @@ try {
     // : End
     
 	function changeCheckboxState() {
-		var chkboxState;
+		var aState;
+		var btnLabel = document.truckLinkForm.btnChangeChkbox;
 
 	    // : Change label of button
 		if (btnLabel.innerHTML == "Select All") {
-			chkboxState = false;
+			aState = true;
 		} else {
-			chkboxState = true;
+			aState = false;
 		}
-		setAllCheckboxStates(chkboxState);
+		setAllCheckboxStates(aState);
 		// : End
 	}
 
     function ajaxResetFleetCheckboxes() {
-    	setAllCheckboxStates(false);
-
-		var btnLabel = document.truckLinkForm.btnChangeChkbox;
-	    // Assign count value to php fleets array count value
-		var chkboxCount = <?php echo count($_fleets);?>;
-
-	    // : Change label of button
-		if (chkboxState === true) {
-			btnLabel.innerHTML = "Deselect All";
-		} else {
-			btnLabel.innerHTML = "Select All";
+    	var t = document.truckLinkForm.truckSelect;
+		var ajaxRequest;  // The variable that makes Ajax possible!
+		
+		try{
+			// Opera 8.0+, Firefox, Safari
+			ajaxRequest = new XMLHttpRequest();
+		} catch (e){
+					// Something went wrong
+					alert("Your browser broke!");
+					return false;
 		}
-		// : End
+		// Create a function that will receive data sent from the server
+		ajaxRequest.onreadystatechange = function(){
+			
+			if(ajaxRequest.readyState == 4){ 
+				// Setup variables for getting response
+				
+				var tempVar = ajaxRequest.responseText;
+				
+				var fleets = tempVar.split(",");
+				window.alert('ajax response');
+		    	setAllCheckboxStates(false);
 
-		// : Change state of all checkboxes on page
-		for (x = 1; x <= chkboxCount; x++) {
-		    document.getElementById("cbx_fleet_" + x).checked = chkboxState;
+			    // Assign count value to php fleets array count value
+				var chkboxCount = fleets.length;
+				
+				// : Change state of all checkboxes on page
+				window.alert(fleets);
+				for (x = 1; x <= chkboxCount; x++) {
+				    document.getElementById("cbx_fleet_" + fleets[x]).checked = true;
+				}
+				// : End
+						
+			}
 		}
-		// : End
+		var queryString = "?truck_id=" + t.options[t.selectedIndex].value;
+		ajaxRequest.open("GET", "get_fleets_for_truck.php" + queryString, true);
+		ajaxRequest.send(null); 
     }
  
   function ajaxLoadFleets(){
@@ -257,15 +290,14 @@ try {
 							<label for="truck_id">Select a truck:</label>
 						</div>
 						<div class="col-md-10">
-							<select id="truck_id" name="truckSelect" class="form-control"
-								required autofocus>
+							<select id="truck_id" name="truckSelect" class="form-control" onchange="ajaxResetFleetCheckboxes()" required autofocus>
 						          <!-- Dynamically generate select options with trucks from MAX -->
 						          <?php
 						              if (isset($_trucks)) {
 						                  if ($_trucks) {
 						                      $a = 1;
 						                      foreach($_trucks as $_id => $_fleetnum) {
-						                          printf('<option value="%d">%s</option>', $_id, 'Truck ID: ' . $_id . ', Fleetnum: ' .$_fleetnum);
+						                          printf('<option value="%d">%s</option>', $_id, $_fleetnum . ' [' . $_id . ']');
 						                          $a++;
 						                      }
 						                  }
@@ -287,8 +319,10 @@ try {
 						      $a = 1;
 						      $_checked = "";
 						        foreach($_fleets as $_id => $_fleetname) {
-						          if (array_key_exists($_id, $_fleets_by_truck)) {
-						              $_checked = "true";
+						          if ($_fleets_by_truck) {
+										if (array_key_exists($_id, $_fleets_by_truck)) {
+						              		$_checked = "true";
+						              	}
 						          } else {
 						              $_checked = "";
 						          }
