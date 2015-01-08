@@ -1,7 +1,25 @@
 <?php 
 # comment
-if (array_key_exists("content", $_GET)) {
-    header("location: fleettrucklinks_admin.php");
+session_start();
+if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd'])) {
+if (isset($_GET["content"])) {
+    switch ($_GET["content"]) {
+        case "fleettrucklink" : {
+            header("location: fleettrucklinks_admin.php");
+            break;    
+        }
+        case "logout" : {
+            header("Location: ../logout.php");
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+}
+} else {
+    session_destroy();
+    header("Location: ../logout.php");
 }
 ?>
 <!DOCTYPE html>
@@ -53,8 +71,8 @@ if (array_key_exists("content", $_GET)) {
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">My Account <span class="caret"></span></a>
               <ul class="dropdown-menu" role="menu">
-                <li><a href="#">My Profile</a></li>
-                <li><a href="#">Logout</a></li>
+                <li><a href="?content=profile">My Profile</a></li>
+                <li><a href="?content=logout">Logout</a></li>
               </ul>
             </li>
         </div><!--/.nav-collapse -->

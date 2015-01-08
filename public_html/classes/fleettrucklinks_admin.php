@@ -1,12 +1,44 @@
 <?php
+// : Error reporting for debugging purposes
 error_reporting(E_ALL);
 ini_set("display_errors", "1");
-include "PullDataFromMySQLQuery.php";
+// : End
 
-if (empty($_POST)) {
-    $_fleettrucklink_data = (array) array();
+session_start();
+if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd'])) {
+    if (isset($_GET["content"])) {
+        switch ($_GET["content"]) {
+            case "fleettrucklink" : {
+                header("location: fleettrucklinks_admin.php");
+                break;
+            }
+            case "logout" : {
+                header("Location: ../logout.php");
+                break;
+            }
+            case "dashboard" : {
+                header("Location: dashboard.php");
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+    }
 } else {
-    if (array_key_exists('addTruckLink', $_POST && $_SERVER['REQUEST_METHOD'] === 'POST')) {}
+    session_destroy();
+    header("Location: ../logout.php");
+}
+
+// : Includes
+include "PullDataFromMySQLQuery.php";
+// : End
+
+if (isset($_POST['addTruckLink']) && $_SERVER['REQUEST_METHOD'] === "POST") {
+    var_dump($_POST);
+    //if (isset($_POST['start_date']))
+} else {
+    $_fleettrucklink_data = (array) array();
 }
 
 try {
@@ -35,7 +67,8 @@ try {
     $_queries = array(
         "SELECT id, name FROM udo_fleet ORDER BY name ASC;",
         "SELECT id, fleetnum FROM udo_truck ORDER BY fleetnum ASC;",
-        "SELECT truck_id, fleet_id FROM udo_fleettrucklink WHERE truck_id=%s;"
+        "SELECT truck_id, fleet_id FROM udo_fleettrucklink WHERE truck_id=%s;",
+        "SELECT ftl.truck_id, ftl.fleet_id FROM udo_fleettrucklink AS ftl LEFT JOIN udo_truck AS t ON (t.id=ftl.truck_id) LEFT JOIN udo_fleet AS f ON (f.id=ftl.fleet_id) LEFT JOIN daterangevalue AS drv ON (drv.objectInstanceId=ftl.id) WHERE (drv.beginDate IS NOT NULL) AND (drv.endDate IS NULL OR drv.endDate >= DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s')) AND ftl.truck_id=%s;"
     );
     $_dbh = new PullDataFromMySQLQuery('max2', '192.168.1.19');
     
@@ -66,10 +99,12 @@ try {
     $_itrucks = array_keys($_trucks);
     
     if ($_trucks && $_fleets) {
-    	$_fleets_by_truck = get_fleets_for_truck($_itrucks[0], $_queries[2]);
+    	$_fleets_by_truck = get_fleets_for_truck($_itrucks[0], $_queries[3]);
     }
-    var_dump($_fleets_by_truck);
     // : End 
+    
+    // Close DB connection
+    $_dbh = null;
     
 } catch (Exception $e) {
     die("Was not able to successfully connect to the database.");
@@ -163,19 +198,17 @@ try {
 		ajaxRequest.onreadystatechange = function(){
 			
 			if(ajaxRequest.readyState == 4){ 
-				// Setup variables for getting response
 				
+				// Setup variables for getting response
 				var tempVar = ajaxRequest.responseText;
 				
 				var fleets = tempVar.split(",");
-				window.alert('ajax response');
 		    	setAllCheckboxStates(false);
 
 			    // Assign count value to php fleets array count value
 				var chkboxCount = fleets.length;
-				
+
 				// : Change state of all checkboxes on page
-				window.alert(fleets);
 				for (x = 1; x <= chkboxCount; x++) {
 				    document.getElementById("cbx_fleet_" + fleets[x]).checked = true;
 				}
@@ -183,7 +216,7 @@ try {
 						
 			}
 		}
-		var queryString = "?truck_id=" + t.options[t.selectedIndex].value;
+		var queryString = "?truck_id=" + t.options[t.selectedIndex].value + "&data_type=keys";
 		ajaxRequest.open("GET", "get_fleets_for_truck.php" + queryString, true);
 		ajaxRequest.send(null); 
     }
@@ -237,7 +270,7 @@ try {
 			
 			<div id="navbar" class="navbar-collapse collapse">
 				<ul class="nav navbar-nav">
-					<li class="active"><a href="#">My Dashboard</a></li>
+					<li class="active"><a href="?=content=dashboard">My Dashboard</a></li>
 					<li class="dropdown"><a href="#" class="dropdown-toggle"
 						data-toggle="dropdown" role="button" aria-expanded="false">Automation
 							<span class="caret"></span>
@@ -254,7 +287,7 @@ try {
 					</a>
 						<ul class="dropdown-menu" role="menu">
 							<li><a href="#">My Profile</a></li>
-							<li><a href="#">Logout</a></li>
+							<li><a href="?content=logout">Logout</a></li>
 						</ul></li>
 			
 			</div>
@@ -269,7 +302,7 @@ try {
 			<div class="col-sm-3 col-md-2 sidebar">
 				<ul class="nav nav-sidebar">
 					<h6>My Tasks</h6>
-					<li class="active"><a href="#">My Dashboard <span class="sr-only">(current)</span></a></li>
+					<li class="active"><a href="?content=dashboard">My Dashboard <span class="sr-only">(current)</span></a></li>
 				</ul>
 			</div>
 			
@@ -283,14 +316,45 @@ try {
 						ready to commit the changes click Commit.</p>
 				</div>
 				
-				<form name="truckLinkForm" class="form-signin" role="form">
+				<form name="truckLinkForm" class="form-signin" role="form" action="<?php echo $_SERVER['PHP_SELF'];?>" method="post">
 					<h2 class="form-signin-heading">Add truck link</h2>
+					
+					<div class="row">
+						<div class="col-md-2">
+							<label for="start_date">Start Date:</label>
+						</div>
+						<div class="col-md-10">
+							<input type="date" class="form-control" id="start_date" name="start_date">
+						</div>
+					</div>
+					
+					<div class="row">
+						<div class="col-md-2">
+							<label for="stop_date">Stop Date:</label>
+						</div>
+						<div class="col-md-10">
+							<input type="date" class="form-control" id="stop_date" name="stop_date">
+						</div>
+					</div>
+					
+					<div class="row">
+						<div class="col-md-2">
+							<label for="stop_date">Operation to perform:</label>
+						</div>
+						<div class="col-md-10">
+							<select id="cbxOperation" name="opSelect" class="form-control" onchange="" required>
+							     <option value="create">Create New Link</option>
+							     <option value="update">Update Existing Link</option>
+							</select>
+						</div>
+					</div>
+					
 					<div class="row">
 						<div class="col-md-2">
 							<label for="truck_id">Select a truck:</label>
 						</div>
 						<div class="col-md-10">
-							<select id="truck_id" name="truckSelect" class="form-control" onchange="ajaxResetFleetCheckboxes()" required autofocus>
+							<select id="truck_id" name="truckSelect" class="form-control" onchange="ajaxResetFleetCheckboxes()" required>
 						          <!-- Dynamically generate select options with trucks from MAX -->
 						          <?php
 						              if (isset($_trucks)) {
@@ -335,13 +399,46 @@ try {
 						<!-- End -->
 						</div>
 					</div>
+					
+					<!-- Checkbox operation buttons -->
 					<div class="row">
 						<div class="col-md-2">
 						</div>
-						<div class="col-md-10">
-						<button class="btn btn-default" name="btnChangeChkbox" type="button" onclick="changeCheckboxState()">Select All</button>
+						<div class="col-md-2">
+						  <button class="btn btn-default" name="btnChangeChkbox" type="button" onclick="changeCheckboxState()">Select All</button>
+						</div>
+						<div class="col-md-8">
+						  <button class="btn btn-default" name="btnSelectFleetTruckLinks" type="button" onclick="ajaxResetFleetCheckboxes()">Select Fleets where Truck is Active</button>
 						</div>
 					</div>
+					<!-- End -->
+					
+					<!-- Table summary of operations -->
+					<h4>Operations Summary:</h4>
+					<div class="row">
+					   <table class="table table-hover">
+					   <thead>
+					       <tr>
+					           <th>#</th>
+					           <th>Truck ID:</th>
+					           <th>Fleetnum:</th>
+					           <th>Operation:</th>
+					           <th></th>
+					       </tr>
+					   </thead>
+					       <tbody>
+					           <tr>
+					               <td></td>
+					               <td></td>
+					               <td></td>
+					               <td></td>
+					               <td></td>				           
+					           </tr>
+					       </tbody>
+					   </table>
+					</div>
+					<!-- End -->
+					
 					<div class="row">
 						<div class="col-md-6">
 							<button class="btn btn-lg btn-primary btn-block" name="addTruckLink" type="submit">Add</button>
