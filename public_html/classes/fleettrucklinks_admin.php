@@ -1,11 +1,20 @@
 <?php
+const DEFAULT_PROCESS = "fleet_truck_link_batch";
+
 // : Error reporting for debugging purposes
 error_reporting(E_ALL);
 ini_set("display_errors", "1");
 // : End
 
+// : Includes
+include "PullDataFromMySQLQuery.php";
+// : End
+
+$_ftl_data = (array) array();
+
 session_start();
 if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd'])) {
+	
     if (isset($_GET["content"])) {
         switch ($_GET["content"]) {
             case "fleettrucklink" : {
@@ -25,90 +34,106 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd'])) {
             }
         }
     }
+	
+	if (isset($_POST['addTruckLink']) && $_SERVER['REQUEST_METHOD'] === "POST") {
+		var_dump($_POST);
+		//if (isset($_POST['start_date']))
+	} else {
+		$_fleettrucklink_data = (array) array();
+	}
+	
+	try {
+		$_debugjs = "testing";
+		$_queries = array(
+				"SELECT id, name FROM udo_fleet ORDER BY name ASC;",
+				"SELECT id, fleetnum FROM udo_truck ORDER BY fleetnum ASC;",
+				"SELECT truck_id, fleet_id FROM udo_fleettrucklink WHERE truck_id=%s;",
+				"SELECT ftl.truck_id, ftl.fleet_id FROM udo_fleettrucklink AS ftl LEFT JOIN udo_truck AS t ON (t.id=ftl.truck_id) LEFT JOIN udo_fleet AS f ON (f.id=ftl.fleet_id) LEFT JOIN daterangevalue AS drv ON (drv.objectInstanceId=ftl.id) WHERE (drv.beginDate IS NOT NULL) AND (drv.endDate IS NULL OR drv.endDate >= DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s')) AND ftl.truck_id=%s;",
+				"SELECT * FROM `process WHERE state != 'completed' AND session_id=" . session_id() . ";",
+				"SELECT id FROM users WHERE user_email='{$_SESSION['user_email']}';",
+				"INSERT INTO `process` (detail, process_type_id, state, process_start, session_id) VALUES (:detail, :process_type_id, :state, :process_start, :session_id);"
+		);
+		$_bwtdb = new PullDataFromMySQLQuery('bwt_max_auto', 'localhost', 'user', 'pwd');
+		$_dbh = new PullDataFromMySQLQuery('max2', '192.168.1.19');
+		
+		$_result = $_bwtdb->getDataFromQuery($_queries[4]);
+		if (count($_result) == 1) {
+			
+		} else if (!$_result) {
+			$_date = new DateTime();
+			$_keys = array(':detail', ':process_type_id', ':state', ':process_start', ':session_id');
+			$_values = array(DEFAULT_PROCESS, 1, 'new', $_date->getTimestamp(), session_id());
+			$_bwtdb->insertSQLQuery($_keys, $_values, $_queries[6]);
+		}
+		
+		
+		function get_fleets_for_truck($_truck_id, $_query) {
+			$_data = (array) array();
+			global $_fleets, $_dbh;
+			$_sql = preg_replace("/%s/", $_truck_id, $_query);
+			$_result = $_dbh->getDataFromQuery($_sql);
+	
+			if ($_result) {
+				foreach($_result as $_value) {
+					var_dump($_value);
+					if (array_key_exists("truck_id", $_value) && array_key_exists("fleet_id", $_value)) {
+						$_data[$_value["fleet_id"]]= $_fleets[$_value["fleet_id"]];
+						return $_data;
+					} else {
+						return FALSE;
+					}
+	
+				}
+			} else {
+				return FALSE;
+			}
+		}
+	
+		// : Run query to get all fleets from MAX DB
+		$_fleets = (array) array();
+		$_result = $_dbh->getDataFromQuery($_queries[0]);
+		if ($_result) {
+			foreach($_result as $_value) {
+				if (array_key_exists("id", $_value) && array_key_exists("name", $_value)) {
+					$_fleets[$_value["id"]] = $_value["name"];
+				}
+			}
+		}
+		// : End
+	
+		// : Run query to get all trucks from MAX DB
+		$_trucks = (array) array();
+		$_result = $_dbh->getDataFromQuery($_queries[1]);
+		if ($_result) {
+			foreach($_result as $_value) {
+				if (array_key_exists("id", $_value) && array_key_exists("fleetnum", $_value)) {
+					$_trucks[$_value["id"]] = $_value["fleetnum"];
+				}
+			}
+		}
+		// : End
+	
+		$_itrucks = array_keys($_trucks);
+	
+		if ($_trucks && $_fleets) {
+			$_fleets_by_truck = get_fleets_for_truck($_itrucks[0], $_queries[3]);
+		}
+		// : End
+	
+		// Close DB connection
+		$_dbh = null;
+	
+	} catch (Exception $e) {
+		die("Was not able to successfully connect to the database.");
+	}
+	
+	// : End
 } else {
     session_destroy();
     header("Location: ../logout.php");
 }
 
-// : Includes
-include "PullDataFromMySQLQuery.php";
-// : End
 
-if (isset($_POST['addTruckLink']) && $_SERVER['REQUEST_METHOD'] === "POST") {
-    var_dump($_POST);
-    //if (isset($_POST['start_date']))
-} else {
-    $_fleettrucklink_data = (array) array();
-}
-
-try {
-	function get_fleets_for_truck($_truck_id, $_query) {
-		$_data = (array) array();
-		global $_fleets, $_dbh;
-		$_sql = preg_replace("/%s/", $_truck_id, $_query);
-		$_result = $_dbh->getDataFromQuery($_sql);
-	
-		if ($_result) {
-			foreach($_result as $_value) {
-				var_dump($_value);
-				if (array_key_exists("truck_id", $_value) && array_key_exists("fleet_id", $_value)) {
-					$_data[$_value["fleet_id"]]= $_fleets[$_value["fleet_id"]];
-					return $_data;
-				} else {
-					return FALSE;
-				}
-	
-			}
-		} else {
-			return FALSE;
-		}
-	}
-	
-    $_queries = array(
-        "SELECT id, name FROM udo_fleet ORDER BY name ASC;",
-        "SELECT id, fleetnum FROM udo_truck ORDER BY fleetnum ASC;",
-        "SELECT truck_id, fleet_id FROM udo_fleettrucklink WHERE truck_id=%s;",
-        "SELECT ftl.truck_id, ftl.fleet_id FROM udo_fleettrucklink AS ftl LEFT JOIN udo_truck AS t ON (t.id=ftl.truck_id) LEFT JOIN udo_fleet AS f ON (f.id=ftl.fleet_id) LEFT JOIN daterangevalue AS drv ON (drv.objectInstanceId=ftl.id) WHERE (drv.beginDate IS NOT NULL) AND (drv.endDate IS NULL OR drv.endDate >= DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s')) AND ftl.truck_id=%s;"
-    );
-    $_dbh = new PullDataFromMySQLQuery('max2', '192.168.1.19');
-    
-    // : Run query to get all fleets from MAX DB
-    $_fleets = (array) array();
-    $_result = $_dbh->getDataFromQuery($_queries[0]);
-    if ($_result) {
-        foreach($_result as $_value) {
-            if (array_key_exists("id", $_value) && array_key_exists("name", $_value)) {
-                $_fleets[$_value["id"]] = $_value["name"];
-            }
-        }
-    }    
-    // : End
-    
-    // : Run query to get all trucks from MAX DB
-    $_trucks = (array) array();
-    $_result = $_dbh->getDataFromQuery($_queries[1]);
-    if ($_result) {
-        foreach($_result as $_value) {
-            if (array_key_exists("id", $_value) && array_key_exists("fleetnum", $_value)) {
-                $_trucks[$_value["id"]] = $_value["fleetnum"];
-            }
-        }
-    }
-    // : End
-    
-    $_itrucks = array_keys($_trucks);
-    
-    if ($_trucks && $_fleets) {
-    	$_fleets_by_truck = get_fleets_for_truck($_itrucks[0], $_queries[3]);
-    }
-    // : End 
-    
-    // Close DB connection
-    $_dbh = null;
-    
-} catch (Exception $e) {
-    die("Was not able to successfully connect to the database.");
-}
 
 ?>
 
@@ -249,7 +274,13 @@ try {
 		var queryString = "?age=" + age + "&wpm=" + wpm + "&sex=" + sex;
 		ajaxRequest.open("GET", "ajax-example.php" + queryString, true);
 		ajaxRequest.send(null); 
-	}  
+	} 
+
+	function debugjs() {
+		<?php if (isset($_debugjs) && $_debugjs) {echo "window.alert({$_debugjs});";}?>
+	}
+	
+	window.onload(debugjs);
   </script>
 	<!--  End of AJAX Code -->
 

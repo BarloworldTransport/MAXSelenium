@@ -114,6 +114,7 @@ if ($_errors) {
     foreach ($_errors as $_value) {
         echo '<div class="alert alert-danger" role="alert"><strong>Error: </strong>' . $_value . '</div>';
     }
+    session_destroy();
 }
 ?>
 			<label for="inputEmail" class="sr-only">Email address</label> <input

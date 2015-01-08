@@ -138,7 +138,39 @@ class PullDataFromMySQLQuery {
 		}
 		unset ( $_errors, $data );
 	}
+	// : End
 	
+	/**
+	 * PullDataFromMySQLQuery::insertSQLQuery()
+	 * Insert new data into database using SQL Query
+	 *
+	 * @param array: $this->_data
+	 */
+	public function insertSQLQuery($_keys, $_values, $_query) {
+		$_errors = array();
+		try {	
+			$stmt = $dbh->prepare("INSERT INTO REGISTRY (name, value) VALUES (:name, :value)");
+			if ($_keys && is_array($_keys) && $_values && is_array($_values)) {
+				$_stmt = $this->_db->prepare($_query);
+				foreach($_keys as $_key => $_value) {
+					$_stmt->bindParam($_value, $_values[$_key]);
+				}
+				$_stmt->execute();
+			} else {
+				$_errors[] = "Function arguments keys and values need to be array values.";
+			}
+		} catch ( Exception $e ) {
+				$_errors [] = $e->getMessage ();
+		}
+		if (!$_errors) {
+			return TRUE;
+		} else {
+			foreach($_errors as $_errval) {
+				$this->_errors[] = $_errval;
+			}
+			return FALSE;
+		}
+	}
 	// : End
 	
 	// : Magic
@@ -146,7 +178,7 @@ class PullDataFromMySQLQuery {
 	 * PullDataFromMySQLQuery::__construct()
 	 * Class constructor
 	 */
-	public function __construct($_tenant, $_host) {
+	public function __construct($_tenant, $_host, $_db_user_key = 'dbuser', $_db_pwd_key = 'dbpwd') {
 		try {
 			if ($_tenant && $_host) {
 				$_inifile = dirname ( __FILE__ ) . self::DS . $this->_inifile;
@@ -158,8 +190,8 @@ class PullDataFromMySQLQuery {
 						$_dsn = preg_replace ( "/%s/", $_tenant, $data ["dbdsn"] );
 						$_dsn = preg_replace ( "/%h/", $_host, $_dsn );
 						$this->_dbdsn = $_dsn;
-						$this->_dbuser = $data ["dbuser"];
-						$this->_dbpwd = $data ["dbpwd"];
+						$this->_dbuser = $data [$_db_user_key];
+						$this->_dbpwd = $data [$_db_pwd_key];
 						$this->dbOpen ();
 					} else {
 						throw new Exception ( "Correct fields where not found in file: " . $_inifile . ". Please make sure the following fields are available: dbdsn, dbuser, dbpwd" );
