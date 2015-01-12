@@ -13,8 +13,9 @@ include "PullDataFromMySQLQuery.php";
 $_ftl_data = (array) array();
 
 session_start();
-if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd'])) {
-	
+
+if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SESSION['userAgent']) && isset($_SESSION['IPaddress'])) {
+	if (($_SESSION['userAgent']) == $_SERVER['HTTP_USER_AGENT'] || $_SESSION['IPaddress'] == $_SERVER['REMOTE_ADDR']) {
     if (isset($_GET["content"])) {
         switch ($_GET["content"]) {
             case "fleettrucklink" : {
@@ -35,15 +36,13 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd'])) {
         }
     }
 	
-	if (isset($_POST['addTruckLink']) && $_SERVER['REQUEST_METHOD'] === "POST") {
-		var_dump($_POST);
-		//if (isset($_POST['start_date']))
-	} else {
-		$_fleettrucklink_data = (array) array();
-	}
-	
 	try {
+		// Boolean used to determined if continuing existing process or starting a new process
+		$_newProcess = false;
+		// Debug variable that can be echo'ed inside javascript code
 		$_debugjs = "testing";
+		
+		// : Predefined queries that will be used
 		$_queries = array(
 				"SELECT id, name FROM udo_fleet ORDER BY name ASC;",
 				"SELECT id, fleetnum FROM udo_truck ORDER BY fleetnum ASC;",
@@ -53,20 +52,28 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd'])) {
 				"SELECT id FROM users WHERE user_email='{$_SESSION['user_email']}';",
 				"INSERT INTO `process` (detail, process_type_id, state, process_start, session_id) VALUES (:detail, :process_type_id, :state, :process_start, :session_id);"
 		);
+		// : End
+		
+		// Open database connection to BWT Auto DB
 		$_bwtdb = new PullDataFromMySQLQuery('bwt_max_auto', 'localhost', 'user', 'pwd');
+		
+		// Open database connection to MAX
 		$_dbh = new PullDataFromMySQLQuery('max2', '192.168.1.19');
 		
+		// : Check if existing process already started for fleettrucklink. If no process found the start with clean data.
 		$_result = $_bwtdb->getDataFromQuery($_queries[4]);
+		
 		if (count($_result) == 1) {
-			
+			// Process exists
 		} else if (!$_result) {
-			$_date = new DateTime();
-			$_keys = array(':detail', ':process_type_id', ':state', ':process_start', ':session_id');
-			$_values = array(DEFAULT_PROCESS, 1, 'new', $_date->getTimestamp(), session_id());
-			$_bwtdb->insertSQLQuery($_keys, $_values, $_queries[6]);
+			// New process
+			$_newProcess = true;
+			
+
 		}
+		// : End
 		
-		
+		// : Get fleets where truck is actively linked
 		function get_fleets_for_truck($_truck_id, $_query) {
 			$_data = (array) array();
 			global $_fleets, $_dbh;
@@ -88,6 +95,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd'])) {
 				return FALSE;
 			}
 		}
+		// : End
 	
 		// : Run query to get all fleets from MAX DB
 		$_fleets = (array) array();
@@ -129,7 +137,9 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd'])) {
 	
 	// : End
 } else {
-    session_destroy();
+	header("Location: ../logout.php");
+}
+} else {
     header("Location: ../logout.php");
 }
 
@@ -245,7 +255,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd'])) {
 		ajaxRequest.open("GET", "get_fleets_for_truck.php" + queryString, true);
 		ajaxRequest.send(null); 
     }
- 
+
   function ajaxLoadFleets(){
 		var ajaxRequest;  // The variable that makes Ajax possible!
 		
@@ -347,7 +357,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd'])) {
 						ready to commit the changes click Commit.</p>
 				</div>
 				
-				<form name="truckLinkForm" class="form-signin" role="form" action="<?php echo $_SERVER['PHP_SELF'];?>" method="post">
+				<form name="truckLinkForm" class="form-signin" role="form" action="addTruckLink.php" method="post">
 					<h2 class="form-signin-heading">Add truck link</h2>
 					
 					<div class="row">
@@ -421,7 +431,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd'])) {
 						          } else {
 						              $_checked = "";
 						          }
-						          printf('<label class="checkbox-inline"> <input type="checkbox" id="cbx_fleet_%d" value="%d" %s>%s</label>', $a, $_id, $_checked, $_fleetname);
+						          printf('<label class="checkbox-inline"> <input type="checkbox" id="cbx_fleet_%d" name="fleetSelect%d" value="%d" %s>%s</label>', $a, $a, $_id, $_checked, $_fleetname);
 						          $a++;
 						        }
 						   }

@@ -49,9 +49,12 @@ if (isset($_SESSION['SID'])) {
                             $sth->execute(array(':email' => $_clean['user_email'], ':pwd' => $_clean['user_pwd']));
                             $_result = $sth->fetchAll();
 
-                            if (count($_result) > 0) {
+                            if (count($_result) === 1) {
                                 $_SESSION['user_email'] = $_clean['user_email'];
                                 $_SESSION['user_pwd'] = $_clean['user_pwd'];
+                                $_SESSION['IPaddress'] = $_SERVER['REMOTE_ADDR'];
+                                $_SESSION['userAgent'] = $_SERVER['HTTP_USER_AGENT'];
+                                $_SESSION['userID'] = $_result[0]['id'];
                                 $_dbh = null;
                                 header("Location: classes/dashboard.php");
                             } else {

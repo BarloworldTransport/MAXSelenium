@@ -148,14 +148,18 @@ class PullDataFromMySQLQuery {
 	 */
 	public function insertSQLQuery($_keys, $_values, $_query) {
 		$_errors = array();
-		try {	
-			$stmt = $dbh->prepare("INSERT INTO REGISTRY (name, value) VALUES (:name, :value)");
+		try {
+
 			if ($_keys && is_array($_keys) && $_values && is_array($_values)) {
 				$_stmt = $this->_db->prepare($_query);
 				foreach($_keys as $_key => $_value) {
 					$_stmt->bindParam($_value, $_values[$_key]);
 				}
-				$_stmt->execute();
+				if ($_stmt->execute()) {
+					return true;
+				} else {
+					$_errors[] = "Failed to insert query. Reason unknown.";
+				}
 			} else {
 				$_errors[] = "Function arguments keys and values need to be array values.";
 			}
