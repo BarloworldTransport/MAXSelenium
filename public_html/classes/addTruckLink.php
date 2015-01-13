@@ -12,11 +12,14 @@ $_errors = (array) array();
 $_loginStatus = false;
 session_start();
 
+var_dump($_POST);
+die("thanks");
+
 if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SESSION['userAgent']) && isset($_SESSION['IPaddress'])) {
 	
 	if (($_SESSION['userAgent']) === $_SERVER['HTTP_USER_AGENT'] && $_SESSION['IPaddress'] === $_SERVER['REMOTE_ADDR'] && ($_SERVER['REQUEST_METHOD'] == 'POST')) {
 		$_loginStatus = true;
-		if (isset($_POST['addTruckLink']) && isset($_POST['truckSelect']) && isset($_POST['start_date']) && isset($_POST['stop_date']) && isset($_POST['opSelect'])) {
+		if (isset($_POST['truckSelect']) && isset($_POST['start_date']) && isset($_POST['stop_date']) && isset($_POST['opSelect'])) {
 			// : Predefined queries that will be used
 			$_queries = array(
 					"SELECT id, name FROM udo_fleet ORDER BY name ASC;",
@@ -31,21 +34,25 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 			// : End
 			
 			// : Fetch all selected fleets for the transaction
-			$_fleets_list = (array) array();
-			$_fleet_java_str = (string) "";
+			$_fleet_str = (string) $_POST['fleets'];
+			if ($_fleet_str) {
+				$_fleets_list = explode(",", $_fleet_str);
+			} else {
+				$_errors[] = "No fleets supplied.";
+			}
 			
-			foreach($_POST as $key => $value) {
+			/*foreach($_POST as $key => $value) {
 				if (preg_match("/^fleetSelect.*$/", $key)) {
 					preg_match("/^fleetSelect(.*)$/", $key, $_matches);
 					if ($_matches) {
 						$_fleets_list[] = $_matches[1];
 					}
 				}
-			}
+			}*/
 			// : End
 			
 			if ($_fleets_list) {
-				$_fleet_java_str = implode(",", $_fleets_list);
+				$_fleet_str = implode(",", $_fleets_list);
 				
 				// Open new connection to BWT Auto database
 					
@@ -98,7 +105,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 							$_end_date = NULL;
 						}
 						$_keys = array('process_id','truck_id', 'fleets', 'operation', 'start_date', 'end_date');
-						$_values = array($_process_id, $_SESSION['truckSelect'], $_fleet_java_str, $_SESSION['opSelect'], $_start_date, $_end_date);
+						$_values = array($_process_id, $_SESSION['truckSelect'], $_fleet_str, $_SESSION['opSelect'], $_start_date, $_end_date);
 						if ($_dbh->insertSQLQuery($_keys, $_values, $_queries[7])) {
 							header('Location: fleettrucklinks_admin.php');
 						} else {
@@ -120,15 +127,15 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 
 if ($_loginStatus) {
 	if ($_errors) {
-		$_errmsg = (string)"List of errors encountered: " . PHP_EOL;
-		foreach($_errors as $_key => $_value) {
-			$_errmsg .= $_value . ", " . PHP_EOL;	
-		}
+		$_errmsg = implode(",", $_errors);
 		echo $_errmsg;
-		echo "Redirecting back to Fleet Truck Links Admin page..." . PHP_EOL;
-		sleep(5);
+		/*echo "Redirecting back to Fleet Truck Links Admin page..." . PHP_EOL;
+		sleep(5);*/
+		
+	} else {
+		echo "true";
 	}
-	header("Location: fleettrucklinks_admin.php");
+	//header("Location: fleettrucklinks_admin.php");
 } else {
 	header("Location: ../logout.php");
 }

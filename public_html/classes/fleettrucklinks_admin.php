@@ -68,8 +68,6 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 		} else if (!$_result) {
 			// New process
 			$_newProcess = true;
-			
-
 		}
 		// : End
 		
@@ -179,7 +177,10 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 <body>
 
 	<!--  AJAX Code for loading data onchange of select elements -->
-	<script language="javascript" type="text/javascript">
+	<script type="text/javascript">
+
+	// : Global scope variables
+	var countInterval, countTmr;
 
 	// : Set all checkbox input elements to true|false
     function setAllCheckboxStates(chkboxState) {
@@ -255,6 +256,124 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 		ajaxRequest.open("GET", "get_fleets_for_truck.php" + queryString, true);
 		ajaxRequest.send(null); 
     }
+    
+	function validateAddTruckLink() {
+		var errMsg = new Array(0);
+
+		var chkboxCount = <?php echo count($_fleets);?>;
+
+		// Fetch list of selected trucks
+		var selected_fleets;
+		for (x = 1; x <= chkboxCount; x++) {
+		    if (document.getElementById("cbx_fleet_" + x).checked) {
+		    	selected_fleets[x] = document.getElementById("cbx_fleet_" + x).value;
+		    }
+		}
+		// : End
+		
+		if (document.getElementById('start_date').value == "") {
+			errMsg.push("Start Date field is required.");
+		}
+		
+		if (document.getElementById('truck_id').options[document.getElementById('truck_id').selectedIndex] == "") {
+			errMsg.push("Truck field is required.");
+		}
+		
+		if (selected_fleets == undefined || selected_fleets.length == 0) {
+			errMsg.push("Please select at least one fleet to complete this operation.");
+		}
+		
+		if (document.getElementById('cbxOperation').options[document.getElementById('cbxOperation').selectedIndex] == "") {
+			errMsg.push("Operations field is required.");
+		}
+		
+		if (errMsg.length > 0) {
+			var errStr, arrCount;
+			arrCount = errMsg.length;
+			for (x = 0; x <= arrCount; x++) {
+				errStr += errMsg[x];
+			}
+			
+			// : Display error message for 30 seconds and then clear the message
+			document.getElementById('divError').hidden = false;
+			document.getElementById('errorMsg').innerHTML = "The following error(s) occured while trying to add a truck link:<br>" + errStr + "This message will automatically clear in: <strong id=\"tmrCount\">30</strong> seconds";
+			document.getElementById('divError').focus;
+			tmrCount = 30000;
+			setTimeout(clearErrors, 30000);
+			countInterval = setInterval(function () {updateCount(1000)}, 1000);
+			// : End
+			
+			return false;
+		} else {
+			return true;
+		}
+	}
+	
+    function ajaxAddTruckLink(){
+    	setDisableSubmitBtn(true);
+    	if (validateAddTruckLink() == true) {
+        /*
+		var ajaxRequest;  // The variable that makes Ajax possible!
+		var chkboxCount = <?php echo count($_fleets);?>;
+		
+		try{
+			// Opera 8.0+, Firefox, Safari
+			ajaxRequest = new XMLHttpRequest();
+		} catch (e){
+					// Something went wrong
+					alert("Your browser broke!");
+					return false;
+		}
+		// Create a function that will receive data sent from the server
+		ajaxRequest.onreadystatechange = function(){
+			if(ajaxRequest.readyState == 4){
+				// Setup variables for getting response
+				var errStr;
+				var tempVar = ajaxRequest.responseText;
+				if (tempVar != "true") {
+					var resultErrs = tempVar.split(",");
+					for (x = 0; x <= tempVar.length; x++) {
+						errStr += tempVar[x] + "<br>";
+					}
+					
+					// : Display error message for 30 seconds and then clear the message
+					document.getElementById('divError').hidden = false;
+					document.getElementById('errorMsg').innerHTML = "The following error(s) occured while trying to add a truck link:<br>" + errStr + "This message will automatically clear in: <strong id=\"tmrCount\">30</strong> seconds";
+					document.getElementById('divError').focus;
+					tmrCount = 30000;
+					setTimeout(clearErrors, 30000);
+					countInterval = setInterval(function () {updateCount(1000)}, 1000);
+					// : End
+					
+
+				} else {
+					var tbl = document.getElementById("tblOpList");
+					var tblStr;
+					tbl.innerHTML = "<tr><td>test</td><td><from script/td><td></td><td></td></tr>
+				}
+			}
+		}
+
+		// Fetch list of selected trucks
+		var selected_fleets, prep_fleets_str;
+		for (x = 1; x <= chkboxCount; x++) {
+		    if (document.getElementById("cbx_fleet_" + x).checked) {
+		    	selected_fleets[x] = document.getElementById("cbx_fleet_" + x).value;
+		    }
+		}
+		prep_fleets_str = selected_fleets.split(",");
+		// : End
+		
+		var start_date = document.start_date.value;
+		var stop_date = document.stop_date.value;
+		var opertaion = document.opSelect.options[document.opSelect.selectedIndex];
+		var truck_id = document.truckSelect.options[document.truckSelect.selectedIndex];
+		ajaxRequest.open("POST", "addTruckLink.php", true);
+		ajaxRequest.send("truckSelect=" + truck_id + "&start_date=" + start_date + "&stop_date=" + stop_date + "&opSelect=" + operation + "&fleets=" + prep_fleets_str);
+		*/
+    		setDisableSubmitBtn(false);
+        }
+	}
 
   function ajaxLoadFleets(){
 		var ajaxRequest;  // The variable that makes Ajax possible!
@@ -284,13 +403,24 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 		var queryString = "?age=" + age + "&wpm=" + wpm + "&sex=" + sex;
 		ajaxRequest.open("GET", "ajax-example.php" + queryString, true);
 		ajaxRequest.send(null); 
-	} 
-
-	function debugjs() {
-		<?php if (isset($_debugjs) && $_debugjs) {echo "window.alert({$_debugjs});";}?>
 	}
-	
-	window.onload(debugjs);
+
+	function clearErrors() {
+		clearInterval(countInterval);
+		document.getElementById('divError').hidden = true;
+		setDisableSubmitBtn(false);
+	}
+
+	function updateCount(stepByMs) {
+		tmrCount -= stepByMs;
+		displayTime = tmrCount / 1000;
+		document.getElementById("tmrCount").innerHTML = displayTime;
+	}
+
+	function setDisableSubmitBtn(btnState) {
+		document.getElementById("btnAddTruckLink").disabled = btnState;
+		document.getElementById("btnCommitTruckLinks").disabled = btnState;
+	}
   </script>
 	<!--  End of AJAX Code -->
 
@@ -330,10 +460,10 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 							<li><a href="#">My Profile</a></li>
 							<li><a href="?content=logout">Logout</a></li>
 						</ul></li>
-			
+					</ul>
 			</div>
 			<!--/.nav-collapse -->
-	
+			</div>
 	</nav>
 
 	<div class="container-fluid">
@@ -342,7 +472,6 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 		
 			<div class="col-sm-3 col-md-2 sidebar">
 				<ul class="nav nav-sidebar">
-					<h6>My Tasks</h6>
 					<li class="active"><a href="?content=dashboard">My Dashboard <span class="sr-only">(current)</span></a></li>
 				</ul>
 			</div>
@@ -359,7 +488,11 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 				
 				<form name="truckLinkForm" class="form-signin" role="form" action="addTruckLink.php" method="post">
 					<h2 class="form-signin-heading">Add truck link</h2>
-					
+					<div class="row" id="divError" hidden=true>
+						<div class="col-md-12">
+							<div class="alert alert-danger" role="alert" id="errorMsg"></div>
+						</div>
+					</div>
 					<div class="row">
 						<div class="col-md-2">
 							<label for="start_date">Start Date:</label>
@@ -380,7 +513,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 					
 					<div class="row">
 						<div class="col-md-2">
-							<label for="stop_date">Operation to perform:</label>
+							<label for="cbxOperation">Operation to perform:</label>
 						</div>
 						<div class="col-md-10">
 							<select id="cbxOperation" name="opSelect" class="form-control" onchange="" required>
@@ -467,7 +600,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 					           <th></th>
 					       </tr>
 					   </thead>
-					       <tbody>
+					       <tbody name="tblOpList">
 					           <tr>
 					               <td></td>
 					               <td></td>
@@ -482,16 +615,17 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 					
 					<div class="row">
 						<div class="col-md-6">
-							<button class="btn btn-lg btn-primary btn-block" name="addTruckLink" type="submit">Add</button>
+							<button class="btn btn-lg btn-primary btn-block" id="btnAddTruckLink" name="addTruckLink" onclick="ajaxAddTruckLink()" type="button">Add</button>
 						</div>
 
 						<div class="col-md-6">
-							<button class="btn btn-lg btn-primary btn-block" name="commitTruckLinks" type="submit">Commit</button>
+							<button class="btn btn-lg btn-primary btn-block" id="btnCommitTruckLinks" name="commitTruckLinks" type="submit">Commit</button>
 						</div>
 					</div>
 				</form>
 				
 			</div>
+		</div>
 		</div>
 
 		<!-- Bootstrap core JavaScript
