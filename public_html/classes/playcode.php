@@ -50,17 +50,7 @@ if ($_dbh->insertSQLQuery($_keys, $_values, $_query)) {
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
     
-<script language="javascript" type="text/javascript">
-
-function changeDiv() {
-	document.getElementById("divError").hidden = false;
-}
-
-function disableBtn() {
-	document.getElementById("btn2").disabled = true;
-}
-
-</script>
+<script src="playjs.js"></script>
 </head>
 
 <body>
@@ -167,14 +157,27 @@ function disableBtn() {
 					
 					<div class="row">
 						<div class="col-md-2">
-							<label for="truck_id">Select a truck:</label>
+							<label for="truckId">Select a truck:</label>
 						</div>
 						<div class="col-md-10">
-							<select id="truck_id" name="truckSelect" class="form-control" onchange="ajaxResetFleetCheckboxes()" required>
+							<select id="truckId" name="truckSelect" class="form-control" required>
 								<option value="truck1">truck1</option>
 								<option value="truck2">truck2</option>
 							</select>
-						</div>
+							<div class="row">
+								<div class="col-md-2">
+									<button class="btn btn-default" name="btnAddTruckToList" type="button" onclick="addTruckToPanel()">Add Truck to Operation</button>
+								</div>
+								<div class="col-md-10"></div>
+							</div>
+							<div class="panel panel-default" id="panelTruckList">
+								<div class="panel-heading">
+									<h3 class="panel-title">Trucks selected:</h3>
+								</div>
+								<div class="panel-body" id="truckPanelBody">
+								<!-- Panel contents for trucks goes here -->
+								</div>
+							</div>
 					</div>
 					<div class="row">
 						<div class="col-md-2">

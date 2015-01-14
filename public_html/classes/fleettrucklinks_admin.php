@@ -1,6 +1,15 @@
 <?php
 const DEFAULT_PROCESS = "fleet_truck_link_batch";
 
+/* 
+ * IDEAS TO IMPLEMENT LATER (EXCLUSIVE TO FLEET TRUCK LINKS ADMIN):
+ * 1. Filters for trucks and fleets to make administrating quicker
+ * 2. Change selecting 1 truck to multiple trucks at a time for a batch process
+ * 3. Explore a busy processing foreground message while processing transactions
+ * 4. When multiple transactions are to be performed run a mysql transaction
+ * 5. RND better security for ajax calls
+ */
+
 // : Error reporting for debugging purposes
 error_reporting(E_ALL);
 ini_set("display_errors", "1");
@@ -181,6 +190,50 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 
 	// : Global scope variables
 	var countInterval, countTmr;
+	var trucksList = new Array();
+
+	function drawLbl(truckName, truckAction, truckID) {
+		var lblResult = "<span id=\"lbl" + truckID + "\" class=\"label label-info\">" + truckName + "<a id=\"" + truckID + "\" onclick=\"" + truckAction + "\">X</a></span>";
+		return lblResult;
+	}
+
+	function drawTruckPanel() {
+		var truckPanel = document.getElementById("truckPanelBody");
+		var tCount = trucksList.length;
+		var panelStr = "<h4>";
+		for (x = 0; x < tCount; x++) {
+			panelStr += drawLbl(trucksList[x], "truckRemove(this)", x);
+		}
+		panelStr += "</h4>";
+		truckPanel.innerHTML = panelStr;
+	}
+
+	function addTruckToPanel() {
+		var truckSel = document.getElementById("truckId");
+		var truckValue = truckSel.options[truckSel.selectedIndex].text;
+
+		if (trucksList.indexOf(truckValue) == -1) {
+			trucksList.push(truckValue);
+			drawTruckPanel();
+		}
+	}
+
+	function truckRemove(lblElement) {
+		// : Setup variables to get the span element that was clicked
+		var truckPanel = document.getElementById("truckPanelBody");
+		var elementID = "lbl" + lblElement.id;
+		var spanValue = document.getElementById(elementID).innerHTML;
+		var truckValue = spanValue.substr(0, spanValue.indexOf("<a id="));
+		var spanElement = document.getElementById(elementID);
+		
+		// : Remove array indice
+		var arrIndex = trucksList.indexOf(truckValue);
+		if (arrIndex > -1) {
+			trucksList.splice(arrIndex, 1);
+			drawTruckPanel();
+		}
+		// : End
+	}
 
 	// : Set all checkbox input elements to true|false
     function setAllCheckboxStates(chkboxState) {
@@ -524,11 +577,12 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 					</div>
 					
 					<div class="row">
+					
 						<div class="col-md-2">
-							<label for="truck_id">Select a truck:</label>
+							<label for="truckId">Select a truck:</label>
 						</div>
 						<div class="col-md-10">
-							<select id="truck_id" name="truckSelect" class="form-control" onchange="ajaxResetFleetCheckboxes()" required>
+							<select id="truckId" name="truckSelect" class="form-control">
 						          <!-- Dynamically generate select options with trucks from MAX -->
 						          <?php
 						              if (isset($_trucks)) {
@@ -543,6 +597,20 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 						          ?>
 						<!-- End -->
 							</select>
+							<div class="row">
+								<div class="col-md-2">
+									<button class="btn btn-default" name="btnAddTruckToList" type="button" onclick="addTruckToPanel()">Add Truck to Operation</button>
+								</div>
+								<div class="col-md-10"></div>
+							</div>
+							<div class="panel panel-default" id="panelTruckList">
+								<div class="panel-heading">
+									<h3 class="panel-title">Trucks selected:</h3>
+								</div>
+								<div class="panel-body" id="truckPanelBody">
+								<!-- Panel contents for trucks goes here -->
+								</div>
+							</div>
 						</div>
 					</div>
 					<div class="row">

@@ -149,7 +149,6 @@ class PullDataFromMySQLQuery {
 	public function insertSQLQuery($_keys, $_values, $_query) {
 		$_errors = array();
 		try {
-
 			if ($_keys && is_array($_keys) && $_values && is_array($_values)) {
 				$_stmt = $this->_db->prepare($_query);
 				foreach($_keys as $_key => $_value) {
