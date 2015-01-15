@@ -8,6 +8,11 @@ const DEFAULT_PROCESS = "fleet_truck_link_batch";
  * 3. Explore a busy processing foreground message while processing transactions
  * 4. When multiple transactions are to be performed run a mysql transaction
  * 5. RND better security for ajax calls
+ * 
+ * CHANGES TO BE MADE:
+ * 1. Update js for selecting fleets to which multiple trucks belong too instead of (current code) single truck
+ * 2. Commit transaction once ready - validate all data and that there is a task to be performed
+ * 3. Complete add truck link code to add truck to DB and table on page to reflect current actions added by user
  */
 
 // : Error reporting for debugging purposes
@@ -198,24 +203,34 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 	}
 
 	function drawTruckPanel() {
+		// Store element for the panel body into a variable
 		var truckPanel = document.getElementById("truckPanelBody");
 		var tCount = trucksList.length;
+
+		// : Build string to be inserted into the panel body
 		var panelStr = "<h4>";
 		for (x = 0; x < tCount; x++) {
 			panelStr += drawLbl(trucksList[x], "truckRemove(this)", x);
 		}
 		panelStr += "</h4>";
+		// : End
+		
+		/* 	Insert the HTML string into the panel which contains the labels for each truck
+		*	that has been added by the user during this transaction
+		*/
 		truckPanel.innerHTML = panelStr;
 	}
 
 	function addTruckToPanel() {
 		var truckSel = document.getElementById("truckId");
 		var truckValue = truckSel.options[truckSel.selectedIndex].text;
-
+		
+		// : Check if truck has been added to trucksList array and if not add truck and redraw the truck list panel
 		if (trucksList.indexOf(truckValue) == -1) {
 			trucksList.push(truckValue);
 			drawTruckPanel();
 		}
+		// : End
 	}
 
 	function truckRemove(lblElement) {
@@ -226,7 +241,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 		var truckValue = spanValue.substr(0, spanValue.indexOf("<a id="));
 		var spanElement = document.getElementById(elementID);
 		
-		// : Remove array indice
+		// : Remove truck from the trucksList array and redraw the truck list panel
 		var arrIndex = trucksList.indexOf(truckValue);
 		if (arrIndex > -1) {
 			trucksList.splice(arrIndex, 1);
@@ -270,7 +285,9 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 		setAllCheckboxStates(aState);
 		// : End
 	}
-
+	/* 	THIS FUNCTION CODE IS REDUNDANT AND NEEDS UPDATING TO WORK WITH MULTIPLE TRUCKS
+		(STILL CURRENTLY WORKS FOR SINGLE SELECTED TRUCK) BUT I HAVE REMOVED ITS CALL VIA ONCLICK
+	*/
     function ajaxResetFleetCheckboxes() {
     	var t = document.truckLinkForm.truckSelect;
 		var ajaxRequest;  // The variable that makes Ajax possible!
@@ -311,12 +328,14 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
     }
     
 	function validateAddTruckLink() {
-		var errMsg = new Array(0);
 
+		// Define empty array for error messages that can be gathered for each validation error found
+		var errMsg = new Array(0);
+		// Use PHP variable to get the number of fleets/checkbox elements on page
 		var chkboxCount = <?php echo count($_fleets);?>;
 
-		// Fetch list of selected trucks
-		var selected_fleets;
+		// Fetch list of selected fleets
+		var selected_fleets = new Array();
 		for (x = 1; x <= chkboxCount; x++) {
 		    if (document.getElementById("cbx_fleet_" + x).checked) {
 		    	selected_fleets[x] = document.getElementById("cbx_fleet_" + x).value;
@@ -324,22 +343,30 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 		}
 		// : End
 		
+		// : Validate Start Date
 		if (document.getElementById('start_date').value == "") {
-			errMsg.push("Start Date field is required.");
+			errMsg.push("Start Date: Start Date field is required.");
 		}
+		// : End
 		
-		if (document.getElementById('truck_id').options[document.getElementById('truck_id').selectedIndex] == "") {
-			errMsg.push("Truck field is required.");
+		// : Validate Trucks: Has at least 1 truck been added to the truck list?		
+		if (trucksList.length < 1) {
+			errMsg.push("Truck: No trucks have been added to the list. At least 1 truck has to be added.");
 		}
+		// : End
 		
+		// : Validate Fleets: Has at least 1 fleet checkbox been checked?
 		if (selected_fleets == undefined || selected_fleets.length == 0) {
-			errMsg.push("Please select at least one fleet to complete this operation.");
+			errMsg.push("Fleet: No fleets have been selected. At least 1 fleet has to be checked.");
 		}
-		
+
+		// : Validate Operation: Has an operation been selected (this is almost a useless check)
 		if (document.getElementById('cbxOperation').options[document.getElementById('cbxOperation').selectedIndex] == "") {
-			errMsg.push("Operations field is required.");
+			errMsg.push("Operation: Operation field is required.");
 		}
+		// : End
 		
+		// : If any errors then display in alert element on page for duration of time and return false else return true
 		if (errMsg.length > 0) {
 			var errStr, arrCount;
 			arrCount = errMsg.length;
@@ -356,16 +383,21 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 			countInterval = setInterval(function () {updateCount(1000)}, 1000);
 			// : End
 			
+			// Validation has failed and code may not proceed
 			return false;
 		} else {
+			// Validation has passed and code may proceed
 			return true;
 		}
+		// : End
 	}
 	
     function ajaxAddTruckLink(){
+        // Disable both submit buttons on page until process is complete
     	setDisableSubmitBtn(true);
+    	
     	if (validateAddTruckLink() == true) {
-        /*
+        
 		var ajaxRequest;  // The variable that makes Ajax possible!
 		var chkboxCount = <?php echo count($_fleets);?>;
 		
@@ -378,12 +410,14 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 					return false;
 		}
 		// Create a function that will receive data sent from the server
+		/*try {
 		ajaxRequest.onreadystatechange = function(){
 			if(ajaxRequest.readyState == 4){
+				
 				// Setup variables for getting response
 				var errStr;
 				var tempVar = ajaxRequest.responseText;
-				if (tempVar != "true") {
+				if (tempVar !== "true") {
 					var resultErrs = tempVar.split(",");
 					for (x = 0; x <= tempVar.length; x++) {
 						errStr += tempVar[x] + "<br>";
@@ -406,29 +440,70 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 				}
 			}
 		}
+		} catch (e) {
+			window.alert(e.message);
+		}*/
 
 		// Fetch list of selected trucks
-		var selected_fleets, prep_fleets_str;
+		try {
+		var selected_fleets = new Array();
+		var prep_fleets_str;
+
 		for (x = 1; x <= chkboxCount; x++) {
 		    if (document.getElementById("cbx_fleet_" + x).checked) {
 		    	selected_fleets[x] = document.getElementById("cbx_fleet_" + x).value;
 		    }
 		}
-		prep_fleets_str = selected_fleets.split(",");
+		// Convert array into string
+		prep_fleets_str = selected_fleets.join();
 		// : End
 		
-		var start_date = document.start_date.value;
-		var stop_date = document.stop_date.value;
-		var opertaion = document.opSelect.options[document.opSelect.selectedIndex];
-		var truck_id = document.truckSelect.options[document.truckSelect.selectedIndex];
+		// : Run through each trucksList array item, fetch the id for each truck and store into an array
+		var selected_truck_ids = new Array();
+		var tCount = trucksList.length;
+		var truckSel = document.getElementById("truckId");
+		var tempID;
+		if (tCount > 0) {
+			for (x = 0; x < tCount; x++) {
+				tempID = findValueInSelectBox(trucksList[x], truckSel);
+				if (tempID !== false) {
+					selected_truck_ids.push(tempID);
+				}
+			}
+		}
+
+		// : End
+		
+		var start_date = document.getElementById("start_date").value;
+		var stop_date = document.getElementById("stop_date").value;
+		var operation = document.getElementById("cbxOperation").options[document.getElementById("cbxOperation").selectedIndex];
+		
 		ajaxRequest.open("POST", "addTruckLink.php", true);
-		ajaxRequest.send("truckSelect=" + truck_id + "&start_date=" + start_date + "&stop_date=" + stop_date + "&opSelect=" + operation + "&fleets=" + prep_fleets_str);
-		*/
-    		setDisableSubmitBtn(false);
+		ajaxRequest.send("truckSelect=" + selected_truck_ids + "&start_date=" + start_date + "&stop_date=" + stop_date + "&opSelect=" + operation + "&fleets=" + prep_fleets_str);
+		} catch (e) {
+			window.alert(e.message);
+		}
+		setDisableSubmitBtn(false);
         }
 	}
 
-  function ajaxLoadFleets(){
+    function findValueInSelectBox(needle, haystack) {
+    	if (typeof haystack == "object") {
+    		var searchResult = false;
+    		var selCount = haystack.length;
+    		for (x = 0; x < selCount; x++) {
+    			if (haystack.options[x].text == needle) {
+    				searchResult = haystack.options[x].value;
+    				break;
+    			}
+    		}
+    		return searchResult;
+    	} else {
+    		return false;
+    	}
+    }
+	
+  	function ajaxLoadFleets(){
 		var ajaxRequest;  // The variable that makes Ajax possible!
 		
 		try{

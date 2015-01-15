@@ -193,7 +193,7 @@ if ($_dbh->insertSQLQuery($_keys, $_values, $_query)) {
 						<div class="col-md-2">
 						</div>
 						<div class="col-md-2">
-						  <button class="btn btn-default" name="btnChangeChkbox" type="button" onclick="disableBtn()">Select All</button>
+						  <button class="btn btn-default" name="btnChangeChkbox" type="button" onclick="testSelectBox()">Select All</button>
 						</div>
 						<div class="col-md-8">
 						  <button class="btn btn-default" name="btnSelectFleetTruckLinks" type="button" onclick="ajaxResetFleetCheckboxes()">Select Fleets where Truck is Active</button>
