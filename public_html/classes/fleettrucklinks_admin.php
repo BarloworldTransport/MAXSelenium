@@ -166,7 +166,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="">
-<meta name="author" content="">
+<meta name="author" content="Unknown" >
 <link rel="icon" href="../favicon.ico">
 
 <title>Barloworld Transport | MAX Automation System - Fleet Truck Links</title>
@@ -177,381 +177,12 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 <!-- Custom styles for this template -->
 <link href="../dist/css/dashboard.css" rel="stylesheet">
 
-<!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-<!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-<script src="../assets/js/ie-emulation-modes-warning.js"></script>
+<!-- Main JS code for this page -->
+<script src="fleettrucklinks_admin.js"></script>
 
-<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-<!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
 </head>
 
 <body>
-
-	<!--  AJAX Code for loading data onchange of select elements -->
-	<script type="text/javascript">
-
-	// : Global scope variables
-	var countInterval, countTmr;
-	var trucksList = new Array();
-
-	function drawLbl(truckName, truckAction, truckID) {
-		var lblResult = "<span id=\"lbl" + truckID + "\" class=\"label label-info\">" + truckName + "<a id=\"" + truckID + "\" onclick=\"" + truckAction + "\">X</a></span>";
-		return lblResult;
-	}
-
-	function drawTruckPanel() {
-		// Store element for the panel body into a variable
-		var truckPanel = document.getElementById("truckPanelBody");
-		var tCount = trucksList.length;
-
-		// : Build string to be inserted into the panel body
-		var panelStr = "<h4>";
-		for (x = 0; x < tCount; x++) {
-			panelStr += drawLbl(trucksList[x], "truckRemove(this)", x);
-		}
-		panelStr += "</h4>";
-		// : End
-		
-		/* 	Insert the HTML string into the panel which contains the labels for each truck
-		*	that has been added by the user during this transaction
-		*/
-		truckPanel.innerHTML = panelStr;
-	}
-
-	function addTruckToPanel() {
-		var truckSel = document.getElementById("truckId");
-		var truckValue = truckSel.options[truckSel.selectedIndex].text;
-		
-		// : Check if truck has been added to trucksList array and if not add truck and redraw the truck list panel
-		if (trucksList.indexOf(truckValue) == -1) {
-			trucksList.push(truckValue);
-			drawTruckPanel();
-		}
-		// : End
-	}
-
-	function truckRemove(lblElement) {
-		// : Setup variables to get the span element that was clicked
-		var truckPanel = document.getElementById("truckPanelBody");
-		var elementID = "lbl" + lblElement.id;
-		var spanValue = document.getElementById(elementID).innerHTML;
-		var truckValue = spanValue.substr(0, spanValue.indexOf("<a id="));
-		var spanElement = document.getElementById(elementID);
-		
-		// : Remove truck from the trucksList array and redraw the truck list panel
-		var arrIndex = trucksList.indexOf(truckValue);
-		if (arrIndex > -1) {
-			trucksList.splice(arrIndex, 1);
-			drawTruckPanel();
-		}
-		// : End
-	}
-
-	// : Set all checkbox input elements to true|false
-    function setAllCheckboxStates(chkboxState) {
-		var btnLabel = document.truckLinkForm.btnChangeChkbox;
-	    // Assign count value to php fleets array count value
-		var chkboxCount = <?php echo count($_fleets);?>;
-
-	    // : Change label of button
-		if (chkboxState == true) {
-			btnLabel.innerHTML = "Deselect All";
-		} else {
-			btnLabel.innerHTML = "Select All";
-		}
-		// : End
-
-		// : Change state of all checkboxes on page
-		for (x = 1; x <= chkboxCount; x++) {
-		    document.getElementById("cbx_fleet_" + x).checked = chkboxState;
-		}
-		// : End
-    }
-    // : End
-    
-	function changeCheckboxState() {
-		var aState;
-		var btnLabel = document.truckLinkForm.btnChangeChkbox;
-
-	    // : Change label of button
-		if (btnLabel.innerHTML == "Select All") {
-			aState = true;
-		} else {
-			aState = false;
-		}
-		setAllCheckboxStates(aState);
-		// : End
-	}
-	/* 	THIS FUNCTION CODE IS REDUNDANT AND NEEDS UPDATING TO WORK WITH MULTIPLE TRUCKS
-		(STILL CURRENTLY WORKS FOR SINGLE SELECTED TRUCK) BUT I HAVE REMOVED ITS CALL VIA ONCLICK
-	*/
-    function ajaxResetFleetCheckboxes() {
-    	var t = document.truckLinkForm.truckSelect;
-		var ajaxRequest;  // The variable that makes Ajax possible!
-		
-		try{
-			// Opera 8.0+, Firefox, Safari
-			ajaxRequest = new XMLHttpRequest();
-		} catch (e){
-					// Something went wrong
-					alert("Your browser broke!");
-					return false;
-		}
-		// Create a function that will receive data sent from the server
-		ajaxRequest.onreadystatechange = function(){
-			
-			if(ajaxRequest.readyState == 4){ 
-				
-				// Setup variables for getting response
-				var tempVar = ajaxRequest.responseText;
-				
-				var fleets = tempVar.split(",");
-		    	setAllCheckboxStates(false);
-
-			    // Assign count value to php fleets array count value
-				var chkboxCount = fleets.length;
-
-				// : Change state of all checkboxes on page
-				for (x = 1; x <= chkboxCount; x++) {
-				    document.getElementById("cbx_fleet_" + fleets[x]).checked = true;
-				}
-				// : End
-						
-			}
-		}
-		var queryString = "?truck_id=" + t.options[t.selectedIndex].value + "&data_type=keys";
-		ajaxRequest.open("GET", "get_fleets_for_truck.php" + queryString, true);
-		ajaxRequest.send(null); 
-    }
-    
-	function validateAddTruckLink() {
-
-		// Define empty array for error messages that can be gathered for each validation error found
-		var errMsg = new Array(0);
-		// Use PHP variable to get the number of fleets/checkbox elements on page
-		var chkboxCount = <?php echo count($_fleets);?>;
-
-		// Fetch list of selected fleets
-		var selected_fleets = new Array();
-		for (x = 1; x <= chkboxCount; x++) {
-		    if (document.getElementById("cbx_fleet_" + x).checked) {
-		    	selected_fleets[x] = document.getElementById("cbx_fleet_" + x).value;
-		    }
-		}
-		// : End
-		
-		// : Validate Start Date
-		if (document.getElementById('start_date').value == "") {
-			errMsg.push("Start Date: Start Date field is required.");
-		}
-		// : End
-		
-		// : Validate Trucks: Has at least 1 truck been added to the truck list?		
-		if (trucksList.length < 1) {
-			errMsg.push("Truck: No trucks have been added to the list. At least 1 truck has to be added.");
-		}
-		// : End
-		
-		// : Validate Fleets: Has at least 1 fleet checkbox been checked?
-		if (selected_fleets == undefined || selected_fleets.length == 0) {
-			errMsg.push("Fleet: No fleets have been selected. At least 1 fleet has to be checked.");
-		}
-
-		// : Validate Operation: Has an operation been selected (this is almost a useless check)
-		if (document.getElementById('cbxOperation').options[document.getElementById('cbxOperation').selectedIndex] == "") {
-			errMsg.push("Operation: Operation field is required.");
-		}
-		// : End
-		
-		// : If any errors then display in alert element on page for duration of time and return false else return true
-		if (errMsg.length > 0) {
-			var errStr, arrCount;
-			arrCount = errMsg.length;
-			for (x = 0; x <= arrCount; x++) {
-				errStr += errMsg[x];
-			}
-			
-			// : Display error message for 30 seconds and then clear the message
-			document.getElementById('divError').hidden = false;
-			document.getElementById('errorMsg').innerHTML = "The following error(s) occured while trying to add a truck link:<br>" + errStr + "This message will automatically clear in: <strong id=\"tmrCount\">30</strong> seconds";
-			document.getElementById('divError').focus;
-			tmrCount = 30000;
-			setTimeout(clearErrors, 30000);
-			countInterval = setInterval(function () {updateCount(1000)}, 1000);
-			// : End
-			
-			// Validation has failed and code may not proceed
-			return false;
-		} else {
-			// Validation has passed and code may proceed
-			return true;
-		}
-		// : End
-	}
-	
-    function ajaxAddTruckLink(){
-        // Disable both submit buttons on page until process is complete
-    	setDisableSubmitBtn(true);
-    	
-    	if (validateAddTruckLink() == true) {
-        
-		var ajaxRequest;  // The variable that makes Ajax possible!
-		var chkboxCount = <?php echo count($_fleets);?>;
-		
-		try{
-			// Opera 8.0+, Firefox, Safari
-			ajaxRequest = new XMLHttpRequest();
-		} catch (e){
-					// Something went wrong
-					alert("Your browser broke!");
-					return false;
-		}
-		// Create a function that will receive data sent from the server
-		/*try {
-		ajaxRequest.onreadystatechange = function(){
-			if(ajaxRequest.readyState == 4){
-				
-				// Setup variables for getting response
-				var errStr;
-				var tempVar = ajaxRequest.responseText;
-				if (tempVar !== "true") {
-					var resultErrs = tempVar.split(",");
-					for (x = 0; x <= tempVar.length; x++) {
-						errStr += tempVar[x] + "<br>";
-					}
-					
-					// : Display error message for 30 seconds and then clear the message
-					document.getElementById('divError').hidden = false;
-					document.getElementById('errorMsg').innerHTML = "The following error(s) occured while trying to add a truck link:<br>" + errStr + "This message will automatically clear in: <strong id=\"tmrCount\">30</strong> seconds";
-					document.getElementById('divError').focus;
-					tmrCount = 30000;
-					setTimeout(clearErrors, 30000);
-					countInterval = setInterval(function () {updateCount(1000)}, 1000);
-					// : End
-					
-
-				} else {
-					var tbl = document.getElementById("tblOpList");
-					var tblStr;
-					tbl.innerHTML = "<tr><td>test</td><td><from script/td><td></td><td></td></tr>
-				}
-			}
-		}
-		} catch (e) {
-			window.alert(e.message);
-		}*/
-
-		// Fetch list of selected trucks
-		try {
-		var selected_fleets = new Array();
-		var prep_fleets_str;
-
-		for (x = 1; x <= chkboxCount; x++) {
-		    if (document.getElementById("cbx_fleet_" + x).checked) {
-		    	selected_fleets[x] = document.getElementById("cbx_fleet_" + x).value;
-		    }
-		}
-		// Convert array into string
-		prep_fleets_str = selected_fleets.join();
-		// : End
-		
-		// : Run through each trucksList array item, fetch the id for each truck and store into an array
-		var selected_truck_ids = new Array();
-		var tCount = trucksList.length;
-		var truckSel = document.getElementById("truckId");
-		var tempID;
-		if (tCount > 0) {
-			for (x = 0; x < tCount; x++) {
-				tempID = findValueInSelectBox(trucksList[x], truckSel);
-				if (tempID !== false) {
-					selected_truck_ids.push(tempID);
-				}
-			}
-		}
-
-		// : End
-		
-		var start_date = document.getElementById("start_date").value;
-		var stop_date = document.getElementById("stop_date").value;
-		var operation = document.getElementById("cbxOperation").options[document.getElementById("cbxOperation").selectedIndex];
-		
-		ajaxRequest.open("POST", "addTruckLink.php", true);
-		ajaxRequest.send("truckSelect=" + selected_truck_ids + "&start_date=" + start_date + "&stop_date=" + stop_date + "&opSelect=" + operation + "&fleets=" + prep_fleets_str);
-		} catch (e) {
-			window.alert(e.message);
-		}
-		setDisableSubmitBtn(false);
-        }
-	}
-
-    function findValueInSelectBox(needle, haystack) {
-    	if (typeof haystack == "object") {
-    		var searchResult = false;
-    		var selCount = haystack.length;
-    		for (x = 0; x < selCount; x++) {
-    			if (haystack.options[x].text == needle) {
-    				searchResult = haystack.options[x].value;
-    				break;
-    			}
-    		}
-    		return searchResult;
-    	} else {
-    		return false;
-    	}
-    }
-	
-  	function ajaxLoadFleets(){
-		var ajaxRequest;  // The variable that makes Ajax possible!
-		
-		try{
-			// Opera 8.0+, Firefox, Safari
-			ajaxRequest = new XMLHttpRequest();
-		} catch (e){
-					// Something went wrong
-					alert("Your browser broke!");
-					return false;
-		}
-		// Create a function that will receive data sent from the server
-		ajaxRequest.onreadystatechange = function(){
-			if(ajaxRequest.readyState == 4){ 
-				// Setup variables for getting response
-				var tempVar = ajaxRequest.responseText;
-				var fleets = tempVar.split(",");
-				document.myForm.selectFleet.length=0;
-				var b = true;
-				for (a = 0; a < fleets.length; a++) {
-					if (a > 0) {b = false};
-					document.myForm.selectFleet.options[a] = new Option(fleets[a], "truck"+ toString(a), b, b);
-				}
-			}
-		}
-		var queryString = "?age=" + age + "&wpm=" + wpm + "&sex=" + sex;
-		ajaxRequest.open("GET", "ajax-example.php" + queryString, true);
-		ajaxRequest.send(null); 
-	}
-
-	function clearErrors() {
-		clearInterval(countInterval);
-		document.getElementById('divError').hidden = true;
-		setDisableSubmitBtn(false);
-	}
-
-	function updateCount(stepByMs) {
-		tmrCount -= stepByMs;
-		displayTime = tmrCount / 1000;
-		document.getElementById("tmrCount").innerHTML = displayTime;
-	}
-
-	function setDisableSubmitBtn(btnState) {
-		document.getElementById("btnAddTruckLink").disabled = btnState;
-		document.getElementById("btnCommitTruckLinks").disabled = btnState;
-	}
-  </script>
-	<!--  End of AJAX Code -->
-
 	<!-- Fixed navbar -->
 	<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
 		<div class="container">
@@ -614,8 +245,8 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 						ready to commit the changes click Commit.</p>
 				</div>
 				
-				<form name="truckLinkForm" class="form-signin" role="form" action="addTruckLink.php" method="post">
-					<h2 class="form-signin-heading">Add truck link</h2>
+				<form name="truckLinkForm" id="frmMain" class="form-signin" role="form" action="addTruckLink.php" method="post">
+					<h2 id="frmHeading" class="form-signin-heading">Add truck link</h2>
 					<div class="row" id="divError" hidden=true>
 						<div class="col-md-12">
 							<div class="alert alert-danger" role="alert" id="errorMsg"></div>
@@ -707,7 +338,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 						          } else {
 						              $_checked = "";
 						          }
-						          printf('<label class="checkbox-inline"> <input type="checkbox" id="cbx_fleet_%d" name="fleetSelect%d" value="%d" %s>%s</label>', $a, $a, $_id, $_checked, $_fleetname);
+						          printf('<label class="checkbox-inline"> <input type="checkbox" id="cbx_fleet_%d" name="cbxFleet" value="%d" %s>%s</label>', $a, $_id, $_checked, $_fleetname);
 						          $a++;
 						        }
 						   }
@@ -778,8 +409,6 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 			src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 		<script src="../dist/js/bootstrap.min.js"></script>
 		<script src="../assets/js/docs.min.js"></script>
-		<!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-		<script src="../assets/js/ie10-viewport-bug-workaround.js"></script>
 
 </body>
 </html>

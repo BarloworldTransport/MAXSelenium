@@ -185,6 +185,9 @@ if ($_dbh->insertSQLQuery($_keys, $_values, $_query)) {
 						</div>
 						<!-- Dynamically list fleets -->
 						<div class="col-md-10">
+						<label class="checkbox-inline"> <input type="checkbox" id="cbx_fleet_1" name="fleetCbx" value="1">343001</label>
+						<label class="checkbox-inline"> <input type="checkbox" id="cbx_fleet_2" name="fleetCbx" value="2">343002</label>
+						<label class="checkbox-inline"> <input type="checkbox" id="cbx_fleet_3" name="fleetCbx" value="3">343003</label>
 						</div>
 					</div>
 					
