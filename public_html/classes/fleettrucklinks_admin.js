@@ -1,6 +1,6 @@
 
 //: Global scope variables
-var countInterval, countTmr;
+var countInterval, countTmr, tableData;
 var trucksList = new Array(0);
 
 function drawLbl(truckName, truckAction, truckID) {
@@ -146,7 +146,7 @@ function validateAddTruckLink() {
 
 	// Fetch list of selected fleets
 	var selected_fleets = new Array(0);
-	
+
 	for (x = 1; x <= chkboxCount; x++) {
 		var cbxElement = document.getElementById("cbx_fleet_" + x); 
 		if (cbxElement.checked) {
@@ -230,23 +230,20 @@ function ajaxAddTruckLink(){
 		try {
 			ajaxRequest.onreadystatechange = function(){
 				if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200){
-					console.log("I have detected a return from post");
-					console.log(ajaxRequest.responseText);
 
 					// Setup variables to parse and store the JSON response from the PHP script
 					var errStr;
-					
+
 					// Try parse JSON response. If invalid JSON response then throw error and do nothing
 					try {
 						var tempVar = JSON.parse(ajaxRequest.responseText);
 
-						console.log(tempVar);
 						if ('phpresult' in tempVar) {
 							var post_status = tempVar['phpresult'];
 							if (post_status !== 'true' && 'phperrors' in tempVar) {
 
 								var resultErrs = tempVar['phperrors'];
-								console.log(resultErrs);
+
 								for (x = 0; x <= tempVar.length; x++) {
 									errStr += resultErrs[x] + "<br>";
 								}
@@ -263,10 +260,8 @@ function ajaxAddTruckLink(){
 
 
 							} else {
-								/*var tbl = document.getElementById("tblOpList");
-					var tblStr;
-					tbl.innerHTML = "<tr><td>test</td><td><from script/td><td></td><td></td></tr>*/
-								console.log("Some code to draw the table");
+								ajaxGetDataForProcess();
+								resetFormData();
 							}
 						}
 					} catch (e) {
@@ -315,7 +310,6 @@ function ajaxAddTruckLink(){
 			var operation = document.getElementById("cbxOperation").options[document.getElementById("cbxOperation").selectedIndex].value;
 			var post_data = "truckSelect=" + selected_truck_ids + "&start_date=" + start_date + "&stop_date=" + stop_date + "&opSelect=" + operation + "&fleets=" + fleets_str;
 			if (post_data != false) {
-				console.log(post_data);
 				ajaxRequest.open("POST", "addTruckLink.php", true);
 				ajaxRequest.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 				ajaxRequest.send(post_data);
@@ -326,6 +320,70 @@ function ajaxAddTruckLink(){
 			window.alert(e.message);
 		}
 		setDisableSubmitBtn(false);
+	}
+}
+
+function ajaxGetDataForProcess(){
+	var ajaxRequest;  // The variable that makes Ajax possible!
+
+	try{
+		// Opera 8.0+, Firefox, Safari
+		ajaxRequest = new XMLHttpRequest();
+	} catch (e){
+		// Something went wrong
+		alert("Your browser broke!");
+		return false;
+	}
+	// Create a function that will receive data sent from the server
+	try {
+		ajaxRequest.onreadystatechange = function(){
+			if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200){ 
+				// Setup variables for getting response
+				tableData = JSON.parse(ajaxRequest.responseText);
+				redrawTable(tableData);
+			}
+		}
+	} catch (e) {
+		window.alert("Getting data for this session and process has failed. Error message: " + e.message);
+	}
+	ajaxRequest.open("GET", "get_ftl_data.php", true);
+	ajaxRequest.send(null); 
+}
+
+function redrawTable(objData) {
+
+	var tableBody = document.getElementById("tblOpList");
+	// Add code to redraw HTML table
+	var tableHtml = "";
+	var objKeys = Object.keys(objData);
+	var objCount = objKeys.length;
+	var aDate = "";
+	   
+	tableHtml += "<table class=\"table table-hover\"><thead><tr><th>ID #:</th><th>Truck IDs:</th><th>Fleets:</th><th>Operation:</th>th>Start Date:</th><th>Stop Date:</th><th>Delete:</th></tr></thead>"
+	
+	if (objCount !== 0) {
+		for (x = 0; x < objCount; x++) {
+			tableHtml += "<tr>";
+			var subData = objData[objKeys[x]];
+			var subKeys = Object.keys(subData);
+			var subCount = subKeys.length;
+			if (subCount !== 0) {
+				for (y = 0; y < subCount; y++) {
+					if (subKeys[y] == "start_date" || (subKeys[y] == "end_date" && subData[subKeys[y]])) {
+						aDate = timeConverter(subData[subKeys[y]]);
+						tableHtml += "<td>" + aDate + "</td>";
+					} else {
+						tableHtml += "<td>" + subData[subKeys[y]] + "</td>";
+					}
+				}
+			}
+			tableHtml += "</tr>";
+		}
+		if (tableHtml) {
+			tableHtml += "</tbody></table>";
+
+			tableBody.innerHTML = tableHtml;
+		}
 	}
 }
 
@@ -343,6 +401,13 @@ function findValueInSelectBox(needle, haystack) {
 	} else {
 		return false;
 	}
+}
+
+function resetFormData(){
+	// : Reset form for new addition process
+	trucksList.length = 0;
+	drawTruckPanel();
+	clearErrors();
 }
 
 function ajaxLoadFleets(){
@@ -390,4 +455,31 @@ function updateCount(stepByMs) {
 function setDisableSubmitBtn(btnState) {
 	document.getElementById("btnAddTruckLink").disabled = btnState;
 	document.getElementById("btnCommitTruckLinks").disabled = btnState;
+}
+
+
+
+function timeConverter(UNIX_timestamp){
+  var a = new Date(UNIX_timestamp*1000);
+  var year = a.getFullYear();
+  var month = a.getMonth();
+  var vmonth = month + 1;
+  if (vmonth < 10) {
+	  vmonth  = "0" + vmonth.toString();
+  }
+  var day = a.getDate();
+  if (day < 9) {
+	  day = "0" + day.toString();
+  }
+  var hour = a.getHours();
+  var min = a.getMinutes();
+  if (min < 9) {
+	  min = "0" + min.toString();
+  }
+  var sec = a.getSeconds();
+  if (sec < 9) {
+	  sec = "0" + sec.toString();
+  }
+  var time = year + '-' + vmonth + '-' + day + ' ' + hour + ':' + min + ':' + sec ;
+  return time;
 }

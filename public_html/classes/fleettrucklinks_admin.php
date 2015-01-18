@@ -177,6 +177,9 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 <!-- Custom styles for this template -->
 <link href="../dist/css/dashboard.css" rel="stylesheet">
 
+<!-- Jac Wright's DateTime library - PHP Style date for JS -->
+<script src="date.format.js"></script>
+
 <!-- Main JS code for this page -->
 <script src="fleettrucklinks_admin.js"></script>
 
@@ -363,25 +366,21 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 					
 					<!-- Table summary of operations -->
 					<h4>Operations Summary:</h4>
-					<div class="row">
+					<div class="row" id="tblOpList">
 					   <table class="table table-hover">
 					   <thead>
 					       <tr>
-					           <th>#</th>
-					           <th>Truck ID:</th>
-					           <th>Fleetnum:</th>
+					           <th>ID #:</th>
+					           <th>Truck IDs:</th>
+					           <th>Fleets:</th>
 					           <th>Operation:</th>
-					           <th></th>
+					           <th>Start Date:</th>
+					           <th>Stop Date:</th>
+					           <th>Delete:</th>
 					       </tr>
 					   </thead>
-					       <tbody name="tblOpList">
-					           <tr>
-					               <td></td>
-					               <td></td>
-					               <td></td>
-					               <td></td>
-					               <td></td>				           
-					           </tr>
+					       <tbody>
+					       <!-- Table data goes here -->
 					       </tbody>
 					   </table>
 					</div>
@@ -409,6 +408,5 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 			src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 		<script src="../dist/js/bootstrap.min.js"></script>
 		<script src="../assets/js/docs.min.js"></script>
-
 </body>
 </html>
