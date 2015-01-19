@@ -25,11 +25,16 @@ include "PullDataFromMySQLQuery.php";
 // : End
 
 $_ftl_data = (array) array();
+$_userStatus = (boolean) false;
+$_errors = (array) array();
 
 session_start();
 
 if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SESSION['userAgent']) && isset($_SESSION['IPaddress'])) {
 	if (($_SESSION['userAgent']) == $_SERVER['HTTP_USER_AGENT'] || $_SESSION['IPaddress'] == $_SERVER['REMOTE_ADDR']) {
+	    
+	    $_userStatus = true;
+	    
     if (isset($_GET["content"])) {
         switch ($_GET["content"]) {
             case "fleettrucklink" : {
@@ -53,8 +58,6 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 	try {
 		// Boolean used to determined if continuing existing process or starting a new process
 		$_newProcess = false;
-		// Debug variable that can be echo'ed inside javascript code
-		$_debugjs = "testing";
 		
 		// : Predefined queries that will be used
 		$_queries = array(
@@ -62,9 +65,9 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 				"SELECT id, fleetnum FROM udo_truck ORDER BY fleetnum ASC;",
 				"SELECT truck_id, fleet_id FROM udo_fleettrucklink WHERE truck_id=%s;",
 				"SELECT ftl.truck_id, ftl.fleet_id FROM udo_fleettrucklink AS ftl LEFT JOIN udo_truck AS t ON (t.id=ftl.truck_id) LEFT JOIN udo_fleet AS f ON (f.id=ftl.fleet_id) LEFT JOIN daterangevalue AS drv ON (drv.objectInstanceId=ftl.id) WHERE (drv.beginDate IS NOT NULL) AND (drv.endDate IS NULL OR drv.endDate >= DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s')) AND ftl.truck_id=%s;",
-				"SELECT * FROM `process WHERE state != 'completed' AND session_id=" . session_id() . ";",
-				"SELECT id FROM users WHERE user_email='{$_SESSION['user_email']}';",
-				"INSERT INTO `process` (detail, process_type_id, state, process_start, session_id) VALUES (:detail, :process_type_id, :state, :process_start, :session_id);"
+				"SELECT * FROM `process` WHERE state != 'completed' AND user_id=%s;",
+				"SELECT id FROM users WHERE user_email='%s';",
+				"SELECT id, truck_id, fleets, operation, start_date, end_date FROM ftl_data WHERE process_id=%s;"
 		);
 		// : End
 		
@@ -139,9 +142,48 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 			$_fleets_by_truck = get_fleets_for_truck($_itrucks[0], $_queries[3]);
 		}
 		// : End
-	
+	      
+		try {
+		    $_dbhBWT = new PullDataFromMySQLQuery ( 'bwt_max_auto', 'localhost', 'user', 'pwd' );
+		    // : Check if a process already exists for the user and session, else create a new process
+		    $_query = preg_replace("/%s/", $_SESSION["user_email"], $_queries[5]);
+		    $_result = $_dbhBWT->getDataFromQuery ( $_query );
+		    
+		    if (isset ( $_result [0] ['id'] )) {
+		        $_user_id = $_result [0] ['id'];
+		        
+		        $_query = preg_replace("/%s/", $_user_id, $_queries[4]);
+		        $_result = $_dbhBWT->getDataFromQuery ( $_query );
+		        // : Add data for the process to the ftl_data table
+		        if (isset ( $_result [0] ['id'] )) {
+		            $_process_id = $_result [0] ['id'];
+		        } else {
+		            $_errors [] = "Something failed. Could not obtain the process id.";
+		        }
+		    } else {
+		        $_errors [] = "Something failed. Could not obtain the user id.";
+		    }
+		    		    
+		    // : End
+		    if (isset ( $_process_id )) {
+		        if ($_process_id) {
+		            $_data = ( array ) array ();
+		            $_query = preg_replace ( "/%s/", $_process_id, $_queries [6] );
+		            $_queryResult = $_dbhBWT->getDataFromQuery ( $_query );
+		            if ($_queryResult) {
+		                foreach ( $_queryResult as $_value ) {
+		                    $_data [] = $_value;
+		                }
+		            }
+		        }
+		    }
+		} catch ( Exception $e ) {
+		    $_errors [] = $e->getMessage ();
+		}
+		
 		// Close DB connection
 		$_dbh = null;
+		$_dbhBWT = null;
 	
 	} catch (Exception $e) {
 		die("Was not able to successfully connect to the database.");
@@ -176,9 +218,6 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 
 <!-- Custom styles for this template -->
 <link href="../dist/css/dashboard.css" rel="stylesheet">
-
-<!-- Jac Wright's DateTime library - PHP Style date for JS -->
-<script src="date.format.js"></script>
 
 <!-- Main JS code for this page -->
 <script src="fleettrucklinks_admin.js"></script>
@@ -381,6 +420,19 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 					   </thead>
 					       <tbody>
 					       <!-- Table data goes here -->
+					       <?php
+					           if (isset($_data) && (isset($_process_id))) {
+					               if ($_process_id && $_data && is_array($_data)) {
+					                   foreach ($_data as $_key => $_record) {
+					                       print("<tr>");
+					                       foreach ($_record as $_value) {
+					                           printf("<td>%s</td>", $_value);
+					                       }
+					                       print("</tr>");
+					                   }
+					               }
+					           }
+					       ?>
 					       </tbody>
 					   </table>
 					</div>

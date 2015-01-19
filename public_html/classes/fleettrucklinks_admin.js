@@ -239,6 +239,7 @@ function ajaxAddTruckLink(){
 						var tempVar = JSON.parse(ajaxRequest.responseText);
 
 						if ('phpresult' in tempVar) {
+							console.log(tempVar);
 							var post_status = tempVar['phpresult'];
 							if (post_status !== 'true' && 'phperrors' in tempVar) {
 
@@ -251,10 +252,10 @@ function ajaxAddTruckLink(){
 
 								// : Display error message for 30 seconds and then clear the message
 								document.getElementById('divError').hidden = false;
-								document.getElementById('errorMsg').innerHTML = "The following error(s) occured while trying to add a truck link:<br>" + errStr + "This message will automatically clear in: <strong id=\"tmrCount\">30</strong> seconds";
+								document.getElementById('errorMsg').innerHTML = "The following error(s) occured while trying to add a truck link:<br>" + errStr + "This message will automatically clear in: <strong id=\"tmrCount\">15</strong> seconds";
 								window.location.hash = 'frmHeading';
-								tmrCount = 30000;
-								setTimeout(clearErrors, 30000);
+								tmrCount = 15000;
+								setTimeout(clearErrors, 15000);
 								countInterval = setInterval(function () {updateCount(1000)}, 1000);
 								// : End
 
@@ -340,7 +341,22 @@ function ajaxGetDataForProcess(){
 			if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200){ 
 				// Setup variables for getting response
 				tableData = JSON.parse(ajaxRequest.responseText);
-				redrawTable(tableData);
+				console.log(tableData);
+				
+				if ('phperrors' in tableData && tableData['phpresult'] == "false") {
+					var errStr = tableData['phperrors'];
+					// : Display error message for 15 seconds and then clear the message
+					document.getElementById('divError').hidden = false;
+					document.getElementById('errorMsg').innerHTML = "The following error(s) occured while trying to add a truck link:<br>" + errStr + "This message will automatically clear in: <strong id=\"tmrCount\">15</strong> seconds";
+					window.location.hash = 'frmHeading';
+					tmrCount = 15000;
+					setTimeout(clearErrors, 15000);
+					countInterval = setInterval(function () {updateCount(1000)}, 1000);
+					// : End
+					
+				} else {
+					redrawTable(tableData);					
+				}
 			}
 		}
 	} catch (e) {
@@ -410,7 +426,7 @@ function resetFormData(){
 	clearErrors();
 }
 
-function ajaxLoadFleets(){
+/*function ajaxLoadFleets(){
 	var ajaxRequest;  // The variable that makes Ajax possible!
 
 	try{
@@ -438,7 +454,7 @@ function ajaxLoadFleets(){
 	var queryString = "?age=" + age + "&wpm=" + wpm + "&sex=" + sex;
 	ajaxRequest.open("GET", "ajax-example.php" + queryString, true);
 	ajaxRequest.send(null); 
-}
+}*/
 
 function clearErrors() {
 	clearInterval(countInterval);
