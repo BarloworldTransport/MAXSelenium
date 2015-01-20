@@ -366,7 +366,55 @@ function ajaxGetDataForProcess(){
 	ajaxRequest.send(null); 
 }
 
-function redrawTable(objData) {
+function ajaxGetNames(fleets, trucks){
+	var ajaxRequest;  // The variable that makes Ajax possible!
+
+	try{
+		// Opera 8.0+, Firefox, Safari
+		ajaxRequest = new XMLHttpRequest();
+	} catch (e){
+		// Something went wrong
+		alert("Your browser broke!");
+		return false;
+	}
+	// Create a function that will receive data sent from the server
+	try {
+		ajaxRequest.onreadystatechange = function(){
+			if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200){ 
+				// Setup variables for getting response
+				var data = JSON.parse(ajaxRequest.responseText);
+				console.log(data);
+				
+				if ('phperrors' in data && data['phpresult'] == "false") {
+					var errStr = data['phperrors'];
+					console.log(errStr);
+					return false;
+				} else if ('fleets' in data && 'trucks' in data){
+					objCount = Object.keys(data);
+					if (objCount !== 0) {
+						for (x = 0; x < objCount; x++) {
+							var subData = objData[objKeys[x]];
+							var subKeys = Object.keys(subData);
+							var subCount = subKeys.length;
+							if (subCount !== 0) {
+								for (y = 0; y < subCount; y++) {
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	} catch (e) {
+		window.alert("Getting fleet and/or truck name values failed. Error message: " + e.message);
+	}
+	
+	var queryString = "?fleets=" + fleets + "&trucks=" + trucks;
+	ajaxRequest.open("GET", "get_fleet_truck_name_values.php" + queryString, true);
+	ajaxRequest.send(null); 
+}
+
+function redrawTable(objData, data) {
 
 	var tableBody = document.getElementById("tblOpList");
 	// Add code to redraw HTML table
