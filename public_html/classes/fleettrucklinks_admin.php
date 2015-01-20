@@ -421,14 +421,62 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 					       <tbody>
 					       <!-- Table data goes here -->
 					       <?php
+					           $_outputHTML = (string) "";
 					           if (isset($_data) && (isset($_process_id))) {
 					               if ($_process_id && $_data && is_array($_data)) {
 					                   foreach ($_data as $_key => $_record) {
-					                       print("<tr>");
-					                       foreach ($_record as $_value) {
-					                           printf("<td>%s</td>", $_value);
+					                       $_outputHTML = "<tr>";
+					                       foreach ($_record as $_field => $_value) {
+					                           
+					                           // : Fetch fleet names using the fleet IDs
+					                           if ($_field == "fleets" || $_field == "truck_id") {
+					                               
+					                               $_arrData = array();
+					                               if (isset($_fleets) && $_field == "fleets") {
+					                                   $_arrData = $_fleets;
+					                               } else if (isset($_trucks) && $_field == "truck_id") {
+					                                   $_arrData = $_trucks;
+					                               }
+					                               
+					                               $_valuename = '';
+					                               // : If there is a comma found in the fleet string then extract each ID and get its fleetname
+					                               if (strpos($_value, ',')) {
+					                                   
+					                                   $_arrValues = explode(',', $_value);
+					                                   if ($_arrValues && is_array($_arrValues)) {
+					                                       foreach ($_arrValues as $_valuekey => $_valueid) {
+					                                           switch ($_valuekey) {
+					                                               case 0: {
+					                                                   $_valuename = $_arrData[$_valueid];
+					                                                   break;
+					                                               }
+					                                               default: {
+					                                                   $_valuename .= "," . $_arrData[$_valueid];
+					                                                   break;
+					                                               }
+					                                           }
+					                                       }
+					                                   }
+					                                  // : End
+					                               } else {
+					                                   // Else if single fleet ID value then return that fleet IDs fleetname
+					                                   $_valuename = $_arrData[$_value];
+					                               }
+					                               if ($_valuename) {
+					                                   $_outputHTML .= "<td>$_valuename</td>";
+					                               }
+					                               // : End
+					                               
+					                           } else {
+					                               // Else print the fleet IDs for the fleets
+					                               
+					                               $_outputHTML .= "<td>$_value</td>";
+					                           }
 					                       }
-					                       print("</tr>");
+					                       $_outputHTML .= "<td><a id={$_record['id']}>Delete</a></td></tr>";
+					                       if ($_outputHTML) {
+					                           print($_outputHTML);
+					                       }
 					                   }
 					               }
 					           }
