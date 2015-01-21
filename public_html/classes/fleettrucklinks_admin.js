@@ -2,6 +2,8 @@
 //: Global scope variables
 var countInterval, countTmr, tableData;
 var trucksList = new Array(0);
+var fleetArr = new Array(0);
+var truckArr = new Array(0);
 
 function drawLbl(truckName, truckAction, truckID) {
 	var lblResult = "<span id=\"lbl" + truckID + "\" class=\"label label-info\">" + truckName + "<a id=\"" + truckID + "\" onclick=\"" + truckAction + "\">X</a></span>";
@@ -366,7 +368,7 @@ function ajaxGetDataForProcess(){
 	ajaxRequest.send(null); 
 }
 
-function ajaxGetNames(fleets, trucks){
+function ajaxGetNames(){
 	var ajaxRequest;  // The variable that makes Ajax possible!
 
 	try{
@@ -374,43 +376,51 @@ function ajaxGetNames(fleets, trucks){
 		ajaxRequest = new XMLHttpRequest();
 	} catch (e){
 		// Something went wrong
-		alert("Your browser broke!");
+		window.alert("Your browser broke!");
 		return false;
 	}
 	// Create a function that will receive data sent from the server
 	try {
 		ajaxRequest.onreadystatechange = function(){
-			if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200){ 
+			if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200){
 				// Setup variables for getting response
 				var data = JSON.parse(ajaxRequest.responseText);
+				console.log("Got JSON response from PHP script. Dumping data object below:");
 				console.log(data);
 				
-				if ('phperrors' in data && data['phpresult'] == "false") {
+				if ('phperrors' in data) {
 					var errStr = data['phperrors'];
 					console.log(errStr);
 					return false;
 				} else if ('fleets' in data && 'trucks' in data){
-					objCount = Object.keys(data);
+					objKeys = Object.keys(data['fleets']);
+					objCount = objKeys.length;
 					if (objCount !== 0) {
 						for (x = 0; x < objCount; x++) {
-							var subData = objData[objKeys[x]];
-							var subKeys = Object.keys(subData);
-							var subCount = subKeys.length;
-							if (subCount !== 0) {
-								for (y = 0; y < subCount; y++) {
-								}
-							}
+							fleetArr[x] = data['fleets'][objKeys[x]];
 						}
 					}
+					
+					objKeys = Object.keys(data['trucks']);
+					objCount = objKeys.length;
+					if (objCount !== 0) {
+						for (x = 0; x < objCount; x++) {
+							truckArr[x] = data['trucks'][objKeys[x]];
+						}
+					}
+					console.log("Dumping built arrays for fleets:");
+					console.log(fleetArr);
+					
+					console.log("Dumping built arrays for trucks:");
+					console.log(truckArr);
 				}
 			}
 		}
 	} catch (e) {
 		window.alert("Getting fleet and/or truck name values failed. Error message: " + e.message);
 	}
-	
-	var queryString = "?fleets=" + fleets + "&trucks=" + trucks;
-	ajaxRequest.open("GET", "get_fleet_truck_name_values.php" + queryString, true);
+	console.log("Sending get request to PHP script.");
+	ajaxRequest.open("GET", "get_fleet_truck_name_values.php", true);
 	ajaxRequest.send(null); 
 }
 
@@ -436,6 +446,11 @@ function redrawTable(objData, data) {
 					if (subKeys[y] == "start_date" || (subKeys[y] == "end_date" && subData[subKeys[y]])) {
 						aDate = timeConverter(subData[subKeys[y]]);
 						tableHtml += "<td>" + aDate + "</td>";
+					} else if (subKeys[y] == "truck_id" || subKeys[y] == "fleets") {
+						// : Search for , in string and then split into array and process each item
+						var tempArr = new Array(0);
+						
+						tableHtml += "<td>" + trucksArr[subData[subKeys[y]]] + "</td>";
 					} else {
 						tableHtml += "<td>" + subData[subKeys[y]] + "</td>";
 					}
@@ -518,4 +533,5 @@ function timeConverter(UNIX_timestamp){
   return time;
 }
 
+ajaxGetNames();
 
