@@ -383,21 +383,25 @@ function ajaxGetNames(){
 	try {
 		ajaxRequest.onreadystatechange = function(){
 			if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200){
+				
 				// Setup variables for getting response
 				var data = JSON.parse(ajaxRequest.responseText);
 				console.log("Got JSON response from PHP script. Dumping data object below:");
 				console.log(data);
 				
 				if ('phperrors' in data) {
+					
 					var errStr = data['phperrors'];
 					console.log(errStr);
 					return false;
+					
 				} else if ('fleets' in data && 'trucks' in data){
+					
 					objKeys = Object.keys(data['fleets']);
 					objCount = objKeys.length;
 					if (objCount !== 0) {
 						for (x = 0; x < objCount; x++) {
-							fleetArr[x] = data['fleets'][objKeys[x]];
+							fleetArr[objKeys[x]] = data['fleets'][objKeys[x]];
 						}
 					}
 					
@@ -405,14 +409,11 @@ function ajaxGetNames(){
 					objCount = objKeys.length;
 					if (objCount !== 0) {
 						for (x = 0; x < objCount; x++) {
-							truckArr[x] = data['trucks'][objKeys[x]];
+							truckArr[objKeys[x]] = data['trucks'][objKeys[x]];
 						}
 					}
-					console.log("Dumping built arrays for fleets:");
-					console.log(fleetArr);
 					
-					console.log("Dumping built arrays for trucks:");
-					console.log(truckArr);
+					ajaxGetDataForProcess();
 				}
 			}
 		}
@@ -424,7 +425,7 @@ function ajaxGetNames(){
 	ajaxRequest.send(null); 
 }
 
-function redrawTable(objData, data) {
+function redrawTable(objData) {
 
 	var tableBody = document.getElementById("tblOpList");
 	// Add code to redraw HTML table
@@ -432,8 +433,12 @@ function redrawTable(objData, data) {
 	var objKeys = Object.keys(objData);
 	var objCount = objKeys.length;
 	var aDate = "";
+	var tempStr = "";
+	var tempArr = new Array(0);
+	var tempDataStr = "";
+	var tempName = "";
 	   
-	tableHtml += "<table class=\"table table-hover\"><thead><tr><th>ID #:</th><th>Truck IDs:</th><th>Fleets:</th><th>Operation:</th>th>Start Date:</th><th>Stop Date:</th><th>Delete:</th></tr></thead>"
+	tableHtml += "<table class=\"table table-hover\"><thead><tr><th>ID #:</th><th>Truck IDs:</th><th>Fleets:</th><th>Operation:</th><th>Start Date:</th><th>Stop Date:</th><th>Delete:</th></tr></thead>"
 	
 	if (objCount !== 0) {
 		for (x = 0; x < objCount; x++) {
@@ -447,15 +452,47 @@ function redrawTable(objData, data) {
 						aDate = timeConverter(subData[subKeys[y]]);
 						tableHtml += "<td>" + aDate + "</td>";
 					} else if (subKeys[y] == "truck_id" || subKeys[y] == "fleets") {
-						// : Search for , in string and then split into array and process each item
-						var tempArr = new Array(0);
+						tempDataStr = "";
 						
-						tableHtml += "<td>" + trucksArr[subData[subKeys[y]]] + "</td>";
+						// : Search for , in string and then split into array and process each item
+						tempStr = subData[subKeys[y]];
+						// Check for , in string
+						if (tempStr.indexOf(",") != -1) {
+							tempArr = tempStr.split(",");
+							
+							if (tempArr.length > 0) {
+								for (z = 0; z < tempArr.length; z++) {
+									
+									if (subKeys[y] == "truck_id") {
+										tempName = truckArr[tempArr[z]];
+									} else if (subKeys[y] == "fleets") {
+										tempName = fleetArr[tempArr[z]];
+									}
+									
+									tempDataStr += tempName;
+									if (z != (tempArr.length - 1)) {
+										tempDataStr += ",";
+									}
+								}
+							}
+						} else {
+							
+							if (subKeys[y] == "truck_id") {
+								tempName = truckArr[tempStr];
+							} else if (subKeys[y] == "fleets") {
+								tempName = fleetArr[tempStr];
+							}
+							tempDataStr += tempName;
+						}
+						if (tempDataStr) {
+							tableHtml += "<td>" + tempDataStr + "</td>";
+						}
 					} else {
 						tableHtml += "<td>" + subData[subKeys[y]] + "</td>";
 					}
 				}
 			}
+			tableHtml += "<td><a id=" + subData["id"] + " onclick=\"removeDataEntryForProcess(this)\">Remove</a></td>"
 			tableHtml += "</tr>";
 		}
 		if (tableHtml) {
@@ -480,6 +517,89 @@ function findValueInSelectBox(needle, haystack) {
 	} else {
 		return false;
 	}
+}
+
+function removeDataEntryForProcess(tdElement) {
+	
+	// Disable all submit buttons on page
+	setDisableSubmitBtn(true);
+	
+	var ajaxRequest;  // The variable that makes Ajax possible!
+
+	try{
+		// Opera 8.0+, Firefox, Safari
+		ajaxRequest = new XMLHttpRequest();
+	} catch (e){
+		// Something went wrong
+		window.alert("Your browser broke!");
+		return false;
+	}
+	
+	try {
+		ajaxRequest.onreadystatechange = function(){
+			if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200){
+
+				// Setup variables to parse and store the JSON response from the PHP script
+				var errStr;
+
+				// Try parse JSON response. If invalid JSON response then throw error and do nothing
+				try {
+					var tempVar = JSON.parse(ajaxRequest.responseText);
+
+					if ('phpresult' in tempVar) {
+						
+						console.log(tempVar);
+						var post_status = tempVar['phpresult'];
+						
+						if (post_status !== 'true' && 'phperrors' in tempVar) {
+
+							var resultErrs = tempVar['phperrors'];
+
+							for (x = 0; x <= tempVar.length; x++) {
+								errStr += resultErrs[x] + "<br>";
+							}
+
+							// : Display error message for 15 seconds and then clear the message
+							document.getElementById('divError').hidden = false;
+							document.getElementById('errorMsg').innerHTML = "The following error(s) occured while attempting to remove a data operation entry for this process:<br>" + errStr + "This message will automatically clear in: <strong id=\"tmrCount\">15</strong> seconds";
+							window.location.hash = 'frmHeading';
+							tmrCount = 15000;
+							setTimeout(clearErrors, 15000);
+							countInterval = setInterval(function () {updateCount(1000)}, 1000);
+							// : End
+
+
+						} else {
+							// PHP Post succeeded and completed operation successfully
+							ajaxGetDataForProcess();
+							resetFormData();
+						}
+					}
+				} catch (e) {
+					window.alert(e.message);
+				}
+			}
+		}
+	} catch (e) {
+		window.alert(e.message);
+	}
+	
+	try {
+
+		var ftl_id = tdElement.id;
+		var post_data = "ftl_id=" + ftl_id;
+		if (post_data != false) {
+			ajaxRequest.open("POST", "remove_process_data.php", true);
+			ajaxRequest.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			ajaxRequest.send(post_data);
+		}
+
+	} catch (e) {
+		console.log("Failed posting to remove_process_data.php");
+		window.alert(e.message);
+	}
+	setDisableSubmitBtn(false);
+	
 }
 
 function resetFormData(){

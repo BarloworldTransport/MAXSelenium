@@ -34,7 +34,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
             if ($_result) {
                 foreach ($_result as $_value) {
                     if (array_key_exists("id", $_value) && array_key_exists("name", $_value)) {
-                        $_fleets[] = $_value["name"];
+                        $_fleets[$_value["id"]] = $_value["name"];
                     }
                 }
             }
@@ -46,7 +46,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
             if ($_result) {
                 foreach ($_result as $_value) {
                     if (array_key_exists("id", $_value) && array_key_exists("fleetnum", $_value)) {
-                        $_trucks[] = $_value["fleetnum"];
+                        $_trucks[$_value["id"]] = $_value["fleetnum"];
                     }
                 }
             }
