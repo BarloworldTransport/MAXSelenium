@@ -63,7 +63,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
                         			if ($_resultB[0]['process_id'] == $_process_id) {
                         				
                         				$_keys = array(
-                        						"id"
+                        						"ftl_id"
                         				);
                         				
                         				$_values = array(
