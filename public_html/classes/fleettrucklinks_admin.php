@@ -218,6 +218,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 
 <!-- Custom styles for this template -->
 <link href="../dist/css/dashboard.css" rel="stylesheet">
+<link href="../dist/css/loading.css" rel="stylesheet">
 
 <!-- Main JS code for this page -->
 <script src="fleettrucklinks_admin.js"></script>
@@ -289,11 +290,17 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 				
 				<form name="truckLinkForm" id="frmMain" class="form-signin" role="form" action="addTruckLink.php" method="post">
 					<h2 id="frmHeading" class="form-signin-heading">Add truck link</h2>
-					<div class="row" id="divError" hidden=true>
+					<div class="row" id="divPanel" hidden=true>
 						<div class="col-md-12">
-							<div class="alert alert-danger" role="alert" id="errorMsg"></div>
+							<div class="alert alert-danger" role="alert" id="panelMsg"></div>
 						</div>
 					</div>
+					<div class="row">
+						<div id="LoadingDiv" style="display:none;">
+							<img src="../assets/img/ajax-loader.gif" alt="" />
+						</div>
+					</div>
+					
 					<div class="row">
 						<div class="col-md-2">
 							<label for="start_date">Start Date:</label>
@@ -432,7 +439,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
 						</div>
 
 						<div class="col-md-6">
-							<button class="btn btn-lg btn-primary btn-block" id="btnCommitTruckLinks" name="commitTruckLinks" type="submit">Commit</button>
+							<button class="btn btn-lg btn-primary btn-block" id="btnCommitTruckLinks" name="commitTruckLinks" onclick="commitTransactions()" type="button">Commit</button>
 						</div>
 					</div>
 				</form>

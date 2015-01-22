@@ -1,258 +1,154 @@
 <?php
-
 // : Error reporting for debugging purposes
-error_reporting(E_ALL);
-ini_set("display_errors", "1");
+error_reporting ( E_ALL );
+ini_set ( "display_errors", "1" );
+// : End
+const INI_DIR = "config";
+const INI_FILE = "automation.ini";
+// : Includes
+include "PullDataFromMySQLQuery.php";
 // : End
 
-/*include "PullDataFromMySQLQuery.php";
+$_errors = ( array ) array ();
 
-$_dbh = new PullDataFromMySQLQuery('bwt_max_auto', 'localhost', 'user', 'pwd');
+$_loginStatus = true;
 
-$_keys = array("detail", "process_type_id", "state", "process_start", "session_id", "user_id");
-$_values = array("myDetail", 1, 1, 20140112, "aSessionID", 1);
-$_query = "INSERT INTO `process` (detail, process_type_id, state, process_start, session_id, user_id) VALUES (:detail, :process_type_id, :state, :process_start, :session_id, :user_id);";
+$ini = ".." . DIRECTORY_SEPARATOR . INI_DIR . DIRECTORY_SEPARATOR . INI_FILE;
 
-if ($_dbh->insertSQLQuery($_keys, $_values, $_query)) {
-	$_dbh = null;
-	die("success");
+if (is_file ( $ini ) === FALSE) {
+	$_errors [] = "File not found for automation configuration: $ini";
 } else {
-	$_dbh = null;
-	die("failed.");
-}*/
-?>
+	$_config = parse_ini_file ( $ini );
+}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="">
-<meta name="author" content="">
-<link rel="icon" href="../favicon.ico">
-
-<title>Barloworld Transport | MAX Automation System - Fleet Truck Links</title>
-
-<!-- Bootstrap core CSS -->
-<link href="../dist/css/bootstrap.min.css" rel="stylesheet">
-
-<!-- Custom styles for this template -->
-<link href="../dist/css/dashboard.css" rel="stylesheet">
-
-<!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-<!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-<script src="../assets/js/ie-emulation-modes-warning.js"></script>
-
-<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-<!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
-    
-<script src="playjs.js"></script>
-</head>
-
-<body>
-
-	<!-- Fixed navbar -->
-	<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-		<div class="container">
-
-			<div class="navbar-header">
-				<button type="button" class="navbar-toggle collapsed"
-					data-toggle="collapse" data-target="#navbar" aria-expanded="false"
-					aria-controls="navbar">
-					<span class="sr-only">Toggle navigation</span> <span
-						class="icon-bar"></span> <span class="icon-bar"></span> <span
-						class="icon-bar"></span>
-				</button>
-				<a class="navbar-brand" href="#">BWT Automation</a>
-			</div>
-			
-			<div id="navbar" class="navbar-collapse collapse">
-				<ul class="nav navbar-nav">
-					<li class="active"><a href="?=content=dashboard">My Dashboard</a></li>
-					<li class="dropdown"><a href="#" class="dropdown-toggle"
-						data-toggle="dropdown" role="button" aria-expanded="false">Automation
-							<span class="caret"></span>
-					</a>
-						<ul class="dropdown-menu" role="menu">
-							<li><a href="#">Reporting</a></li>
-							<li><a href="#">Fleet Truck Links</a></li>
-							<li><a href="#">Batch Rate Processing</a></li>
-						</ul></li>
-					<li><a href="#">Settings</a></li>
-					<li class="dropdown"><a href="#" class="dropdown-toggle"
-						data-toggle="dropdown" role="button" aria-expanded="false">My
-							Account <span class="caret"></span>
-					</a>
-						<ul class="dropdown-menu" role="menu">
-							<li><a href="#">My Profile</a></li>
-							<li><a href="?content=logout">Logout</a></li>
-						</ul></li>
-			
-			</div>
-			<!--/.nav-collapse -->
-	
-	</nav>
-
-	<div class="container-fluid">
-	
-		<div class="row">
+if (isset ( $_config ) && (! $_errors) && isset ( $_config ['auto_dir_inbox'] ) && isset ( $_config ['auto_dir_temp'] )) {
+	try {
+		$_tmp_dir = $_config ['auto_dir_temp'];
+		$_inbox_dir = $_config ['auto_dir_inbox'];
+		// : Predefined queries that will be used
+		$_queries = array (
+				"SELECT * FROM `process` WHERE state != 'completed' AND user_id=%s;",
+				"SELECT id FROM users WHERE user_email='%s';",
+				"SELECT process_id, truck_id, fleets, operation, start_date, end_date FROM ftl_data WHERE process_id=%d;",
+				"UPDATE `process` SET state = 'completed' WHERE id=:process_id;" 
+		);
+		// : End
 		
-			<div class="col-sm-3 col-md-2 sidebar">
-				<ul class="nav nav-sidebar">
-					<h6>My Tasks</h6>
-					<li class="active"><a href="?content=dashboard">My Dashboard <span class="sr-only">(current)</span></a></li>
-				</ul>
-			</div>
+		// Open new connection to BWT Auto database
+		$_dbh = new PullDataFromMySQLQuery ( 'bwt_max_auto', 'localhost', 'user', 'pwd' );
+		
+		// : Check if a process already exists for the user and session else fail
+		$_query = preg_replace ( "/%s/", "cwright@bwtsgroup.com", $_queries [1] );
+		$_result = $_dbh->getDataFromQuery ( $_query );
+		
+		if ($_result) {
+			$_userid = $_result [0] ['id'];
+		} else {
+			$_errors [] = "Something happened. Could not obtain the user id.";
+		}
+		if (isset ( $_userid ) && ! $_errors) {
 			
-			<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-
-				<div class="jumbotron">
-					<h2>Fleet Truck Links</h2>
-					<h3>Administration of Fleet Truck Links in MAX</h3>
-					<p>Use the form below to administrate truck link changes and click
-						add to add each truck link operation individually. When you are
-						ready to commit the changes click Commit.</p>
-				</div>
+			// : Check if there is an active process for the user
+			$_query = preg_replace ( "/%s/", $_userid, $_queries [0] );
+			$_result = $_dbh->getDataFromQuery ( $_query );
+			
+			if ($_result && ! $_errors) {
 				
-				<form name="truckLinkForm" class="form-signin" role="form" action="addTruckLink.php" method="post">
-					<h2 class="form-signin-heading">Add truck link</h2>
-					<div class="row" id="divError" hidden>
-						<div class="col-md-12">
-							<div class="alert alert-danger" role="alert" id="error_msg"></div>
-						</div>
-					</div>
-					<div class="row">
-						<div class="col-md-2">
-							<label for="start_date">Start Date:</label>
-						</div>
-						<div class="col-md-10">
-							<input type="date" class="form-control" id="start_date" name="start_date">
-						</div>
-					</div>
-					
-					<div class="row">
-						<div class="col-md-2">
-							<label for="stop_date">Stop Date:</label>
-						</div>
-						<div class="col-md-10">
-							<input type="date" class="form-control" id="stop_date" name="stop_date">
-						</div>
-					</div>
-					
-					<div class="row">
-						<div class="col-md-2">
-							<label for="cbxOperation">Operation to perform:</label>
-						</div>
-						<div class="col-md-10">
-							<select id="cbxOperation" name="opSelect" class="form-control" onchange="" required>
-							     <option value="create">Create New Link</option>
-							     <option value="update">Update Existing Link</option>
-							</select>
-						</div>
-					</div>
-					
-					<div class="row">
-						<div class="col-md-2">
-							<label for="truckId">Select a truck:</label>
-						</div>
-						<div class="col-md-10">
-							<select id="truckId" name="truckSelect" class="form-control" required>
-								<option value="truck1">truck1</option>
-								<option value="truck2">truck2</option>
-							</select>
-							<div class="row">
-								<div class="col-md-2">
-									<button class="btn btn-default" name="btnAddTruckToList" type="button" onclick="addTruckToPanel()">Add Truck to Operation</button>
-								</div>
-								<div class="col-md-10"></div>
-							</div>
-							<div class="panel panel-default" id="panelTruckList">
-								<div class="panel-heading">
-									<h3 class="panel-title">Trucks selected:</h3>
-								</div>
-								<div class="panel-body" id="truckPanelBody">
-								<!-- Panel contents for trucks goes here -->
-								</div>
-							</div>
-					</div>
-					<div class="row">
-						<div class="col-md-2">
-							<label for="fleet_id">Select Fleet(s)</label>
-						</div>
-						<!-- Dynamically list fleets -->
-						<div class="col-md-10">
-						<label class="checkbox-inline"> <input type="checkbox" id="cbx_fleet_1" name="fleetCbx" value="1">343001</label>
-						<label class="checkbox-inline"> <input type="checkbox" id="cbx_fleet_2" name="fleetCbx" value="2">343002</label>
-						<label class="checkbox-inline"> <input type="checkbox" id="cbx_fleet_3" name="fleetCbx" value="3">343003</label>
-						</div>
-					</div>
-					
-					<!-- Checkbox operation buttons -->
-					<div class="row">
-						<div class="col-md-2">
-						</div>
-						<div class="col-md-2">
-						  <button class="btn btn-default" name="btnChangeChkbox" type="button" onclick="testSelectBox()">Select All</button>
-						</div>
-						<div class="col-md-8">
-						  <button class="btn btn-default" name="btnSelectFleetTruckLinks" type="button" onclick="ajaxResetFleetCheckboxes()">Select Fleets where Truck is Active</button>
-						</div>
-					</div>
-					<!-- End -->
-					
-					<!-- Table summary of operations -->
-					<h4>Operations Summary:</h4>
-					<div class="row">
-					   <table class="table table-hover">
-					   <thead>
-					       <tr>
-					           <th>#</th>
-					           <th>Truck ID:</th>
-					           <th>Fleetnum:</th>
-					           <th>Operation:</th>
-					           <th></th>
-					       </tr>
-					   </thead>
-					       <tbody name="tblOpList">
-					           <tr>
-					               <td></td>
-					               <td></td>
-					               <td></td>
-					               <td></td>
-					               <td></td>				           
-					           </tr>
-					       </tbody>
-					   </table>
-					</div>
-					<!-- End -->
-					
-					<div class="row">
-						<div class="col-md-6">
-							<button class="btn btn-lg btn-primary btn-block" id="btn1" name="addTruckLink" onclick="disableBtn" type="button">Add</button>
-						</div>
-
-						<div class="col-md-6">
-							<button class="btn btn-lg btn-primary btn-block" id="btn2" name="commitTruckLinks" type="submit">Commit</button>
-						</div>
-					</div>
-				</form>
+				if (isset ( $_result [0] ['id'] )) {
+					$_process_id = $_result [0] ['id'];
+				}
+				// : End
 				
-			</div>
-		</div>
+				if (isset ( $_process_id ) && (! $_errors)) {
+					
+					$_query = preg_replace ( "/%d/", $_process_id, $_queries [2] );
+					$_resultB = $_dbh->getDataFromQuery ( $_query );
+					if ($_resultB) {
+						// : Type cast the array variables
+						$_data = ( array ) array ();
+						$_headers = ( array ) array ();
+						// : End
+						
+						if (isset ( $_resultB [0] ['process_id'] ) && isset ( $_resultB [0] ['truck_id'] ) && isset ( $_resultB [0] ['fleets'] ) && isset ( $_resultB [0] ['operation'] )) {
+							
+							// : Get the result headers and add to data array
+							$_headers = array_keys ( $_resultB [0] );
+							$_data[0] = $_headers;
+							// : End
+							
+							// : Get all ftl data for the process
+							foreach ( $_resultB as $key1 => $value1 ) {
+								
+								foreach ( $value1 as $key2 => $value2 ) {
+									// key1 + 1 as key1 starts at 0 and the header data in stored in array key position 0
+									$_data [$key1 + 1][$key2] = "'$value2'";
+								}
+							}
+							// : End
+							
+							// : Generate CSV file and save into automation inbox
+							try {
+								$_file = ".." . DIRECTORY_SEPARATOR . $_inbox_dir . DIRECTORY_SEPARATOR . date ( "YYYY-mm-dd-H-i-s" ) . "_ftldata.csv";
+								
+								$fp = fopen ( $_file, 'w+' );
+								foreach ( $_data as $fields ) {
+									fputcsv ( $fp, $fields );
+								}
+								fclose ( $fp );
+							} catch ( Exception $e ) {
+								$_errors [] = "Failed generating and/or saving csv file: " . $e->getMessage ();
+							}
+							// : End
+							
+							// : Update the process state to completed
+							$_keys = array (
+									"process_id" 
+							);
+							
+							$_values = array (
+									$_process_id 
+							);
+							
+							if (! $_errors) {
+								// Run query to delete the FTL_DATA record
+								$_dbh->insertSQLQuery ( $_keys, $_values, $_queries [3] );
+								
+								// Rerun query to check if the record has been deleted
+								$_query = preg_replace ( "/%d/", $_userid, $_queries [0] );
+								$_result = $_dbh->getDataFromQuery ( $_query );
+								
+								// Check if the record still exists, report error
+								if ($_result) {
+									$_errors [] = "Failed to update the process state.";
+								}
+							}
+							// : End
+						} else {
+							$_errors [] = "Not all fields where found in the returned results.";
+						}
+					} else {
+						$_errors [] = "There is no transactions created for this process. Please first add transactions and then commit.";
+					}
+				} else {
+					$_errors [] = "No active process found for your user. Cannot continue.";
+				}
+			} else {
+				$_errors [] = "Could not find any active processes for user.";
+			}
+		} else {
+			$_errors [] = "Could not find the user your session data identifies. Will not continue.";
+		}
+		// : End
+		// Close DB connection
+		$_dbh = null;
+	} catch ( Exception $e ) {
+		$_errors [] = $e->getMessage ();
+	}
+}
 
-		<!-- Bootstrap core JavaScript
-    ================================================== -->
-		<!-- Placed at the end of the document so the pages load faster -->
-		<script
-			src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-		<script src="../dist/js/bootstrap.min.js"></script>
-		<script src="../assets/js/docs.min.js"></script>
-		<!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-		<script src="../assets/js/ie10-viewport-bug-workaround.js"></script>
-
-</body>
-</html>
+if ($_errors) {
+	echo "false";
+	echo implode ( ",", $_errors );
+} else {
+	echo "true";
+}

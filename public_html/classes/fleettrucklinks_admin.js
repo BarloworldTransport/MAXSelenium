@@ -4,6 +4,7 @@ var countInterval, countTmr, tableData;
 var trucksList = new Array(0);
 var fleetArr = new Array(0);
 var truckArr = new Array(0);
+var loadScrState = false;
 
 function drawLbl(truckName, truckAction, truckID) {
 	var lblResult = "<span id=\"lbl" + truckID + "\" class=\"label label-info\">" + truckName + "<a id=\"" + truckID + "\" onclick=\"" + truckAction + "\">X</a></span>";
@@ -189,14 +190,7 @@ function validateAddTruckLink() {
 			errStr += errMsg[x];
 		}
 
-		// : Display error message for 30 seconds and then clear the message
-		document.getElementById('divError').hidden = false;
-		document.getElementById('errorMsg').innerHTML = "The following error(s) occured while trying to add a truck link:<br>" + errStr + "This message will automatically clear in: <strong id=\"tmrCount\">30</strong> seconds";
-		window.location.hash = 'frmHeading';
-		tmrCount = 30000;
-		setTimeout(clearErrors, 30000);
-		countInterval = setInterval(function () {updateCount(1000)}, 1000);
-		// : End
+		showInfo("error", "The following error(s) occured while attempting to remove a data operation entry for this process:<br>" + errStr, 15000);
 
 		// Validation has failed and code may not proceed
 		return false;
@@ -208,6 +202,7 @@ function validateAddTruckLink() {
 }
 
 function ajaxAddTruckLink(){
+
 	// Disable both submit buttons on page until process is complete
 	setDisableSubmitBtn(true);
 
@@ -251,20 +246,12 @@ function ajaxAddTruckLink(){
 									errStr += resultErrs[x] + "<br>";
 								}
 
-
-								// : Display error message for 30 seconds and then clear the message
-								document.getElementById('divError').hidden = false;
-								document.getElementById('errorMsg').innerHTML = "The following error(s) occured while trying to add a truck link:<br>" + errStr + "This message will automatically clear in: <strong id=\"tmrCount\">15</strong> seconds";
-								window.location.hash = 'frmHeading';
-								tmrCount = 15000;
-								setTimeout(clearErrors, 15000);
-								countInterval = setInterval(function () {updateCount(1000)}, 1000);
-								// : End
-
+								showInfo("error", "The following error(s) occured while attempting to remove a data operation entry for this process:<br>" + errStr, 15000);
 
 							} else {
 								ajaxGetDataForProcess();
 								resetFormData();
+								showInfo("success", "Successfully added the new transaction to the process.", 5000);
 							}
 						}
 					} catch (e) {
@@ -327,6 +314,8 @@ function ajaxAddTruckLink(){
 }
 
 function ajaxGetDataForProcess(){
+	setDisableSubmitBtn(true);
+
 	var ajaxRequest;  // The variable that makes Ajax possible!
 
 	try{
@@ -344,20 +333,16 @@ function ajaxGetDataForProcess(){
 				// Setup variables for getting response
 				tableData = JSON.parse(ajaxRequest.responseText);
 				console.log(tableData);
-				
+
 				if ('phperrors' in tableData && tableData['phpresult'] == "false") {
+
 					var errStr = tableData['phperrors'];
-					// : Display error message for 15 seconds and then clear the message
-					document.getElementById('divError').hidden = false;
-					document.getElementById('errorMsg').innerHTML = "The following error(s) occured while trying to add a truck link:<br>" + errStr + "This message will automatically clear in: <strong id=\"tmrCount\">15</strong> seconds";
-					window.location.hash = 'frmHeading';
-					tmrCount = 15000;
-					setTimeout(clearErrors, 15000);
-					countInterval = setInterval(function () {updateCount(1000)}, 1000);
-					// : End
-					
+					if (errStr.indexOf("Something failed. Could not obtain the process id") === -1) {
+						showInfo("error", "The following error(s) occured while attempting to remove a data operation entry for this process:<br>" + errStr, 15000);
+					}
+
 				} else {
-					redrawTable(tableData);					
+					redrawTable(tableData);		
 				}
 			}
 		}
@@ -365,10 +350,13 @@ function ajaxGetDataForProcess(){
 		window.alert("Getting data for this session and process has failed. Error message: " + e.message);
 	}
 	ajaxRequest.open("GET", "get_ftl_data.php", true);
-	ajaxRequest.send(null); 
+	ajaxRequest.send(null);
+
+	setDisableSubmitBtn(false);
 }
 
 function ajaxGetNames(){
+
 	var ajaxRequest;  // The variable that makes Ajax possible!
 
 	try{
@@ -383,20 +371,20 @@ function ajaxGetNames(){
 	try {
 		ajaxRequest.onreadystatechange = function(){
 			if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200){
-				
+
 				// Setup variables for getting response
 				var data = JSON.parse(ajaxRequest.responseText);
 				console.log("Got JSON response from PHP script. Dumping data object below:");
 				console.log(data);
-				
+
 				if ('phperrors' in data) {
-					
+
 					var errStr = data['phperrors'];
 					console.log(errStr);
 					return false;
-					
+
 				} else if ('fleets' in data && 'trucks' in data){
-					
+
 					objKeys = Object.keys(data['fleets']);
 					objCount = objKeys.length;
 					if (objCount !== 0) {
@@ -404,7 +392,7 @@ function ajaxGetNames(){
 							fleetArr[objKeys[x]] = data['fleets'][objKeys[x]];
 						}
 					}
-					
+
 					objKeys = Object.keys(data['trucks']);
 					objCount = objKeys.length;
 					if (objCount !== 0) {
@@ -412,7 +400,7 @@ function ajaxGetNames(){
 							truckArr[objKeys[x]] = data['trucks'][objKeys[x]];
 						}
 					}
-					
+
 					ajaxGetDataForProcess();
 				}
 			}
@@ -422,84 +410,92 @@ function ajaxGetNames(){
 	}
 	console.log("Sending get request to PHP script.");
 	ajaxRequest.open("GET", "get_fleet_truck_name_values.php", true);
-	ajaxRequest.send(null); 
+	ajaxRequest.send(null);
 }
 
 function redrawTable(objData) {
 
 	var tableBody = document.getElementById("tblOpList");
-	// Add code to redraw HTML table
-	var tableHtml = "";
-	var objKeys = Object.keys(objData);
-	var objCount = objKeys.length;
-	var aDate = "";
-	var tempStr = "";
-	var tempArr = new Array(0);
-	var tempDataStr = "";
-	var tempName = "";
-	   
-	tableHtml += "<table class=\"table table-hover\"><thead><tr><th>ID #:</th><th>Truck IDs:</th><th>Fleets:</th><th>Operation:</th><th>Start Date:</th><th>Stop Date:</th><th>Delete:</th></tr></thead>"
-	
-	if (objCount !== 0) {
-		for (x = 0; x < objCount; x++) {
-			tableHtml += "<tr>";
-			var subData = objData[objKeys[x]];
-			var subKeys = Object.keys(subData);
-			var subCount = subKeys.length;
-			if (subCount !== 0) {
-				for (y = 0; y < subCount; y++) {
-					if (subKeys[y] == "start_date" || (subKeys[y] == "end_date" && subData[subKeys[y]])) {
-						aDate = timeConverter(subData[subKeys[y]]);
-						tableHtml += "<td>" + aDate + "</td>";
-					} else if (subKeys[y] == "truck_id" || subKeys[y] == "fleets") {
-						tempDataStr = "";
-						
-						// : Search for , in string and then split into array and process each item
-						tempStr = subData[subKeys[y]];
-						// Check for , in string
-						if (tempStr.indexOf(",") != -1) {
-							tempArr = tempStr.split(",");
-							
-							if (tempArr.length > 0) {
-								for (z = 0; z < tempArr.length; z++) {
-									
-									if (subKeys[y] == "truck_id") {
-										tempName = truckArr[tempArr[z]];
-									} else if (subKeys[y] == "fleets") {
-										tempName = fleetArr[tempArr[z]];
-									}
-									
-									tempDataStr += tempName;
-									if (z != (tempArr.length - 1)) {
-										tempDataStr += ",";
-									}
-								}
-							}
-						} else {
-							
-							if (subKeys[y] == "truck_id") {
-								tempName = truckArr[tempStr];
-							} else if (subKeys[y] == "fleets") {
-								tempName = fleetArr[tempStr];
-							}
-							tempDataStr += tempName;
-						}
-						if (tempDataStr) {
-							tableHtml += "<td>" + tempDataStr + "</td>";
-						}
-					} else {
-						tableHtml += "<td>" + subData[subKeys[y]] + "</td>";
-					}
-				}
-			}
-			tableHtml += "<td><a id=" + subData["id"] + " onclick=\"removeDataEntryForProcess(this)\">Remove</a></td>"
-			tableHtml += "</tr>";
-		}
-		if (tableHtml) {
-			tableHtml += "</tbody></table>";
+	if (typeof objData == "object" && objData !== null) {
+		// Add code to redraw HTML table
+		var tableHtml = "";
+		var objKeys = Object.keys(objData);
+		var objCount = objKeys.length;
+		var aDate = "";
+		var tempStr = "";
+		var tempArr = new Array(0);
+		var tempDataStr = "";
+		var tempName = "";
 
+		tableHtml += "<table class=\"table table-hover\"><thead><tr><th>ID #:</th><th>Truck IDs:</th><th>Fleets:</th><th>Operation:</th><th>Start Date:</th><th>Stop Date:</th><th>Delete:</th></tr></thead>"
+
+			if (objCount !== 0) {
+				for (x = 0; x < objCount; x++) {
+					tableHtml += "<tr>";
+					var subData = objData[objKeys[x]];
+					var subKeys = Object.keys(subData);
+					var subCount = subKeys.length;
+					if (subCount !== 0) {
+						for (y = 0; y < subCount; y++) {
+							if (subKeys[y] == "start_date" || (subKeys[y] == "end_date" && subData[subKeys[y]])) {
+								aDate = timeConverter(subData[subKeys[y]]);
+								tableHtml += "<td>" + aDate + "</td>";
+							} else if (subKeys[y] == "truck_id" || subKeys[y] == "fleets") {
+								tempDataStr = "";
+
+								// : Search for , in string and then split into array and process each item
+								tempStr = subData[subKeys[y]];
+								// Check for , in string
+								if (tempStr.indexOf(",") != -1) {
+									tempArr = tempStr.split(",");
+
+									if (tempArr.length > 0) {
+										for (z = 0; z < tempArr.length; z++) {
+
+											if (subKeys[y] == "truck_id") {
+												tempName = truckArr[tempArr[z]];
+											} else if (subKeys[y] == "fleets") {
+												tempName = fleetArr[tempArr[z]];
+											}
+
+											tempDataStr += tempName;
+											if (z != (tempArr.length - 1)) {
+												tempDataStr += ",";
+											}
+										}
+									}
+								} else {
+
+									if (subKeys[y] == "truck_id") {
+										tempName = truckArr[tempStr];
+									} else if (subKeys[y] == "fleets") {
+										tempName = fleetArr[tempStr];
+									}
+									tempDataStr += tempName;
+								}
+								if (tempDataStr) {
+									tableHtml += "<td>" + tempDataStr + "</td>";
+								}
+							} else {
+								tableHtml += "<td>" + subData[subKeys[y]] + "</td>";
+							}
+						}
+					}
+					tableHtml += "<td><a id=" + subData["id"] + " onclick=\"removeDataEntryForProcess(this)\">Remove</a></td>"
+					tableHtml += "</tr>";
+				}
+				if (tableHtml) {
+					tableHtml += "</tbody></table>";
+
+					tableBody.innerHTML = tableHtml;
+				}
+			} else {
+				tableHtml = "<table class=\"table table-hover\"><thead><tr><th>ID #:</th><th>Truck IDs:</th><th>Fleets:</th><th>Operation:</th><th>Start Date:</th><th>Stop Date:</th><th>Delete:</th></tr></thead></tbody></table>"
+					tableBody.innerHTML = tableHtml;
+			}
+	} else {
+		tableHtml = "<table class=\"table table-hover\"><thead><tr><th>ID #:</th><th>Truck IDs:</th><th>Fleets:</th><th>Operation:</th><th>Start Date:</th><th>Stop Date:</th><th>Delete:</th></tr></thead></tbody></table>"
 			tableBody.innerHTML = tableHtml;
-		}
 	}
 }
 
@@ -520,10 +516,10 @@ function findValueInSelectBox(needle, haystack) {
 }
 
 function removeDataEntryForProcess(tdElement) {
-	
+
 	// Disable all submit buttons on page
 	setDisableSubmitBtn(true);
-	
+
 	var ajaxRequest;  // The variable that makes Ajax possible!
 
 	try{
@@ -534,7 +530,7 @@ function removeDataEntryForProcess(tdElement) {
 		window.alert("Your browser broke!");
 		return false;
 	}
-	
+
 	try {
 		ajaxRequest.onreadystatechange = function(){
 			if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200){
@@ -547,10 +543,10 @@ function removeDataEntryForProcess(tdElement) {
 					var tempVar = JSON.parse(ajaxRequest.responseText);
 
 					if ('phpresult' in tempVar) {
-						
+
 						console.log(tempVar);
 						var post_status = tempVar['phpresult'];
-						
+
 						if (post_status !== 'true' && 'phperrors' in tempVar) {
 
 							var resultErrs = tempVar['phperrors'];
@@ -559,20 +555,14 @@ function removeDataEntryForProcess(tdElement) {
 								errStr += resultErrs[x] + "<br>";
 							}
 
-							// : Display error message for 15 seconds and then clear the message
-							document.getElementById('divError').hidden = false;
-							document.getElementById('errorMsg').innerHTML = "The following error(s) occured while attempting to remove a data operation entry for this process:<br>" + errStr + "This message will automatically clear in: <strong id=\"tmrCount\">15</strong> seconds";
-							window.location.hash = 'frmHeading';
-							tmrCount = 15000;
-							setTimeout(clearErrors, 15000);
-							countInterval = setInterval(function () {updateCount(1000)}, 1000);
-							// : End
-
+							showInfo("error", "The following error(s) occured while attempting to remove a data operation entry for this process:<br>" + errStr, 15000);
 
 						} else {
 							// PHP Post succeeded and completed operation successfully
 							ajaxGetDataForProcess();
 							resetFormData();
+
+							showInfo("success", "Successfully removed the transaction from the process.", 5000);
 						}
 					}
 				} catch (e) {
@@ -583,7 +573,7 @@ function removeDataEntryForProcess(tdElement) {
 	} catch (e) {
 		window.alert(e.message);
 	}
-	
+
 	try {
 
 		var ftl_id = tdElement.id;
@@ -599,8 +589,125 @@ function removeDataEntryForProcess(tdElement) {
 		window.alert(e.message);
 	}
 	setDisableSubmitBtn(false);
-	
+
 }
+
+function commitTransactions() {
+
+	// Disable all submit buttons on page
+	setDisableSubmitBtn(true);
+	// Show loading screen
+	showLoadingScr(true);
+
+	var ajaxRequest;  // The variable that makes Ajax possible!
+
+	try{
+		// Opera 8.0+, Firefox, Safari
+		ajaxRequest = new XMLHttpRequest();
+	} catch (e){
+		// Something went wrong
+		window.alert("Your browser broke!");
+		return false;
+	}
+
+	try {
+		ajaxRequest.onreadystatechange = function(){
+			if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200){
+
+				// Setup variables to parse and store the JSON response from the PHP script
+				var errStr;
+
+				// Try parse JSON response. If invalid JSON response then throw error and do nothing
+				try {
+					var tempVar = JSON.parse(ajaxRequest.responseText);
+
+					if ('phpresult' in tempVar) {
+
+						console.log(tempVar);
+						var post_status = tempVar['phpresult'];
+
+						if (post_status !== 'true' && 'phperrors' in tempVar) {
+
+							var resultErrs = tempVar['phperrors'];
+
+							for (x = 0; x <= tempVar.length; x++) {
+								errStr += resultErrs[x] + "<br>";
+							}
+
+							showInfo("error", "The following error(s) occured while attempting to remove a data operation entry for this process:<br>" + errStr, 15000);
+
+						} else {
+							// PHP Post succeeded and completed operation successfully
+							redrawTable(null);
+							ajaxGetDataForProcess();
+							resetFormData();
+
+							setDisableSubmitBtn(false);
+							// Remove loading screen
+							showLoadingScr(false);
+
+							showInfo("success", "Successfully processed your transactions.", 5000);
+						}
+					}
+				} catch (e) {
+					setDisableSubmitBtn(false);
+					showLoadingScr(false);
+					window.alert(e.message);
+				}
+			}
+		}
+	} catch (e) {
+		setDisableSubmitBtn(false);
+		showLoadingScr(false);
+		window.alert(e.message);
+	}
+
+	try {
+		ajaxRequest.open("POST", "commit_process_data.php", true);
+		ajaxRequest.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		ajaxRequest.send(null);
+
+	} catch (e) {
+
+		console.log("Failed posting to commit_process_data.php");
+		window.alert(e.message);
+
+		setDisableSubmitBtn(false);
+		showLoadingScr(false);
+	}
+
+}
+
+function showInfo(infoType, infoMsg, duration) {
+
+	var infoSec = duration / 1000;
+
+	if (infoType === "error") {
+
+		// : Display error message for duration milliseconds and then clear the message
+		document.getElementById('panelMsg').className = "alert alert-danger";
+		document.getElementById('divPanel').hidden = false;
+		document.getElementById('panelMsg').innerHTML = infoMsg.toString() +  "\n This message will automatically clear in: <strong id=\"tmrCount\">" + infoSec.toString() + "</strong> seconds";
+		window.location.hash = 'frmHeading';
+		tmrCount = duration;
+		setTimeout(clearErrors, duration);
+		countInterval = setInterval(function () {updateCount(1000)}, 1000);
+		// : End
+
+	} else if (infoType === "success") {
+
+		// : Display success message for duration milliseconds and then clear the message
+		document.getElementById('panelMsg').className = "alert alert-success";
+		document.getElementById('divPanel').hidden = false;
+		document.getElementById('panelMsg').innerHTML = infoMsg.toString() +  "\n This message will automatically clear in: <strong id=\"tmrCount\">" + infoSec.toString() + "</strong> seconds";
+		window.location.hash = 'frmHeading';
+		tmrCount = duration;
+		setTimeout(clearErrors, duration);
+		countInterval = setInterval(function () {updateCount(1000)}, 1000);
+		// : End
+
+	}
+} 
 
 function resetFormData(){
 	// : Reset form for new addition process
@@ -611,8 +718,11 @@ function resetFormData(){
 
 function clearErrors() {
 	clearInterval(countInterval);
-	document.getElementById('divError').hidden = true;
+	document.getElementById('divPanel').hidden = true;
 	setDisableSubmitBtn(false);
+	if (loadScrState === true) {
+		showLoadingScr(false);
+	}
 }
 
 function updateCount(stepByMs) {
@@ -629,28 +739,38 @@ function setDisableSubmitBtn(btnState) {
 
 
 function timeConverter(UNIX_timestamp){
-  var a = new Date(UNIX_timestamp*1000);
-  var year = a.getFullYear();
-  var month = a.getMonth();
-  var vmonth = month + 1;
-  if (vmonth < 10) {
-	  vmonth  = "0" + vmonth.toString();
-  }
-  var day = a.getDate();
-  if (day < 9) {
-	  day = "0" + day.toString();
-  }
-  var hour = a.getHours();
-  var min = a.getMinutes();
-  if (min < 9) {
-	  min = "0" + min.toString();
-  }
-  var sec = a.getSeconds();
-  if (sec < 9) {
-	  sec = "0" + sec.toString();
-  }
-  var time = year + '-' + vmonth + '-' + day + ' ' + hour + ':' + min + ':' + sec ;
-  return time;
+	var a = new Date(UNIX_timestamp*1000);
+	var year = a.getFullYear();
+	var month = a.getMonth();
+	var vmonth = month + 1;
+	if (vmonth < 10) {
+		vmonth  = "0" + vmonth.toString();
+	}
+	var day = a.getDate();
+	if (day < 9) {
+		day = "0" + day.toString();
+	}
+	var hour = a.getHours();
+	var min = a.getMinutes();
+	if (min < 9) {
+		min = "0" + min.toString();
+	}
+	var sec = a.getSeconds();
+	if (sec < 9) {
+		sec = "0" + sec.toString();
+	}
+	var time = year + '-' + vmonth + '-' + day + ' ' + hour + ':' + min + ':' + sec ;
+	return time;
+}
+
+function showLoadingScr(setState) {
+	var ldiv = document.getElementById('LoadingDiv');
+	loadScrState = setState;
+	if (setState === true) {
+		ldiv.style.display='block';
+	} else if (setState === false) {
+		ldiv.style.display='none';
+	}
 }
 
 ajaxGetNames();
