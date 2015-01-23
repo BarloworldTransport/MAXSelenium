@@ -1,0 +1,19 @@
+<?php include 'process.php'; ?>
+<!DOCTYPE html>
+<html>
+<head>
+<title>
+Pick a Color - PHP Example
+</title>
+</head>
+<body>
+<form name='pickcolor' method='POST'>
+<p><label>Pick a Color:</label></p></br>
+<select id='selectBoxColor'>
+<option id='0' value='red'>Red</option>
+<option id='1' value='green'>Green</option>
+<option id='2' value='blue'>Blue</option>
+</select>
+</form>
+</body>
+</html>

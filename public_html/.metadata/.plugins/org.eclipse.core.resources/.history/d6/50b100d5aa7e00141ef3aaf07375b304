@@ -1,0 +1,11 @@
+include 'process.php';
+<!DOCTYPE html>
+<html>
+<head>
+<title>
+Pick a Color - PHP Example
+</title>
+</head>
+<body>
+</body>
+</html>
