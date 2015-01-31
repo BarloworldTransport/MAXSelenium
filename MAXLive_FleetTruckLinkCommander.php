@@ -48,6 +48,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase {
 	const DIR_NOT_FOUND = "The specified directory was not found: %s";
 	const ADMIN_URL = "/adminTop?&tab_id=120";
 	const NOT_CORRECT_ACTION = "Could not verify the action was correct when updating the action update for: %s";
+	const FLEET_URL = "/DataBrowser?browsePrimaryObject=508&browsePrimaryInstance=";
 	
 	// : Variables
 	protected static $driver;
@@ -58,6 +59,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase {
 	protected $_welcome;
 	protected $_wdport;
 	protected $_proxyip;
+	protected $_dbhost;
 	protected $_browser;
 	protected $_data = array ();
 	protected $_file1;
@@ -66,6 +68,10 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase {
 	protected $_scrdir;
 	protected $_errors = array ();
 	protected $_tmp;
+	protected $_queries = array (
+			"SELECT id, fleetnum from udo_truck where id=%d;",
+			"SELECT id, name from udo_fleet where id=%d;" 
+	);
 	
 	// : Public Functions
 	// : Accessors
@@ -84,7 +90,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase {
 			return FALSE;
 		}
 		$data = parse_ini_file ( $ini );
-		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
+		if ((array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "dbhost", $data ) && $data ["dbhost"]) && (array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
 			$this->_username = $data ["username"];
 			$this->_password = $data ["password"];
 			$this->_welcome = $data ["welcome"];
@@ -95,6 +101,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase {
 			$this->_datadir = $data ["datadir"];
 			$this->_scrdir = $data ["screenshotdir"];
 			$this->_errdir = $data ["errordir"];
+			$this->_dbhost = $data ["dbhost"];
 			$this->_file1 = $data ["file1"];
 			switch ($this->_mode) {
 				case "live" :
@@ -134,10 +141,10 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase {
 	}
 	
 	/**
-	 * MAXLive_FleetTruckLinkCommander::testFunctionTemplate
+	 * MAXLive_FleetTruckLinkCommander::testFleetTruckLinkCommander
 	 * This is a function description for a selenium test function
 	 */
-	public function testUpdateTruckPrimaryFleet() {
+	public function testFleetTruckLinkCommander() {
 		
 		// : Import Data
 		$_file1 = dirname ( __FILE__ ) . self::DS . $this->_datadir . self::DS . $this->_file1;
@@ -153,9 +160,69 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase {
 				}
 			}
 		} else {
-			$_errmsg = preg_replace ( "/%s/", $_file, self::FILE_NOT_FOUND );
-			throw new Exception ( "$_errmsg\n{$e->getMessage()}" );
+			$_errmsg = preg_replace ( "/%s/", $_file1, self::FILE_NOT_FOUND );
+			throw new Exception ( "$_errmsg\n" );
 		}
+		// : Using imported ids from csv file get the string names for the trucks and fleets
+		$_data = ( array ) array ();
+		$_dbh = new PullDataFromMySQLQuery ( "max2", $this->_dbhost );
+		
+		if ($this->_data) {
+			foreach ( $this->_data as $key => $value ) {
+				// : Split fleet and truck strings into arrays
+				$_fleets = $value ['fleets'];
+				$_trucks = $value ['truck_id'];
+				// : End
+				
+				if ($_fleets) {
+					
+					$_query = preg_replace ( "/%d/", $_fleets, $this->_queries [1] );
+					$_result = $_dbh->getDataFromQuery ( $_query );
+					
+					if ($_result) {
+						
+						// : Loop each result found
+						foreach ( $_result as $rkey => $rvalue ) {
+							
+							// : If fleet found in original csv data been looped then add fleet name to main data array
+							if (strpos ( $_fleets, $rvalue ['id'] )) {
+								$this->_data [$key] ['fleets'] [$rvalue ['id']] = $rvalue ['name'];
+							}
+							// : End
+							
+							// : End
+						}
+					} else {
+						$this->_errors [] = "No fleets found for transaction: {$this->_data[$key]['process_id']}, fllet value: $_fleets";
+					}
+					
+					if ($_trucks) {
+						$_query = preg_replace ( "/%d/", $_trucks, $this->_queries [0] );
+						$_result = $_dbh->getDataFromQuery ( $_query );
+						if ($_result) {
+							
+							// : Loop each result found
+							foreach ( $_result as $rkey => $rvalue ) {
+								
+								// : If truck found in original csv data been looped then add fleetnum to main data array
+								if (strpos ( $_trucks, $rvalue ['fleetnum'] )) {
+									$this->_data [$key] ['truck_id'] [$rvalue ['id']] = $rvalue ['fleetnum'];
+								}
+								// : End
+							}
+							// : End
+						}
+					} else {
+						$this->_errors [] = "No trucks found for transaction: {$this->_data[$key]['process_id']}, truck value: $_trucks";
+					}
+				}
+			}
+		}
+		
+		var_dump ( $this->_data );
+		$_dbh = null;
+		exit ();
+		
 		// : End
 		
 		try {
@@ -227,50 +294,67 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase {
 		// : Main Loop
 		foreach ( $this->_data as $key => $value ) {
 			try {
-				if (array_key_exists ( "truck_id", $value )) {
-					$this->_session->open ( $this->_maxurl . self::TRUCK_URL . $value ["truck_id"] );
+				
+				// : Split fleet and truck strings into arrays
+				$_fleets = explode ( ',', $value ['fleets'] );
+				$_trucks = explode ( ',', $value ['truck_id'] );
+				// : End
+				
+				// : Loop fleet and truck arrays to process each link operation for each truck in each fleet
+				foreach ( $_fleets as $_fleet ) {
 					
-					// Look for truck fleetnum in div title
-					$this->_tmp = $value["truck_id"];
+					// : Load Fleet DataBrowser page
+					$this->_session->open ( $this->_maxurl . self::FLEET_URL . $_fleet );
+					$this->_tmp = $_fleet;
 					$e = $w->until ( function ($session) {
-						return $session->element ( 'xpath', "//*[contains(text(), '{$this->_tmp}')]" );
+						return $session->element ( "xpath", "//*[@id='toolbar']/div[contains(text(), '{$this->_tmp}')]" );
 					} );
 					
-					$this->assertElementPresent ( "css selector", "div.toolbar-cell-update" );
-					$this->_session->element ( "css selector", "div.toolbar-cell-update" )->click ();
-					
-					$e = $w->until ( function ($session) {
-						return $session->element ( 'xpath', "//*[contains(text(),'Edit Truck')]" );
-					} );
-					
-					$this->assertElementPresent ( "xpath", "//*[@id='udo_Truck-19__0_primaryFleet_id-19']" );
-					$this->assertElementPresent( "css selector", "input[type=submit][name=save]");
-					
-					$this->_session->element ( "xpath", "//*[@id='udo_Truck-19__0_primaryFleet_id-19']/option[text()='{$value['Fleet']}']" )->click ();
-					$this->_session->element ("css selector", "input[type=submit][name=save]")->click();
-					
-					
-					// Look for truck fleetnum in div title
-					$e = $w->until ( function ($session) {
-						return $session->element ( 'xpath', "//*[contains(text(), '{$this->_tmp}')]" );
-					} );
-					
-				} else {
-					throw new Exception ( "No truck id provided in csv file for line item no: $key" );
+					foreach ( $_trucks as $_truck ) {
+						
+						// : Check for select box element and option Fleet Truck Link and click it
+						$this->assertElementPresent ( "xpath", "//*[@id='subtabselector']/select/option[contains(text(),'Fleet Truck Link')]" );
+						$this->_session->element ( "xpath", "//*[@id='subtabselector']/select/option[contains(text(),'Fleet Truck Link')]" )->click ();
+						// : End
+						
+						// : Wait for table and column header of table to read Truck
+						$e = $w->until ( function ($session) {
+							return $session->element ( "xpath", "//*[@id='OrderBy29911']/table/tbody/tr/td[1]/nobr[text='Truck']" );
+						} );
+						// : End
+						
+						// : Check for Create button and click it
+						$this->assertElementPresent ( "xpath", "//*[@id='button-create']" );
+						$this->_session->element ( "xpath", "//*[@id='button-create']" )->click ();
+						// : End
+						
+						// : Wait for text Create Fleet Truck Link
+						$e = $w->until ( function ($session) {
+							return $session->element ( "xpath", "//*[contains(text(),'Create Fleet Truck Link')]" );
+						} );
+						// : End
+						
+						$this->assertElementPresent ( "xpath", "//*[@id='udo_FleetTruckLink-9__0_truck_id-9" );
+						$this->assertElementPresent ( "xpath", ".//*[@id='udo_FleetTruckLink-5_0_0_fleet_id-5']/tbody/tr/td[text()='']" );
+						$this->assertElementPresent ( "xpath", "" );
+						$this->assertElementPresent ( "xpath", "" );
+						$this->assertElementPresent ( "xpath", "" );
+					}
 				}
+				// : End
 			} catch ( Exception $e ) {
 				$_num = count ( $this->_errors );
 				$this->_errors [$_num] ["errormsg"] = $e->getMessage ();
 				foreach ( $value as $recKey => $recVal ) {
 					$this->_errors [$_num] [$recVal] = $recVal;
 				}
-				$this->takeScreenshot($this->_session, "updateTruckPrimaryFleet");
+				$this->takeScreenshot ( $this->_session, "updateTruckPrimaryFleet" );
 			}
 		}
 		
 		// : Report errors if any occured
 		if ($this->_errors) {
-			$_errfile = dirname ( __FILE__ ) . $this->_errdir . self::DS . "error_report_" . date("Y-m-d_His") . ".csv";
+			$_errfile = dirname ( __FILE__ ) . $this->_errdir . self::DS . "error_report_" . date ( "Y-m-d_His" ) . ".csv";
 			$this->ExportToCSV ( $_errfile, $this->_errors );
 			echo "Exported error report to the following path and file: " . $_errfile;
 		}
