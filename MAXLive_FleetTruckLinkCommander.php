@@ -100,7 +100,8 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
 
     protected $_queries = array(
         "SELECT id, fleetnum from udo_truck where id IN (%d);",
-        "SELECT id, name from udo_fleet where id IN (%d);"
+        "SELECT id, name from udo_fleet where id IN (%d);",
+        "SELECT ftl.truck_id, t.fleetnum, ftl.fleet_id, f.name as fleetname, drv.beginDate, drv.endDate FROM udo_fleettrucklink as ftl left join udo_truck as t on (t.id=ftl.truck_id) left join udo_fleet as f on (f.id=ftl.fleet_id) left join daterangevalue as drv on (drv.objectInstanceId=ftl.id) WHERE (drv.beginDate IS NOT NULL) AND (drv.endDate IS NULL OR drv.endDate >= DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s')) AND ftl.truck_id IN (%e);"
     );
     
     // : Public Functions
@@ -202,6 +203,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
         // : Using imported ids from csv file get the string names for the trucks and fleets
         
         $_dbh = new PullDataFromMySQLQuery("max2", $this->_dbhost);
+        $_data = (array) array();
         
         if ($this->_data) {
             foreach ($this->_data as $key => $value) {
@@ -223,7 +225,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                             // : If fleet found in original csv data been looped then add fleet name to main data array;
 
                             if (stripos($_fleets, strval($rvalue['id'])) !== false) {
-                                $this->_data[$key]['fleets'][$rvalue['id']] = $rvalue['name'];
+                                $_data['fleets'][$rvalue['id']] = $rvalue['name'];
                             }
                             // : End
                             
@@ -246,8 +248,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
 
                                 // : If truck found in original csv data been looped then add fleetnum to main data array
                                 if (stripos($_trucks, strval($rvalue['id'])) !== false) {
-                                    var_dump($rvalue['fleetnum']);
-                                    $this->_data[$key]['truck_id'][$rvalue['id']] = $rvalue['fleetnum'];
+                                    $_data['trucks'][$rvalue['id']] = $rvalue['fleetnum'];
                                 }
                                 // : End
                             }
@@ -260,10 +261,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
             }
         }
         
-        var_dump($this->_data);
         $_dbh = null;
-        exit();
-        
         // : End
         
         try {
@@ -384,7 +382,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                         // : End
                         
                         $this->assertElementPresent("xpath", "//*[@id='udo_FleetTruckLink-9__0_truck_id-9");
-                        $this->assertElementPresent("xpath", ".//*[@id='udo_FleetTruckLink-5_0_0_fleet_id-5']/tbody/tr/td[text()='']");
+                        $this->assertElementPresent("xpath", "//*[@id='udo_FleetTruckLink-5_0_0_fleet_id-5']/tbody/tr/td[text()='']");
                         $this->assertElementPresent("xpath", "");
                         $this->assertElementPresent("xpath", "");
                         $this->assertElementPresent("xpath", "");
