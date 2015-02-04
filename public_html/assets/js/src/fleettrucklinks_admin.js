@@ -1,4 +1,3 @@
-
 //: Global scope variables
 var countInterval, countTmr, tableData;
 var trucksList = new Array(0);
@@ -774,4 +773,3 @@ function showLoadingScr(setState) {
 }
 
 ajaxGetNames();
-
