@@ -62,6 +62,8 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
     const NOT_CORRECT_ACTION = "Could not verify the action was correct when updating the action update for: %s";
 
     const FLEET_URL = "/DataBrowser?browsePrimaryObject=508&browsePrimaryInstance=";
+
+    const FLT_URL = "/DataBrowser?browsePrimaryObject=509&browsePrimaryInstance=";
     
     // : Variables
     protected static $driver;
@@ -101,7 +103,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
     protected $_queries = array(
         "SELECT id, fleetnum from udo_truck where id IN (%d);",
         "SELECT id, name from udo_fleet where id IN (%d);",
-        "SELECT ftl.truck_id, t.fleetnum, ftl.fleet_id, f.name as fleetname, drv.beginDate, drv.endDate FROM udo_fleettrucklink as ftl left join udo_truck as t on (t.id=ftl.truck_id) left join udo_fleet as f on (f.id=ftl.fleet_id) left join daterangevalue as drv on (drv.objectInstanceId=ftl.id) WHERE (drv.beginDate IS NOT NULL) AND (drv.endDate IS NULL OR drv.endDate >= DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s')) AND ftl.truck_id IN (%e);"
+        "SELECT ftl.id, ftl.truck_id, ftl.fleet_id FROM udo_fleettrucklink as ftl left join daterangevalue as drv on (drv.objectInstanceId=ftl.id) WHERE (drv.beginDate IS NOT NULL) AND (drv.endDate IS NULL OR drv.endDate >= DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s')) AND ftl.truck_id IN (%e) AND ftl.fleet_id IN (%f);"
     );
     
     // : Public Functions
@@ -218,12 +220,11 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                     $_result = $_dbh->getDataFromQuery($_query);
                     
                     if ($_result) {
-                        // Clear the fleet value
-                        $this->_data[$key]['fleets'] = null;
+
                         // : Loop each result found
                         foreach ($_result as $rkey => $rvalue) {
                             // : If fleet found in original csv data been looped then add fleet name to main data array;
-
+                            
                             if (stripos($_fleets, strval($rvalue['id'])) !== false) {
                                 $_data['fleets'][$rvalue['id']] = $rvalue['name'];
                             }
@@ -232,7 +233,8 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                             // : End
                         }
                     } else {
-                        $this->_errors[] = "No fleets found for transaction: {$this->_data[$key]['process_id']}, fleet value: $_fleets";
+                        $_errmsg = "No fleets found for transaction: {$this->_data[$key]['process_id']}, fleet value: $_fleets";
+                        $this->reportNewError($_errmsg);
                     }
                     
                     if ($_trucks) {
@@ -240,12 +242,9 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                         $_result = $_dbh->getDataFromQuery($_query);
                         if ($_result) {
                             
-                            // Clear the truck_id value
-                            $this->_data[$key]['truck_id'] = null;
-                            
                             // : Loop each result found
                             foreach ($_result as $rkey => $rvalue) {
-
+                                
                                 // : If truck found in original csv data been looped then add fleetnum to main data array
                                 if (stripos($_trucks, strval($rvalue['id'])) !== false) {
                                     $_data['trucks'][$rvalue['id']] = $rvalue['fleetnum'];
@@ -254,8 +253,24 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                             }
                             // : End
                         }
+                        
+                        // : Get all active fleettrucklinks for trucks in fleets
+                        $_query = preg_replace("/%e/", $_trucks, $this->_queries[2]);
+                        $_query = preg_replace("/%f/", $_fleets, $_query);
+                        $_result = $_dbh->getDataFromQuery($_query);
+                        
+                        if ($_result) {
+                            
+                            foreach ($_result as $rkey => $rvalue) {
+                                if (stripos($_fleets, strval($rvalue['fleet_id'])) !== false && stripos($_trucks, strval($rvalue['truck_id'])) !== false) {
+                                    $_data['fleettrucklinks'][$rvalue['fleet_id']][$rvalue['truck_id']] = $rvalue['id'];
+                                }
+                            }
+                        }
+                        // : End
                     } else {
-                        $this->_errors[] = "No trucks found for transaction: {$this->_data[$key]['process_id']}, truck value: $_trucks";
+                        $_errmsg = "No trucks found for transaction: {$this->_data[$key]['process_id']}, truck value: $_trucks";
+                        $this->reportNewError($_errmsg);
                     }
                 }
             }
@@ -344,58 +359,237 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                 $_trucks = explode(',', $value['truck_id']);
                 // : End
                 
+                // : Make 100% sure that the operation is set correctly
+                if (stripos($value['operation'], 'create') !== false) {
+                    $_operation = "create";
+                } else if (stripos($value['operation'], 'update') !== false) {
+                    $_operation = "update";
+                } else if (stripos($value['operation'], 'remove') !== false) {
+                    $_operation = "remove";
+                } else {
+                    throw new Exception("Was not able to determine the operation to be performed");
+                }
+                // : End
+                
+                // : Convert unix time stamp to string formatted Y-m-d H:i:s
+                $_start_date = $this->convertUnixToFormattedTime($value['start_date']);
+                $_end_date = $this->convertUnixToFormattedTime($value['end_date']);
+                //  : End
+                
+                // : Check if operation and dates required are valid and ready to go else skip record and report error
+                if ((($_operation === 'create') && ($_start_date === FALSE)) || (($_operation === 'update') && ($_start_date === FALSE || $_end_date === FALSE)) || (($_operation === 'remove') && ($_end_date === FALSE))) {
+                    throw new Exception("Datetime value supplied for operation: $_operation could not be converted or was not supplied.");    
+                }
+                // : End
+                
                 // : Loop fleet and truck arrays to process each link operation for each truck in each fleet
                 foreach ($_fleets as $_fleet) {
                     
-                    // : Load Fleet DataBrowser page
-                    $this->_session->open($this->_maxurl . self::FLEET_URL . $_fleet);
-                    $this->_tmp = $_fleet;
-                    $e = $w->until(function ($session)
-                    {
-                        return $session->element("xpath", "//*[@id='toolbar']/div[contains(text(), '{$this->_tmp}')]");
-                    });
+                    if (isset($_data['fleets'][$_fleet])) {
+                        $_fleet_name = $_data['fleets'][$_fleet];
+                    } else {
+                        $_fleet_name = null;
+                        $_errmsg = "Could not obtain get name for fleet with ID: $_fleet";
+                        $this->reportNewError($_errmsg);
+                    }
                     
                     foreach ($_trucks as $_truck) {
                         
-                        // : Check for select box element and option Fleet Truck Link and click it
-                        $this->assertElementPresent("xpath", "//*[@id='subtabselector']/select/option[contains(text(),'Fleet Truck Link')]");
-                        $this->_session->element("xpath", "//*[@id='subtabselector']/select/option[contains(text(),'Fleet Truck Link')]")->click();
-                        // : End
-                        
-                        // : Wait for table and column header of table to read Truck
-                        $e = $w->until(function ($session)
-                        {
-                            return $session->element("xpath", "//*[@id='OrderBy29911']/table/tbody/tr/td[1]/nobr[text='Truck']");
-                        });
-                        // : End
-                        
-                        // : Check for Create button and click it
-                        $this->assertElementPresent("xpath", "//*[@id='button-create']");
-                        $this->_session->element("xpath", "//*[@id='button-create']")->click();
-                        // : End
-                        
-                        // : Wait for text Create Fleet Truck Link
-                        $e = $w->until(function ($session)
-                        {
-                            return $session->element("xpath", "//*[contains(text(),'Create Fleet Truck Link')]");
-                        });
-                        // : End
-                        
-                        $this->assertElementPresent("xpath", "//*[@id='udo_FleetTruckLink-9__0_truck_id-9");
-                        $this->assertElementPresent("xpath", "//*[@id='udo_FleetTruckLink-5_0_0_fleet_id-5']/tbody/tr/td[text()='']");
-                        $this->assertElementPresent("xpath", "");
-                        $this->assertElementPresent("xpath", "");
-                        $this->assertElementPresent("xpath", "");
+                        try {
+                            
+                            if (isset($_data['trucks'][$_truck])) {
+                                $_truck_fleetnum = $_data['trucks'][$_truck];
+                            } else {
+                                $_truck_fleetnum = null;
+                                $_errmsg = "Could not obtain get fleetnum for truck with ID: $_truck";
+                                $this->reportNewError($_errmsg);
+                            }
+                            
+                            // : Load Fleet DataBrowser page
+                            $this->_session->open($this->_maxurl . self::FLEET_URL . $_fleet);
+                            $this->_tmp = $_fleet_name;
+                            $e = $w->until(function ($session)
+                            {
+                                return $session->element("xpath", "//*[@id='toolbar']/div[contains(text(), '{$this->_tmp}')]");
+                            });
+                            
+                            // : Check if fleettrucklink exists for the transaction and store it
+                            if (isset($_data['fleettrucklinks'][$_fleet][$_truck])) {
+                                if (is_int($_data['fleettrucklinks'][$_fleet][$_truck]) && $_data['fleettrucklinks'][$_fleet][$_truck] !== 0) {
+                                    $_ftl_id = $_data['fleettrucklinks'][$_fleet][$_truck];
+                                } else {
+                                    $_ftl_id = null;
+                                }
+                            } else {
+                                $_ftl_id = null;
+                            }
+                            // : End
+                            
+                            // : Run automation depending on which operation has been set
+                            if ($_ftl_id !== null) {
+                                
+                                try {
+                                    
+                                    $this->_session->open($this->_maxurl . self::FLT_URL . $_ftl_id);
+                                    
+                                    // : Wait for fleet name to be present on page within specified element
+                                    $this->_tmp = $_fleet_name;
+                                    $e = $w->until(function ($session)
+                                    {
+                                        return $session->element("xpath", "//*[@id='toolbar']/div[contains(text(), '{$this->_tmp}')]");
+                                    });
+                                    // : End
+                                    
+                                    // : Wait for text of truck fleetnum to be present on page
+                                    $this->_tmp = $_truck_fleetnum;
+                                    $e = $w->until(function ($session)
+                                    {
+                                        return $session->element("xpath", "//*/td[contains(text(), '{$this->_tmp}')]");
+                                    });
+                                    // : End
+                                    
+                                    $this->assertElementPresent("css selector", "div.toolbar-cell-update");
+                                    $this->_session->element("css selector", "div.toolbar-cell-update")->click();
+                                    
+                                    // : Wait for Update Fleet Truck Link heading to be present in a table cell
+                                    $e = $w->until(function ($session)
+                                    {
+                                        return $session->element("xpath", "//*/td[contains(text(),'Update Fleet Truck Link')]");
+                                    });
+                                    
+                                    $this->assertElementPresent("xpath", "//*/td[contains(text(), '$_truck_fleetnum')]");
+                                    $this->assertElementPresent("xpath", "//*/td[contains(text(), '$_fleet_name')]");
+                                    $this->assertElementPresent("xpath", "//*[@id='udo_FleetTruckLink-18_0_0_fleetTruckLinkBeginDate-18']");
+                                    $this->assertElementPresent("xpath", "//*[@id='udo_FleetTruckLink-19_0_0_fleetTruckLinkEndDate-19']");
+                                    $this->assertElementPresent("css selector", "input[type=submit][name=save]");
+                                    
+                                    // : Complete start and end dates according to the operation set
+                                    switch ($_operation) {
+                                        case 'update':
+                                            {
+                                                $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-18_0_0_fleetTruckLinkBeginDate-18']")->clear();
+                                                $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-18_0_0_fleetTruckLinkBeginDate-18']")->sendKeys($_start_date);
+                                                $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-19_0_0_fleetTruckLinkEndDate-19']")->clear();
+                                                $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-19_0_0_fleetTruckLinkEndDate-19']")->sendKeys($_end_date);
+                                                break;
+                                            }
+                                        case 'remove':
+                                            {
+                                                $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-19_0_0_fleetTruckLinkEndDate-19']")->clear();
+                                                $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-19_0_0_fleetTruckLinkEndDate-19']")->sendKeys($_end_date);
+                                                break;
+                                            }
+                                        case 'create':
+                                        default:
+                                            {
+                                                $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-19_0_0_fleetTruckLinkEndDate-19']")->clear();
+                                                $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-19_0_0_fleetTruckLinkEndDate-19']")->sendKeys($_start_date);
+                                                break;
+                                            }
+                                    }
+                                    // : End
+                                    
+                                    $this->_session->element("css selector", "input[type=submit][name=save]")->click();
+                                    // : End
+                                    
+                                    // : Wait for fleet name to be present on page within specified element
+                                    $this->_tmp = $_fleet_name;
+                                    $e = $w->until(function ($session)
+                                    {
+                                        return $session->element("xpath", "//*[@id='toolbar']/div[contains(text(), '{$this->_tmp}')]");
+                                    });
+                                    // : End
+                                    
+                                    // : Wait for text of truck fleetnum to be present on page
+                                    $this->_tmp = $_truck_fleetnum;
+                                    $e = $w->until(function ($session)
+                                    {
+                                        return $session->element("xpath", "//*/td[contains(text(), '{$this->_tmp}')]");
+                                    });
+                                    // : End
+                                } catch (Exception $e) {
+                                    $this->reportNewError($e->getMessage(), $value);
+                                }
+                            }
+                            
+                            // : Create new link for create operation only
+                            if ($_operation == 'create') {
+                                try {
+                                    // : Load Fleet DataBrowser page
+                                    $this->_session->open($this->_maxurl . self::FLEET_URL . $_fleet);
+                                    
+                                    $this->_tmp = $_fleet_name;
+                                    $e = $w->until(function ($session)
+                                    {
+                                        return $session->element("xpath", "//*[@id='toolbar']/div[contains(text(), '{$this->_tmp}')]");
+                                    });
+                                    
+                                    // : Check for select box element and option Fleet Truck Link and click it
+                                    $this->assertElementPresent("xpath", "//*[@id='subtabselector']/select/option[contains(text(),'Fleet Truck Link')]");
+                                    $this->_session->element("xpath", "//*[@id='subtabselector']/select/option[contains(text(),'Fleet Truck Link')]")->click();
+                                    // : End
+                                    
+                                    // : Wait for table and column header of table to read Truck
+                                    $e = $w->until(function ($session)
+                                    {
+                                        return $session->element("xpath", "//*[@id='OrderBy29911']/table/tbody/tr/td[1]/nobr[contains(text(),'Truck')]");
+                                    });
+                                    // : End
+                                    
+                                    // : Check for Create button and click it
+                                    $this->assertElementPresent("css selector", "div#button-create");
+                                    $this->_session->element("css selector", "div#button-create")->click();
+                                    // : End
+                                    
+                                    // : Wait for text Create Fleet Truck Link
+                                    $e = $w->until(function ($session)
+                                    {
+                                        return $session->element("xpath", "//*/td[contains(text(),'Create Fleet Truck Link')]");
+                                    });
+                                    // : End
+                                    
+                                    $this->assertElementPresent("xpath", "//*/td[contains(text(),'$_fleet_name')]");
+                                    $this->assertElementPresent("xpath", "//*[@id='udo_FleetTruckLink-9__0_truck_id-9']");
+                                    $this->assertElementPresent("xpath", "//*[@id='udo_FleetTruckLink-18_0_0_fleetTruckLinkBeginDate-18']");
+                                    $this->assertElementPresent("xpath", "//*[@id='udo_FleetTruckLink-19_0_0_fleetTruckLinkEndDate-19']");
+                                    $this->assertElementPresent("css selector", "input[type=submit][name=save]");
+
+                                    $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-9__0_truck_id-9']/option[text()='{$_truck_fleetnum}']")->click();
+                                    
+                                    $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-18_0_0_fleetTruckLinkBeginDate-18']")->clear();
+                                    $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-18_0_0_fleetTruckLinkBeginDate-18']")->sendKeys($_start_date);
+                                    
+                                    $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-19_0_0_fleetTruckLinkEndDate-19']")->clear();
+                                    
+                                    if ($_end_date !== FALSE) {
+                                        $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-19_0_0_fleetTruckLinkEndDate-19']")->sendKeys($_end_date);
+                                    }
+                                    
+                                    $this->_session->element("css selector", "input[type=submit][name=save]")->click();
+                                    
+                                    // : Wait for Fleet Truck Link page to reload and check for truck link
+                                    $this->_tmp = $_truck_fleetnum;
+                                    $e = $w->until(function ($session)
+                                    {
+                                        return $session->element("xpath", "//*/a/nobr[contains(text(),'{$this->_tmp}')]");
+                                    });
+                                    // : End
+                                    
+                                } catch (Exception $e) {
+                                    $this->reportNewError($e->getMessage(), $value);
+                                }
+                            }
+                            // : End
+                            
+                            // : End
+                        } catch (Exception $e) {
+                            $this->reportNewError($e->getMessage(), $value);
+                        }
                     }
                 }
                 // : End
             } catch (Exception $e) {
-                $_num = count($this->_errors);
-                $this->_errors[$_num]["errormsg"] = $e->getMessage();
-                foreach ($value as $recKey => $recVal) {
-                    $this->_errors[$_num][$recVal] = $recVal;
-                }
-                $this->takeScreenshot($this->_session, "updateTruckPrimaryFleet");
+                $this->reportNewError($e->getMessage(), $value);
             }
         }
         
@@ -431,13 +625,18 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
      */
     private function takeScreenshot($_session, $_filename)
     {
-        $_img = $_session->screenshot();
-        $_data = base64_decode($_img);
-        $_file = dirname(__FILE__) . $this->_scrdir . self::DS . date("Y-m-d_His") . $_filename;
-        $_success = file_put_contents($_file, $_data);
-        if ($_success) {
-            return $_file;
-        } else {
+        try {
+            $_img = $_session->screenshot();
+            $_data = base64_decode($_img);
+            $_file = dirname(__FILE__) . $this->_scrdir . self::DS . date("Y-m-d_His") . $_filename;
+            $_success = file_put_contents($_file, $_data);
+            if ($_success) {
+                return $_file;
+            } else {
+                return FALSE;
+            }
+        } catch (Exception $e) {
+            $this->reportNewError($e->getMessage());
             return FALSE;
         }
     }
@@ -504,6 +703,57 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
         } catch (Exception $e) {
             return FALSE;
         }
+    }
+
+    /**
+     * MAXLive_FleetTruckLinkCommander::convertUnixToFormattedTime($_unixTime)
+     * Convert unix time to formated datetime string Y-m-d H:i:s
+     *
+     * @param string: $_unixTime            
+     */
+    private function convertUnixToFormattedTime($_unixTime)
+    {
+        try {
+            if ($_unixTime) {
+                $_result = date("Y-m-d H:i:s", $_unixTime);
+                if ($_result) {
+                    return $_result;
+                } else {
+                    $this->_errors[] = "A call to function " . __FUNCTION__ . " failed because time convert failed.";
+                    return FALSE;
+                }
+            } else {
+                $this->_errors[] = "A call to function " . __FUNCTION__ . " failed because no time was given.";
+                return FALSE;
+            }
+        } catch (Exception $e) {
+            $this->_errors[] = "A call to function " . __FUNCTION__ . " failed because: " . $e->getMessage();
+            return FALSE;
+        }
+    }
+
+    /**
+     * MAXLive_FleetTruckLinkCommander::reportNewError($_error, $_dataarr = null)
+     * Report new error and add current record data been processed to error message
+     *
+     * @param string: $_error            
+     * @param array: $_dataarr            
+     */
+    private function reportNewError($_error, $_dataarr = null)
+    {
+        try {
+            $_num = count($this->_errors);
+            $this->_errors[$_num]["errmsg"] = "Failed to update existing truck link with error message: " . $_error;
+            if ($_dataarr) {
+                foreach ($_dataarr as $recKey => $recVal) {
+                    $this->_errors[$_num][$recKey] = $recVal;
+                }
+            }
+            $this->takeScreenshot($this->_session, "updateTruckPrimaryFleet");
+        } catch (Exception $e) {
+            return FALSE;
+        }
+        return TRUE;
     }
     // : End
 }
