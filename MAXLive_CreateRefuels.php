@@ -510,18 +510,18 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 							$e = $w->until ( function ($session) {
 								return $session->element ( "xpath", "//*[contains(text(),'Initial Refuel Capture')]" );
 							} );
-							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-29__0_refuelPoint-29']" );
-							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-19__0_truck_id-19']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-33__0_refuelPoint-33']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-22__0_truck_id-22']" );
 							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-6__0_driver_id-6']" );
-							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-8_0_0_fillDateTime-8']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-9_0_0_fillDateTime-9']" );
 							$this->assertElementPresent ( "xpath", "//*[@id='formfield']/textarea" );
 							$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 							
-							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-29__0_refuelPoint-29']/option[text()='{$recVal["Location"]}']" )->click ();
+							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-33__0_refuelPoint-33']/option[text()='{$recVal["Location"]}']" )->click ();
 							
 							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-6__0_driver_id-6']/option[text()='{$_driver}']" )->click ();
-							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-8_0_0_fillDateTime-8']" )->clear ();
-							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-8_0_0_fillDateTime-8']" )->sendKeys ( $recVal ["Date"] );
+							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-9_0_0_fillDateTime-9']" )->clear ();
+							$this->_session->element ( "xpath", "//*[@id='udo_Refuel-9_0_0_fillDateTime-9']" )->sendKeys ( $recVal ["Date"] );
 							$this->_session->element ( "xpath", "//*[@id='formfield']/textarea" )->clear ();
 							$this->_session->element ( "xpath", "//*[@id='formfield']/textarea" )->sendKeys ( "This refuel was created by an automation script. Reference no: {$recVal["Note"]}" );
 							$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
@@ -584,35 +584,37 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 						} );
 						// : Confirm refuel order is for the correct truck and order by confirming the details
 						try {
-							$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-19_0_0_truck_id-19']/tbody/tr/td[text()='{$recVal["Truck"]}']" );
+							$this->assertElementPresent ( "xpath", "//*/tbody/tr/td[contains(text(),'{$recVal["Truck"]}')]" );
 						} catch ( Exception $e ) {
 							throw new Exception ( "Could not confirm that the order been completed was the correct order. Error message: " . $e->getMessage () );
 						}
 						// : End
 						
 						// : Check all elements for entering and selecting values to complete refuel are present
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-15_0_0_odo-15']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-12_0_0_litres-12']" );
+						$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-16_0_0_odo-16']" );
+						
+						$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-13_0_0_litres-13']" );
 						$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-3_0_0_cost-3']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-9__0_full_or_Partial-9']" );
+						$this->assertElementPresent ( "xpath", "//*[@id='udo_Refuel-10__0_full_or_Partial-10']" );
 						$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 						// : End
 						
 						// Store the refuel order number
-						$_refuelOrder = $this->_session->element ( "xpath", "//*[@id='udo_Refuel-18_0_0_refuelOrderNumber_id-18']/tbody/tr/td[1]" )->text ();
+						$_refuelOrder = $this->_session->element ( "xpath", "//*[@id='udo_Refuel-21_0_0_refuelOrderNumber_id-21']/tbody/tr/td[1]" )->text ();
 						if ($_refuelOrder) {
 							$this->_data [$recKey] ["OrderNumber"] = $_refuelOrder;
 						}
 						// : End
 						
 						// : Enter values into the Complete Refuel form
-						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-15_0_0_odo-15']" )->clear ();
-						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-15_0_0_odo-15']" )->sendKeys ( $recVal ["Odo"] );
-						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-12_0_0_litres-12']" )->clear ();
-						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-12_0_0_litres-12']" )->sendKeys ( $recVal ["Litres"] );
+						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-16_0_0_odo-16']" )->clear ();
+						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-16_0_0_odo-16']" )->sendKeys ( $recVal ["Odo"] );
+						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-13_0_0_litres-13']" )->clear ();
+						
+						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-13_0_0_litres-13']" )->sendKeys ( $recVal ["Litres"] );
 						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-3_0_0_cost-3']" )->clear ();
 						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-3_0_0_cost-3']" )->sendKeys ( $recVal ["Cost"] );
-						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-9__0_full_or_Partial-9']/option[text()='{$recVal["FullPartial"]}']" )->click ();
+						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-10__0_full_or_Partial-10']/option[text()='{$recVal["FullPartial"]}']" )->click ();
 						
 						$_note = $this->_session->element ( "xpath", "//*[@id='formfield']/textarea" )->text ();
 						if (! $_note) {
@@ -773,7 +775,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		
 		// : Report errors if any occured
 		if ($this->_errors) {
-			$_errfile = dirname ( __FILE__ ) . $this->_errdir . self::DS . "error_report_" . $this->getReportFileName () . ".csv";
+			$_errfile = dirname ( __FILE__ ) . self::DS . $this->_errdir . self::DS . "error_report_" . $this->getReportFileName () . ".csv";
 			$this->ExportToCSV ( $_errfile, $this->_errors );
 			echo "Exported error report to the following path and file: " . $_errfile;
 		}
@@ -789,7 +791,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		}
 		
 		if ($_orders) {
-			$_ordersfile = dirname ( __FILE__ ) . "/export" . self::DS . $this->getReportFileName () . ".csv";
+			$_ordersfile = dirname ( __FILE__ ) . self::DS . "export" . self::DS . $this->getReportFileName () . ".csv";
 			$this->ExportToCSV ( $_ordersfile, $_orders );
 			echo "Exported successfully created refuels report to the following path and file: " . $_ordersfile;
 		}
@@ -807,26 +809,31 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		$this->_session->close ();
 		// : End
 	}
-	
-	// : Private Functions
-	
-	/**
-	 * MAXLive_CreateRefuels::takeScreenshot($_session)
-	 * This is a function description for a selenium test function
-	 *
-	 * @param object: $_session        	
-	 */
-	private function takeScreenshot($_session, $_filename) {
-		$_img = $_session->screenshot ();
-		$_data = base64_decode ( $_img );
-		$_file = dirname ( __FILE__ ) . $this->_scrdir . self::DS . date ( "Y-m-d_His" ) . $_filename;
-		$_success = file_put_contents ( $_file, $_data );
-		if ($_success) {
-			return $_file;
-		} else {
-			return FALSE;
-		}
-	}
+        
+        // : Private Functions
+    
+    /**
+     * MAXLive_CreateRefuels::takeScreenshot($_session)
+     * This is a function description for a selenium test function
+     *
+     * @param object: $_session            
+     */
+    private function takeScreenshot($_session, $_filename)
+    {
+        try {
+            $_img = $_session->screenshot();
+            $_data = base64_decode($_img);
+            $_file = dirname(__FILE__) . $this->_scrdir . self::DS . date("Y-m-d_His") . $_filename;
+            $_success = file_put_contents($_file, $_data);
+            if ($_success) {
+                return $_file;
+            } else {
+                return FALSE;
+            }
+        } catch (Exception $e) {
+            $this->_errors[] = "ERROR: Failed taking a screenshot: " . $e->getMessage();
+        }
+    }
 	
 	/**
 	 * MAXLive_CreateRefuels::assertElementPresent($_using, $_value)
