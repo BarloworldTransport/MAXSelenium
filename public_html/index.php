@@ -85,10 +85,10 @@ if (isset($_SESSION['SID'])) {
 <title>Barloworld Transport | Automation System - Login</title>
 
 <!-- Bootstrap core CSS -->
-<link href="dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="assets/css/bootstrap.min.css" rel="stylesheet">
 
 <!-- Custom styles for this template -->
-<link href="dist/css/signin.css" rel="stylesheet">
+<link href="assets/css/signin.css" rel="stylesheet">
 </head>
 
 <body>
