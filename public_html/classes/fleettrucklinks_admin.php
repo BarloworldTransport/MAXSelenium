@@ -216,7 +216,6 @@ if (isset ( $_SESSION ['user_email'] ) && isset ( $_SESSION ['user_pwd'] ) && is
 
 <!-- Main JS code for this page -->
 <script src="../assets/js/src/fleettrucklinks_admin.js"></script>
-
 </head>
 
 <body>
@@ -338,16 +337,16 @@ if (isset ( $_SESSION ['user_email'] ) && isset ( $_SESSION ['user_pwd'] ) && is
 							<select id="truckId" name="truckSelect" class="form-control">
 								<!-- Dynamically generate select options with trucks from MAX -->
 						          <?php
-																if (isset ( $_trucks )) {
-																	if ($_trucks) {
-																		$a = 1;
-																		foreach ( $_trucks as $_id => $_fleetnum ) {
-																			printf ( '<option value="%d">%s</option>', $_id, $_fleetnum . ' [' . $_id . ']' );
-																			$a ++;
-																		}
-																	}
-																}
-																?>
+                                    if (isset ( $_trucks )) {
+                                        if ($_trucks) {
+                                            $a = 1;
+                                            foreach ( $_trucks as $_id => $_fleetnum ) {
+                                                printf ( '<option value="%d">%s</option>', $_id, $_fleetnum . ' [' . $_id . ']' );
+                                                $a ++;
+                                            }
+                                        }
+                                    }
+                                  ?>
 						<!-- End -->
 							</select>
 							<div class="row">
@@ -457,9 +456,9 @@ if (isset ( $_SESSION ['user_email'] ) && isset ( $_SESSION ['user_pwd'] ) && is
 	<!-- Bootstrap core JavaScript
     ================================================== -->
 	<!-- Placed at the end of the document so the pages load faster -->
-	<!--  <script	src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<script	src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 	<script src="../assets/js/bootstrap.min.js"></script>
-	<script src="../assets/js/docs.min.js"></script>-->
+	<script src="../assets/js/docs.min.js"></script>
 
 	<!--  Load all jQuery, jQuery UI and jQuery Plugins -->
 	<script src="../assets/js/jquery-ui/external/jquery/jquery.js"></script>
