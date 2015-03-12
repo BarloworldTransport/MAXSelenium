@@ -33,12 +33,15 @@ class automationLibrary {
     # Constants - SQL Queries
     const SQL_QUERY_OBJREG = "select ID from objectregistry where handle = '%s';";
     const SQL_QUERY_ZONE = "select ID from udo_zone where name='%s';";
-    const SQL_QUERY_ROUTE = "select ID from udo_route where locationFrom_id IN (select ID from udo_location where name='%f') and locationTo_id IN (select ID from udo_location where name='%t');";
-    const SQL_QUERY_RATE = "select ID from udo_rates where route_id IN (select ID from udo_route where locationFrom_id IN (select ID from udo_location where name='%f') and locationTo_id IN (select ID from udo_location where name='%t')) and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and model='%m' and businessUnit_id=%b and rateType_id=%r;";
+    const SQL_QUERY_ROUTE = "select ID from udo_route where locationFrom_id=%f and locationTo_id=%t;";
+    const SQL_QUERY_RATE = "select ID from udo_rates where route_id=%ro and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and model='%m' and businessUnit_id=%b and rateType_id=%r;";
     const SQL_QUERY_CUSTOMER = "select ID from udo_customer where tradingName='%t';";
-    const SQL_QUERY_OFFLOADING_CUSTOMER = "select ID from udo_offloadingcustomers where offloadingCustomer_id IN (select ID from udo_customer where tradingName='%o') and customer_id IN (select ID from udo_customer where tradingName='%t');";
+    const SQL_QUERY_OFFLOADING_CUSTOMER = "select ID from udo_offloadingcustomers where offloadingCustomer_id IN (select ID from udo_customer where tradingName='%o') and customer_id=%c;";
     const SQL_QUERY_CUSTOMER_LOCATION_LINK = "select ID from udo_customerlocations where location_id=%l and customer_id=%c;";
-    const SQL_QUERY_LOCATION = 'select id from udo_location where name = "%n" and _type="%t";';
+    const SQL_QUERY_LOCATION = "select id from udo_location where name = '%n' and _type='%t';";
+    const SQL_QUERY_TRUCK_TYPE = "select ID from udo_truckdescription where description='%d';";
+    const SQL_QUERY_RATE_TYPE = "select ID from udo_ratetype where name='%s';";
+    const SQL_QUERY_BUNIT = "select ID from udo_businessunit where name='%s';";
     # Constants - Location Types
     const _TYPE_CITY = "udo_City";
     const _TYPE_CONTINENT = "udo_Continent";
@@ -52,8 +55,11 @@ class automationLibrary {
     # Constants - Object Registry Objects
     const OBJREG_CUSTOMER = "udo_Customer";
     # Constants - Error Messages
+    const ERR_COULD_NOT_FIND_ELEMENT = "ERROR: Could not find the expected element on page: %s";
     const ERR_NO_CUSTOMER_DATA = "FATAL: Could not find customer data when attempting to access the imported data from array.";
     const ERR_SQL_QUERY_NO_RESULTS_REQ_DATA = "FATAL: Required data searched from the database was not found using the following SQL query: %s";
+    const ERR_COULD_NOT_FIND_RECORD_USING_URL = "ERROR: Could not find %d after creating it using the following URL: %u";
+    const ERR_PROCESS_FAILED_UNEXPECTEDLY = "ERROR: Caught error while busy with process %s with error message: %e";
     # Constants - URL addresses
     const URL_CUSTOMER = "/DataBrowser?browsePrimaryObject=461&browsePrimaryInstance=";
     const URL_PB = "/Planningboard";
