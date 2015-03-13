@@ -93,7 +93,7 @@ class ReadExcelFile {
 				$cellIterator = $row->getCellIterator();
 				$cellIterator->setIterateOnlyExistingCells(true);
 				foreach ($cellIterator as $cell) {
-					if ($cell->getRow() != 1) { 
+					if ($cell->getRow() != 1) {
 						$data[$objPHPExcel->getActiveSheet()->getCell($cell->getColumn() . "1")->getValue()] [$cell->getRow() - 1] = $cell->getValue();
 					}
 				}
