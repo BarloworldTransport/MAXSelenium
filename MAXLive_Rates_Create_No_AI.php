@@ -268,7 +268,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
         // : Pull spreadsheet data and store into multi dimensional array
         
         // : Import Rates from spreadsheet
-        $_xls1 = new ReadExcelFile($_file, "Rates", "Locations", "OffloadingCustomers", "BU", "Customer");
+        $_xls1 = new ReadExcelFile($_file, "rates", "locations", "offloading", "bu", "customer");
         $_data = $_xls1->getData();
         unset($_xls1);
         // : End
@@ -367,7 +367,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
              * VARIABLE AND DATA PREP
              */
             if ($_data['customer']) {
-                $_sqlquery = preg_replace("/%s/", $_data['customer'][1]['customerName'], automationLibrary::SQL_QUERY_CUSTOMER);
+            	echo $_data['customer']['customerName'][1] . PHP_EOL;
+                $_sqlquery = preg_replace("/%t/", $_data['customer']['customerName'][1], automationLibrary::SQL_QUERY_CUSTOMER);
                 $result = $this->queryDB($_sqlquery);
                 if (count($result) != 0) {
                     $_customerID = intval($result[0]["ID"]);
@@ -406,7 +407,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         
                         // Get IDs for point and customer link location (if link exists)
                         $_sqlquery = preg_replace("/%n/", $_locValue['pointName'], automationLibrary::SQL_QUERY_LOCATION);
-                        $_sqlquery = preg_replace("/%t/", self::_TYPE_POINT, $_sqlquery);
+                        $_sqlquery = preg_replace("/%t/", automationLibrary::_TYPE_POINT, $_sqlquery);
                         $result = $this->queryDB($_sqlquery);
                         if (count($result) != 0) {
                             $_locationID = intval($result[0]["ID"]);
