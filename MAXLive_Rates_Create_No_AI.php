@@ -269,76 +269,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
         
         // : Import Rates from spreadsheet
         $_xls1 = new ReadExcelFile($_file, "Rates", "Locations", "OffloadingCustomers", "BU", "Customer");
-        $_ratesData = $_xls1->getData();
+        $_data = $_xls1->getData();
         unset($_xls1);
-        // : End
-        var_dump($_ratesData);
-        exit;
-        
-        // : Import Locations from spreadsheet
-        $_xls2 = new ReadExcelFile($_file, "Locations");
-        $_locationsData = $_xls2->getData();
-        unset($_xls2);
-        // : End
-        
-        // : Import Offloading Customers from spreadsheet
-        $_xls3 = new ReadExcelFile($_file, "OffloadingCustomers");
-        $_offloadingData = $_xls3->getData();
-        unset($_xls3);
-        // : End
-        
-        // : Import Business Units from spreadsheet
-        $_xls4 = new ReadExcelFile($_file, "BU");
-        $_buData = $_xls4->getData();
-        unset($_xls4);
-        // : End
-        
-        // : Import Business Units from spreadsheet
-        $_xls5 = new ReadExcelFile($_file, "Customer");
-        $_customerData = $_xls5->getData();
-        unset($_xls5);
-        // : End
-        
-        $_data = (array) array("offloading" => "", "locations" => "", "rates" => "", "bu" => "", "customer" => "");
-        
-        if ($_ratesData) {
-            foreach ($_ratesData as $ratekey => $ratevalue) {
-                foreach ($_value as $ratekey2 => $ratevalue2) {
-                    $_data["rates"][$ratekey][$key] = $ratevalue;
-                }
-            }
-        }
-        
-        if ($_locationsData) {
-            foreach ($_locationsData as $lockey => $locvalue) {
-                foreach ($_value as $lockey2 => $locvalue2) {
-                    $_data["locations"][$lockey2][$lockey] = $locvalue2;
-                }
-            }
-        }
-        
-        if ($_offloadingData) {
-            foreach ($_offloadingData as $key => $_value) {
-                foreach ($_value as $key2 => $_value2) {
-                    $_data["offloading"][$key2][$key] = $_value2;
-                }
-            }
-        }
-        
-        foreach ($_buData as $key => $_value) {
-            foreach ($_value as $key2 => $_value2) {
-                $_data["bu"][$key2][$key] = $_value2;
-            }
-        }
-        
-        foreach ($_customerData as $key => $_value) {
-            foreach ($_value as $key2 => $_value2) {
-                $_data["customer"][$key2][$key] = $_value2;
-            }
-        }
-        
-        
-        var_dump($_data);
         // : End
         
         if ((isset($_data)) && (array_key_exists('bu', $_data) && array_key_exists('customer', $_data)) && (array_key_exists('rates', $_data) || array_key_exists('locations', $_data) || array_key_exists('offloading', $_data))) {

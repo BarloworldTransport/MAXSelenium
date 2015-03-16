@@ -497,13 +497,13 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         
                         // Get IDs for all locations
                         $_queries = array();
-                        $_queries["location from town"] = "select ID from udo_location where name='" . $_dataset["location from town"]["value"] . "' and _type='udo_City' and active=1';";
+                        $_queries["location from town"] = "select ID from udo_location where name='" . $_dataset["location from town"]["value"] . "' and _type='udo_City' and active=1;";
                         $_queries["location from point"] = "select ID from udo_location where name='" . $_dataset["location from point"]["value"] . "' and _type='udo_Point' and active=1;";
                         $_queries["location to town"] = "select ID from udo_location where name='" . $_dataset["location to town"]["value"] . "' and _type='udo_City' and active=1;";
                         $_queries["location to point"] = "select ID from udo_location where name='" . $_dataset["location to point"]["value"] . "' and _type='udo_Point' and active=1;";
                         $_queries["province from"] = "select ID from udo_location where name='" . $_dataset["province from"]["value"] . "' and _type='udo_Province' and active=1;";
                         $_queries["province to"] = "select ID from udo_location where name='" . $_dataset["province to"]["value"] . "' and _type='udo_Province' and active=1;";
-                        
+                                             
                         foreach ($_queries as $_sqlKey => $_sqlValue) {
                             $sqlResultA = $this->queryDB($_sqlValue);
                             if (count($sqlResultA) != 0) {
@@ -524,8 +524,18 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             } else {
                                 $_dataset[$_sqlKey]["id"] = NULL;
                             }
+                            /**echo "INFO: Location ID SQL Query output for row been processed:" . PHP_EOL;
+                            echo "DEBUG: Record: " . $this->lastRecord . PHP_EOL;
+                            echo "DEBUG: Data Key: " .$_sqlKey .  PHP_EOL;
+                            echo "DEBUG: SQL Query 1: " . $_sqlValue . PHP_EOL;
+                            echo "DEBUG: SQL Result 1:" . PHP_EOL;
+                            var_dump($sqlResultA);
+                            echo "DEBUG: SQL Query 2: " . $myQuery . PHP_EOL;
+                            echo "DEBUG: SQL Result 2:" . PHP_EOL;
+                            var_dump($sqlResultB);*/
                         }
                         // : End
+                        
                         
                         // : Get IDS and fleet names for Zones
                         foreach ($_dataset as $_dataKey => $_dataValues) {

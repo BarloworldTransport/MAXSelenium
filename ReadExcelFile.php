@@ -98,7 +98,8 @@ class ReadExcelFile
             $objReader = PHPExcel_IOFactory::createReader($inputFileType);
             $objReader->setReadDataOnly(true);
             $objPHPExcel = $objReader->load($excelFile); // Load worksheet into memory
-            $worksheet = $objPHPExcel->getSheetByName($sheetname);
+            $worksheet = $objPHPExcel->setActiveSheetIndexByName($sheetname);
+            $worksheet = $objPHPExcel->getActiveSheet($sheetname);
             
             // Read spreadsheet data and store into array
             foreach ($worksheet->getRowIterator() as $row) {
