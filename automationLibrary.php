@@ -38,7 +38,7 @@ class automationLibrary {
     const SQL_QUERY_CUSTOMER = "select ID from udo_customer where tradingName='%t';";
     const SQL_QUERY_OFFLOADING_CUSTOMER = "select ID from udo_offloadingcustomers where offloadingCustomer_id IN (select ID from udo_customer where tradingName='%o') and customer_id=%c;";
     const SQL_QUERY_CUSTOMER_LOCATION_LINK = "select ID from udo_customerlocations where location_id=%l and customer_id=%c;";
-    const SQL_QUERY_LOCATION = "select id from udo_location where name = '%n' and _type='%t';";
+    const SQL_QUERY_LOCATION = "select ID from udo_location where name = '%n' and _type='%t';";
     const SQL_QUERY_TRUCK_TYPE = "select ID from udo_truckdescription where description='%d';";
     const SQL_QUERY_RATE_TYPE = "select ID from udo_ratetype where name='%s';";
     const SQL_QUERY_BUNIT = "select ID from udo_businessunit where name='%s';";
@@ -76,6 +76,16 @@ class automationLibrary {
     // : End
     
     // : Public Methods
+    public static function CONSOLE_OUTPUT($_heading, $_description, $_type, $_query, $_data) {
+        switch ($_type) {
+            case "sql" :
+            default : {
+                echo "INFO: " . $_heading . ". Query run: " . $_query . PHP_EOL;
+                echo "DEBUG: " . $_description . PHP_EOL;
+                var_dump($_data);
+            }
+        }
+    }
     // : End
 
     // : Magic Methods
