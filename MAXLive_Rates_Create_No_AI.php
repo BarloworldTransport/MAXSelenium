@@ -309,6 +309,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             try {
                 // Load MAX home page
                 $this->_session->open($this->_maxurl);
+                $this->takeScreenshot();
                 // : Wait for page to load and for elements to be present on page
                 if ($this->_mode == "live" || $this->_mode == "test") {
                     $e = $w->until(function ($session)
@@ -322,7 +323,6 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                 {
                     return $session->element('css selector', 'input[id=identification]');
                 });
-                $this->takeScreenshot();
                 // : End
                 $this->assertElementPresent('css selector', 'input[id=identification]');
                 $this->assertElementPresent('css selector', 'input[id=password]');
@@ -357,6 +357,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                 }
             } catch (Exception $e) {
                 throw new Exception("Error: Failed to log into MAX." . PHP_EOL . $e->getMessage());
+                $this->takeScreenshot();
             }
             // : End
             
