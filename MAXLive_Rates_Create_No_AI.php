@@ -322,6 +322,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                 {
                     return $session->element('css selector', 'input[id=identification]');
                 });
+                $this->takeScreenshot();
                 // : End
                 $this->assertElementPresent('css selector', 'input[id=identification]');
                 $this->assertElementPresent('css selector', 'input[id=password]');
