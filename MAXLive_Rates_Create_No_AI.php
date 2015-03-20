@@ -272,8 +272,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
         $_temp = $_xls1->getData();
         unset($_xls1);
         // : End
-
-        // : Rearrange data in array into more orderly layout
+        
+	// : Rearrange data in array into more orderly layout
         foreach($_temp as $key => $value) {
             if ($value) {
             foreach ($value as $key2 => $value2) {
@@ -383,8 +383,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
              */
 
             if ($_data['customer']) {
-            	echo $_data['customer'][0]['customerName'] . PHP_EOL;
-                $_sqlquery = preg_replace("/%t/", $_data['customer'][0]['customerName'], automationLibrary::SQL_QUERY_CUSTOMER);
+            	echo $_data['customer'][1]['customerName'] . PHP_EOL;
+                $_sqlquery = preg_replace("/%t/", $_data['customer'][1]['customerName'], automationLibrary::SQL_QUERY_CUSTOMER);
                 $result = $this->queryDB($_sqlquery);
 		echo 'INFO: SQL Query - Get customer ID: ' . $_sqlquery . PHP_EOL;
                 if ($result) {
@@ -409,7 +409,6 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             if (array_key_exists('locations', $_data)) {
                 
                 $_process = "linkCustomerLocations";
-                
                 foreach ($_data['locations'] as $_locKey => $_locValue) {
                     
                     try {
@@ -485,19 +484,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         $_sqlquery = preg_replace("/%c/", $_customerID, $_sqlquery);
                         $_result = $this->queryDB($_sqlquery);
 
-                        // Get business unit ID
-                        $_sqlquery = preg_replace("/%s/", $_ratesValues['bunit'], automationLibrary::SQL_QUERY_BUNIT);
-                        $result = $this->queryDB($_sqlquery);
-                    	if (count($result) != 0) {
-                        	$_bunitID = intval($result[0]["ID"]);
-                    	}
-	
-			$_sqlquery = preg_replace("/%l/", $_locationID, automationLibrary::SQL_QUERY_CUSTOMER_LOCATION_BU_LINK);
-			$_sqlquery = preg_replace("/%b/", $_bunitID, $_sqlquery);
-			$_result_bu = $this->queryDB($_sqlquery);
-
                         // If BU Link does not exist for customer location then create it else dont
-                        if ($_result && !$_result_bu) {
+                        if ($_result) {
                             
                             $_process = "createCustomerLocationLinkBU";
                             $_customerLocationLinkID = $_result[0]["ID"];
@@ -506,34 +494,49 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                 
                                 foreach ($_data['bu'] as $_buKey => $_buValue) {
                                     try {
-                                        // Load URL for the customer location business unit databrowser page
-                                        $_url = $this->_maxurl . automationLibrary::URL_CUST_LOCATION_BU . $_customerLocationLinkID;
-                                        $this->_session->open($_url);
-                                        // Wait for element
-                                        $e = $w->until(function ($session)
-                                        {
-                                            return $session->element("css selector", "#button-create");
-                                        });
-                                        // Click element = button-create
-                                        $this->_session->element("css selector", "#button-create")->click();
+
+		                        // Get business unit ID
+		                        $_sqlquery = preg_replace("/%s/", $_buValue['bunit'], automationLibrary::SQL_QUERY_BUNIT);
+		                        $result = $this->queryDB($_sqlquery);
+		                        if (count($result) != 0) {
+		                                $_bunitID = intval($result[0]["ID"]);
+		                        }
+
+		                        $_sqlquery = preg_replace("/%l/", $_customerLocationLinkID, automationLibrary::SQL_QUERY_CUSTOMER_LOCATION_BU_LINK);
+		                        $_sqlquery = preg_replace("/%b/", $_bunitID, $_sqlquery);
+		                        $_result_bu = $this->queryDB($_sqlquery);
+					
+					if (!$_result_bu) {
+					
+	                                        // Load URL for the customer location business unit databrowser page
+	                                        $_url = $this->_maxurl . automationLibrary::URL_CUST_LOCATION_BU . $_customerLocationLinkID;
+	                                        $this->_session->open($_url);
+	                                        // Wait for element
+	                                        $e = $w->until(function ($session)
+        	                                {
+	                                            return $session->element("css selector", "#button-create");
+	                                        });
+	                                        // Click element = button-create
+	                                        $this->_session->element("css selector", "#button-create")->click();
                                         
-                                        // Wait for element = Page heading
-                                        $e = $w->until(function ($session)
-                                        {
-                                            return $session->element("xpath", "//*[contains(text(),'Create Customer Locations - Business Unit')]");
-                                        });
+	                                        // Wait for element = Page heading
+	                                        $e = $w->until(function ($session)
+	                                        {
+	                                            return $session->element("xpath", "//*[contains(text(),'Create Customer Locations - Business Unit')]");
+	                                        });
                                         
-                                        $this->assertElementPresent("xpath", "//*[@id='udo_CustomerLocationsBusinessUnit_link-2__0_businessUnit_id-2']");
-                                        $this->assertElementPresent("css selector", "input[type=submit][name=save]");
-                                        
-                                        $this->_session->element("xpath", "//*[@id='udo_CustomerLocationsBusinessUnit_link-2__0_businessUnit_id-2']/option[text()='" . $_buValue['bunit'] . "']")->click();
-                                        // Click the submit button
-                                        $this->_session->element("css selector", "input[type=submit][name=save]")->click();
-                                        // Wait for element
-                                        $e = $w->until(function ($session)
-                                        {
-                                            return $session->element("css selector", "#button-create");
-                                        });
+	                                        $this->assertElementPresent("xpath", "//*[@id='udo_CustomerLocationsBusinessUnit_link-2__0_businessUnit_id-2']");
+	                                        $this->assertElementPresent("css selector", "input[type=submit][name=save]");
+	                                        
+	                                        $this->_session->element("xpath", "//*[@id='udo_CustomerLocationsBusinessUnit_link-2__0_businessUnit_id-2']/option[text()='" . $_buValue['bunit'] . "']")->click();
+	                                        // Click the submit button
+	                                        $this->_session->element("css selector", "input[type=submit][name=save]")->click();
+	                                        // Wait for element
+	                                        $e = $w->until(function ($session)
+	                                        {
+	                                            return $session->element("css selector", "#button-create");
+	                                        });
+					}
                                     } catch (Exception $e) {
                                         $_errmsg = preg_replace("/%s/", $_process, automationLibrary::ERR_PROCESS_FAILED_UNEXPECTEDLY);
                                         $_errmsg = preg_replace("/%e/", $e->getMessage(), $_errmsg);
@@ -853,7 +856,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             
                             $this->_session->element("xpath", "//*[@id='udo_Rates-31__0_route_id-31']/option[text()='" . $_routeName . "']")->click();
                             $this->_session->element("xpath", "//*[@id='udo_Rates-30__0_rateType_id-30']/option[text()='" . $_ratesValues['rateType'] . "']")->click();
-                            $this->_session->element("xpath", "//*[@id='udo_Rates-4__0_businessUnit_id-4']/option[text()='" . $_data['bu'][0]['bunit'] . "']")->click();
+                            $this->_session->element("xpath", "//*[@id='udo_Rates-4__0_businessUnit_id-4']/option[text()='" . $_data['bu'][1]['bunit'] . "']")->click();
                             $this->_session->element("xpath", "//*[@id='udo_Rates-36__0_truckDescription_id-36']/option[text()='" . $_ratesValues['truckType'] . "']")->click();
                             $this->_session->element("xpath", "//*[@id='udo_Rates-20__0_model-20']/option[text()='" . $_ratesValues['contribModel'] . "']")->click();
                             $this->_session->element("xpath", "//*[@id='checkbox_udo_Rates-15_0_0_enabled-15']")->click();
