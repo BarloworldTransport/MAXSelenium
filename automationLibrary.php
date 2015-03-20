@@ -42,6 +42,7 @@ class automationLibrary {
     const SQL_QUERY_TRUCK_TYPE = "select ID from udo_truckdescription where description='%d';";
     const SQL_QUERY_RATE_TYPE = "select ID from udo_ratetype where name='%s';";
     const SQL_QUERY_BUNIT = "select ID from udo_businessunit where name='%s';";
+    const SQL_QUERY_CUSTOMER_LOCATION_BU_LINK = "select ID from udo_customerlocationsbusinessunit_link where customerLocations_id=%l and businessUnit_id=%b;";
     # Constants - Location Types
     const _TYPE_CITY = "udo_City";
     const _TYPE_CONTINENT = "udo_Continent";

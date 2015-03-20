@@ -309,7 +309,6 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             try {
                 // Load MAX home page
                 $this->_session->open($this->_maxurl);
-                $this->takeScreenshot();
                 // : Wait for page to load and for elements to be present on page
                 if ($this->_mode == "live" || $this->_mode == "test") {
                     $e = $w->until(function ($session)
@@ -384,9 +383,10 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
              */
 
             if ($_data['customer']) {
-            	echo $_data['customer'][1]['customerName'] . PHP_EOL;
-                $_sqlquery = preg_replace("/%t/", $_data['customer'][1]['customerName'], automationLibrary::SQL_QUERY_CUSTOMER);
+            	echo $_data['customer'][0]['customerName'] . PHP_EOL;
+                $_sqlquery = preg_replace("/%t/", $_data['customer'][0]['customerName'], automationLibrary::SQL_QUERY_CUSTOMER);
                 $result = $this->queryDB($_sqlquery);
+		echo 'INFO: SQL Query - Get customer ID: ' . $_sqlquery . PHP_EOL;
                 if ($result) {
                     $_customerID = intval($result[0]["ID"]);
                 } else {
@@ -417,6 +417,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         // : Set variables
                         $_locationID = 0;
                         $_customerLocationLinkID = 0;
+			$_bunitID = 0;
                         $_currentRecord = "";
                         foreach ($_locValue as $_key1 => $_value1) {
                             $_currentRecord .= "[$_key1]=>$_value1;";
@@ -483,8 +484,20 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         $_sqlquery = preg_replace("/%l/", $_locationID, automationLibrary::SQL_QUERY_CUSTOMER_LOCATION_LINK);
                         $_sqlquery = preg_replace("/%c/", $_customerID, $_sqlquery);
                         $_result = $this->queryDB($_sqlquery);
-                        
-                        if (count($_result) != 0) {
+
+                        // Get business unit ID
+                        $_sqlquery = preg_replace("/%s/", $_ratesValues['bunit'], automationLibrary::SQL_QUERY_BUNIT);
+                        $result = $this->queryDB($_sqlquery);
+                    	if (count($result) != 0) {
+                        	$_bunitID = intval($result[0]["ID"]);
+                    	}
+	
+			$_sqlquery = preg_replace("/%l/", $_locationID, automationLibrary::SQL_QUERY_CUSTOMER_LOCATION_BU_LINK);
+			$_sqlquery = preg_replace("/%b/", $_bunitID, $_sqlquery);
+			$_result_bu = $this->queryDB($_sqlquery);
+
+                        // If BU Link does not exist for customer location then create it else dont
+                        if ($_result && !$_result_bu) {
                             
                             $_process = "createCustomerLocationLinkBU";
                             $_customerLocationLinkID = $_result[0]["ID"];
@@ -840,7 +853,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             
                             $this->_session->element("xpath", "//*[@id='udo_Rates-31__0_route_id-31']/option[text()='" . $_routeName . "']")->click();
                             $this->_session->element("xpath", "//*[@id='udo_Rates-30__0_rateType_id-30']/option[text()='" . $_ratesValues['rateType'] . "']")->click();
-                            $this->_session->element("xpath", "//*[@id='udo_Rates-4__0_businessUnit_id-4']/option[text()='" . $_data['bu'][1]['bunit'] . "']")->click();
+                            $this->_session->element("xpath", "//*[@id='udo_Rates-4__0_businessUnit_id-4']/option[text()='" . $_data['bu'][0]['bunit'] . "']")->click();
                             $this->_session->element("xpath", "//*[@id='udo_Rates-36__0_truckDescription_id-36']/option[text()='" . $_ratesValues['truckType'] . "']")->click();
                             $this->_session->element("xpath", "//*[@id='udo_Rates-20__0_model-20']/option[text()='" . $_ratesValues['contribModel'] . "']")->click();
                             $this->_session->element("xpath", "//*[@id='checkbox_udo_Rates-15_0_0_enabled-15']")->click();
@@ -995,7 +1008,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             
             // : If errors occured. Create xls of entries that failed.
             if (count($this->_error) != 0) {
-                $_xlsfilename = (dirname(__FILE__) . $this->_errDir . self::DS . date("Y-m-d_His_") . basename(__FILE__, ".php") . ".xlsx");
+                $_xlsfilename = $this->_errDir . self::DS . date("Y-m-d_His_") . basename(__FILE__, ".php") . ".xlsx";
                 $this->writeExcelFile($_xlsfilename, $this->_error, $_xlsColumns);
                 if (file_exists($_xlsfilename)) {
                     print("Excel error report written successfully to file: $_xlsfilename");
@@ -1151,7 +1164,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
     {
         $_img = $this->_session->screenshot();
         $_data = base64_decode($_img);
-        $_file = dirname(__FILE__) . $this->_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_WebDriver.png";
+        $_file = $this->_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_WebDriver.png";
         $_success = file_put_contents($_file, $_data);
         if ($_success) {
             return $_file;
