@@ -98,6 +98,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
 
     protected $_wdport;
 
+    protected $_logDir;
+
     protected $_browser;
 
     protected $_ip;
@@ -126,6 +128,13 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_PERSISTENT => true
     );
+
+    protected $_totals = array(
+    	"locations" => 0,
+        "offloading" => 0,
+        "rates" => 0
+    );
+
     
     // : Public functions
     // : Getters
@@ -189,13 +198,14 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             return FALSE;
         }
         $data = parse_ini_file($ini);
-        if ((array_key_exists("browser", $data) && $data["browser"]) && (array_key_exists("wdport", $data) && $data["wdport"]) && (array_key_exists("xls", $data) && $data["xls"]) && (array_key_exists("errordir", $data) && $data["errordir"]) && (array_key_exists("screenshotdir", $data) && $data["screenshotdir"]) && (array_key_exists("datadir", $data) && $data["datadir"]) && (array_key_exists("ip", $data) && $data["ip"]) && (array_key_exists("username", $data) && $data["username"]) && (array_key_exists("password", $data) && $data["password"]) && (array_key_exists("welcome", $data) && $data["welcome"]) && (array_key_exists("mode", $data) && $data["mode"])) {
+        if ((array_key_exists("logdir", $data) && $data["logdir"]) && (array_key_exists("browser", $data) && $data["browser"]) && (array_key_exists("wdport", $data) && $data["wdport"]) && (array_key_exists("xls", $data) && $data["xls"]) && (array_key_exists("errordir", $data) && $data["errordir"]) && (array_key_exists("screenshotdir", $data) && $data["screenshotdir"]) && (array_key_exists("datadir", $data) && $data["datadir"]) && (array_key_exists("ip", $data) && $data["ip"]) && (array_key_exists("username", $data) && $data["username"]) && (array_key_exists("password", $data) && $data["password"]) && (array_key_exists("welcome", $data) && $data["welcome"]) && (array_key_exists("mode", $data) && $data["mode"])) {
             $this->_username = $data["username"];
             $this->_password = $data["password"];
             $this->_welcome = $data["welcome"];
             $this->_dataDir = $data["datadir"];
             $this->_errDir = $data["errordir"];
             $this->_scrDir = $data["screenshotdir"];
+	    $this->_logDir = $data["logdir"];
             $this->_mode = $data["mode"];
             $this->_ip = $data["ip"];
             $this->_wdport = $data["wdport"];
@@ -226,6 +236,30 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
     }
     // : End
     
+
+    public function progressLogFile($_file, $_category, $_currentRecord, $_process, $_progress) {
+	$_logArray = (array) array();
+	$_logArray[] = "Script Name: " . basename(__FILE__);
+	$_logArray[] = "Record Totals:";
+	$_logArray[] = "Locations: " . $this->_totals["locations"];
+	$_logArray[] = "Offloading Customer: " . $this->_totals["offloading"];
+	$_logArray[] = "Rates: " . $this->_totals["rates"];
+	$_logArray[] = "Current Category of Data been processed: " . $_category;
+	$_logArray[] = "Current Process: " . $_process;
+	$_logArray[] = "Current Record: " . $_currentRecord;
+	$_logArray[] = "Progress: " . $_progress;
+	
+	$_logstr = (string)"";
+
+	foreach($_logArray as $value) {
+		$_logstr .= $value . PHP_EOL;
+	}
+
+	if ($_logstr) {
+		file_put_contents($_logstr, $_file);
+	}
+    }
+	
     /**
      * MAXLive_Rates_Create_No_AI::setUp()
      * Create new class object and initialize session for webdriver
@@ -249,6 +283,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
     {
         
         // : Define local variables
+	$_dateTimeStarted = date("Y-m-d H:i:s");
         $_dbStatus = FALSE;
         $_match = 0;
         $_process = (string) "";
@@ -285,8 +320,20 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                 $_data[$key] = NULL;
             }
         }
+	// : End
+	// : Store total of records for each section of data
+
+	if (array_key_exists('locations', $_data)) {
+		$this->_totals['locations'] = count($_data['locations']);
+	}
+	if (array_key_exists('offloading', $_data)) {
+		$this->_totals['offloading'] = count($_data['offloading']);
+	}
+	if (array_key_exists('rates', $_data)) {
+		$this->_totals['rates'] = count($_data['rates']);
+	}
         // : End
-        
+	
         if ((isset($_data)) && (array_key_exists('bu', $_data) && array_key_exists('customer', $_data)) && (array_key_exists('rates', $_data) || array_key_exists('locations', $_data) || array_key_exists('offloading', $_data))) {
             
             // : Create a persistant connection to the database
@@ -302,7 +349,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             $session = $this->_session;
             $this->_session->setPageLoadTimeout(90);
             // Create a reference to the session object for use with waiting for elements to be present
-            $w = new PHPWebDriver_WebDriverWait($this->_session);
+            $w = new PHPWebDriver_WebDriverWait($this->_session, 120);
             // : End
             
             // : Login
@@ -397,6 +444,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                 throw new Exception(automationLibrary::ERR_NO_CUSTOMER_DATA);
             }
             
+
+	    
             /**
              * END
              */
@@ -404,11 +453,21 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             /**
              * LOCATION SECTION
              */
-            
-            // If location data exists then continue
+
+	    // Define full path and file name for log file
+	    $_progressLogFile = $this->_logDir . DIRECTORY_SEPERATOR . basename(__FILE__, "php") . "_" . basename($_file, "xls") . "_" . $_dateTimeStarted;
+            echo $_progressLogFile . PHP_EOL;
+
+	    // If location data exists then continue
             if (array_key_exists('locations', $_data)) {
                 
                 $_process = "linkCustomerLocations";
+		$_complete = 0;
+		$_currentRecordNum = 0;
+		$_totalRecords = count($_data['locations']);
+		$_recordsProcessed = 0;
+		$_recordsFailed = 0;
+
                 foreach ($_data['locations'] as $_locKey => $_locValue) {
                     
                     try {
@@ -418,9 +477,14 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         $_customerLocationLinkID = 0;
 			$_bunitID = 0;
                         $_currentRecord = "";
+			$_recordsAll = $_recordsFailed + $_recordsProcessed;
+			$_complete = (($_recordsAll / $this->_totals['locations']) * 100);
+			$_progressStr = "Locations Progress: " . strval($_recordsAll) . "/" . strval($this->_totals['locations']) . ", Section Progress: $_complete%";	
+
                         foreach ($_locValue as $_key1 => $_value1) {
                             $_currentRecord .= "[$_key1]=>$_value1;";
                         }
+			$this->progressLogFile($_progressLogFile, "locations", $_currentRecord, $_process, $_progressStr);
                         
                         // Get IDs for point and customer link location (if link exists)
                         $_sqlquery = preg_replace("/%n/", $_locValue['pointName'], automationLibrary::SQL_QUERY_LOCATION);
@@ -462,7 +526,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             // Click element - button
                             $this->_session->element("css selector", "#button-create")->click();
                             // Wait for element
-                            $e = $w->until(function ($session)
+			    $e = $w->until(function ($session)
                             {
                                 return $session->element("xpath", "//*[@id='udo_CustomerLocations-5__0_location_id-5']");
                             });
@@ -549,10 +613,13 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             $_errmsg = preg_replace("/%u/", $_url, $_errmsg);
                             throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
                         }
+			$_recordsProcessed++;
                         // : End
                     } catch (Exception $e) {
+			$_recordsFailed++;
                         $this->addErrorRecord($e->getMessage(), $_currentRecord, $_process);
                     }
+		    $_currentRecordNum++;
                 }
             }
             /**
@@ -697,6 +764,11 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             if (array_key_exists("rates", $_data)) {
                 
                 // : Create Route
+
+                $_complete = 0;
+                $_currentRecordNum = 0;
+                $_recordsProcessed = 0;
+                $_recordsFailed = 0;
                 
                 foreach ($_data['rates'] as $_ratesKey => $_ratesValues) {
                     
@@ -709,12 +781,18 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                     $_routeID = 0;
                     $_rateID = 0;
                     $_rateValueID = 0;
+
+		    $_recordsAll = $_recordsFailed + $_recordsProcessed;
+		    $_complete = (($_recordsAll / $this->_totals['rates']) * 100);
+                    $_progressStr = "Rates Progress: " . strval($_recordsAll) . "/" . strval($this->_totals['rates']) . ", Section Progress: $_complete%";
                     // : End
                     
                     $_currentRecord = "";
                     foreach ($_ratesValues as $_key1 => $_value1) {
                         $_currentRecord .= "[$_key1]=>$_value1;";
                     }
+
+		    $this->progressLogFile($_progressLogFile, "rates", $_currentRecord, "create rate", $_progressStr);
                     
                     // Get truck description ID
                     $_sqlquery = preg_replace("/%d/", $_ratesValues['truckType'], automationLibrary::SQL_QUERY_TRUCK_TYPE);
@@ -977,10 +1055,13 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             }
                         }
                         // : End
+			$_recordsProcessed++;
                     } catch (Exception $e) {
+			$_recordsFailed++;
                         $_errmsg = preg_replace("/%s/", $e->getMessage(), automationLibrary::ERR_PROCESS_FAILED_UNEXPECTEDLY);
                         $this->addErrorRecord($e->getMessage(), $_currentRecord, $_process);
                     }
+		    $_currentRecordNum++;
                     
                     // : End
                 }
