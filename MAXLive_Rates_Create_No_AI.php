@@ -256,7 +256,9 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
 	}
 
 	if ($_logstr) {
-		file_put_contents($_logstr, $_file);
+		$_fh = fopen($_file, 'w+');
+		fwrite($_fh, $_logstr);
+		fclose($_fh);
 	}
     }
 	
