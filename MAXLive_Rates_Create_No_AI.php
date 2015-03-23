@@ -771,7 +771,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                 $_recordsFailed = 0;
                 
                 foreach ($_data['rates'] as $_ratesKey => $_ratesValues) {
-                    
+                    try { 
                     // : Variable preparation
                     $_truckTypeID = 0;
                     $_rateTypeID = 0;
@@ -879,6 +879,11 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             $_rateID = $_result[0]["ID"];
                         }
                     }
+		   
+		    } catch (Exception $e) {
+                        $_errmsg = preg_replace("/%s/", $e->getMessage(), automationLibrary::ERR_PROCESS_FAILED_UNEXPECTEDLY);
+                        $this->addErrorRecord($e->getMessage(), $_currentRecord, $_process);
+		    }
                     // : End
                     
                     // : End
@@ -887,8 +892,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                     // : End
                     
                     // : Check if route and rate exists for customer and create route and rate if they dont exist
-                    
-                    try {
+                   try { 
                         
                         if (! $_rateID) {
                             
