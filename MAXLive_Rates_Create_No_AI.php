@@ -192,7 +192,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
      */
     public function __construct()
     {
-        $ini = dirname(realpath(__FILE__)) . self::DS . self::INI_DIR . self::DS . self::INI_FILE;
+        $ini = dirname(realpath(__FILE__)) . DIRECTORY_SEPARATOR . self::INI_DIR . DIRECTORY_SEPARATOR . self::INI_FILE;
         if (is_file($ini) === FALSE) {
             echo "No " . self::INI_FILE . " file found. Please refer to documentation for script to determine which fields are required and their corresponding values." . PHP_EOL;
             return FALSE;
@@ -244,7 +244,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
 	$_logArray[] = "Browser Used: " . $this->_browser;
 	$_logArray[] = "Data File: " . $this->_xls;
 	$_logArray[] = "Record Totals:";
-	$_logArray[] = "Locations: " . $this->_totals["locations"];
+	$_logArray[] = "Location Record: " . $this->_totals["locations"];
 	$_logArray[] = "Offloading Customer: " . $this->_totals["offloading"];
 	$_logArray[] = "Rates: " . $this->_totals["rates"];
 	$_logArray[] = "Current Category of Data been processed: " . $_category;
@@ -252,7 +252,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
 	$_logArray[] = "Current Record: " . $_currentRecord;
 	$_logArray[] = "Progress: " . $_progress;
 	
-	$_logstr = (string)"";
+	$_logstr = (string)"## BWT Automation Progress Log File" . PHP_EOL;
 
 	foreach($_logArray as $value) {
 		$_logstr .= $value . PHP_EOL;
@@ -295,9 +295,12 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
         $_objectregistry_id = (int) 0;
         
         // Construct full path and filename for csv file using script home dir and data dir path to file
-        $_file = dirname(__FILE__) . $this->_dataDir . self::DS . $this->_xls;
+        $_file = dirname(__FILE__) . $this->_dataDir . DIRECTORY_SEPARATOR . $this->_xls;
         echo $_file . PHP_EOL;
-        
+       
+	$_progressLogFile = $this->_logDir . DIRECTORY_SEPARATOR . "progressLogFile_"  . basename(__FILE__, ".php") . "_{$this->_wdport}";
+        echo $_progressLogFile . PHP_EOL;
+ 
         // : Error report columns for the spreadsheet data
         $_xlsColumns = array(
             "Error_Msg",
@@ -460,7 +463,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
              */
 
 	    // Define full path and file name for log file
-	    $_progressLogFile = $this->_logDir . DIRECTORY_SEPERATOR . basename(__FILE__, "php") . "_{$this->_wdport}_";
+	    $_progressLogFile = $this->_logDir . DIRECTORY_SEPARATOR . basename(__FILE__, "php") . "_{$this->_wdport}_";
             echo $_progressLogFile . PHP_EOL;
 
 	    // If location data exists then continue
@@ -484,7 +487,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         $_currentRecord = "";
 			$_recordsAll = $_recordsFailed + $_recordsProcessed;
 			$_complete = (($_recordsAll / $this->_totals['locations']) * 100);
-			$_progressStr = "Locations Progress: " . strval($_recordsAll) . "/" . strval($this->_totals['locations']) . ", Section Progress: $_complete%";	
+			$_progressStr = "Locations Progress: " . strval($_recordsAll) . "/" . strval($this->_totals['locations']) . ", Section Progress: {$_complete}%";	
 
                         foreach ($_locValue as $_key1 => $_value1) {
                             $_currentRecord .= "[$_key1]=>$_value1;";
@@ -791,7 +794,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
 
 		    $_recordsAll = $_recordsFailed + $_recordsProcessed;
 		    $_complete = (($_recordsAll / $this->_totals['rates']) * 100);
-                    $_progressStr = "Rates Progress: " . strval($_recordsAll) . "/" . strval($this->_totals['rates']) . ", Section Progress: $_complete%";
+                    $_progressStr = "Rates Progress: " . strval($_recordsAll) . "/" . strval($this->_totals['rates']) . ", Section Progress: {$_complete} %";
                     // : End
                     
                     $_currentRecord = "";
@@ -1106,7 +1109,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             
             // : If errors occured. Create xls of entries that failed.
             if (count($this->_error) != 0) {
-                $_xlsfilename = $this->_errDir . self::DS . date("Y-m-d_His_") . basename(__FILE__, ".php") . ".xlsx";
+                $_xlsfilename = $this->_errDir . DIRECTORY_SEPARATOR . date("Y-m-d_His_") . basename(__FILE__, ".php") . ".xlsx";
                 $this->writeExcelFile($_xlsfilename, $this->_error, $_xlsColumns);
                 if (file_exists($_xlsfilename)) {
                     print("Excel error report written successfully to file: $_xlsfilename");
@@ -1265,7 +1268,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
         $_data = base64_decode($_img);
 	$_pathname_extra = (string) "";
 
-	if ($_params && is_array($_param)) {	
+	if ($_params && is_array($_params)) {	
 		if (array_key_exists(0, $_params)) {
 			$_pathname_extra = $_params[0];
 		}
