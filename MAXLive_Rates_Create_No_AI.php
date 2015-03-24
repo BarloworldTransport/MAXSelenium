@@ -543,6 +543,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             $this->_session->element("xpath", "//*[@id='udo_CustomerLocations-8__0_type-8']/option[text()='" . $_locValue['type'] . "']")->click();
                             // Click the submit button
                             $this->_session->element("css selector", "input[type=submit][name=save]")->click();
+			    $this->takeScreenshot("createCustomerLocation");
                         }
                         
                         // : Create Business Unit Link for Point Link
@@ -598,6 +599,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
 	                                        // Click the submit button
 	                                        $this->_session->element("css selector", "input[type=submit][name=save]")->click();
 	                                        // Wait for element
+						$this->takeScreenshot("createCustomerLocationBULink");
 	                                        $e = $w->until(function ($session)
 	                                        {
 	                                            return $session->element("css selector", "#button-create");
@@ -946,6 +948,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             $this->_session->element("xpath", "//*[@id='checkbox_udo_Rates-15_0_0_enabled-15']")->click();
                             $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                             
+			    $this->takeScreenshot("createRate");
+
                             // Wait for element = #button-create
                             try {
                                 $e = $w->until(function ($session)
@@ -1054,6 +1058,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                     }
                                     $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                                     sleep(1);
+				    $this->takeScreenshot("createDateRangeValue" . $_drvKey);
                                 } catch (Exception $e) {
                                     $_errmsg = preg_replace("/%s/", $e->getMessage(), automationLibrary::ERR_PROCESS_FAILED_UNEXPECTEDLY);
                                     throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
@@ -1252,9 +1257,22 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
      */
     private function takeScreenshot()
     {
+	$_params = func_get_args();
         $_img = $this->_session->screenshot();
         $_data = base64_decode($_img);
-        $_file = $this->_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_WebDriver.png";
+	$_pathname_extra = (string) "";
+
+	if ($_params && is_array($_param)) {	
+		if (array_key_exists(0, $_params) {
+			$_pathname_extra = $_params[0];
+		}
+	}
+	
+	if ($_pathname_extra) {
+		$_file = $this->_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_${_pathname_extra}_WebDriver.png"; 
+	} else {
+        	$_file = $this->_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_WebDriver.png";
+	}
         $_success = file_put_contents($_file, $_data);
         if ($_success) {
             return $_file;
