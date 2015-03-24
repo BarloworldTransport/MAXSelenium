@@ -1265,7 +1265,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
 	$_pathname_extra = (string) "";
 
 	if ($_params && is_array($_param)) {	
-		if (array_key_exists(0, $_params) {
+		if (array_key_exists(0, $_params)) {
 			$_pathname_extra = $_params[0];
 		}
 	}
