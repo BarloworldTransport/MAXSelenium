@@ -242,6 +242,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
 	$_logArray[] = "Script Name: " . basename(__FILE__);
 	$_logArray[] = "WebDriver Port: " . $this->_wdport;
 	$_logArray[] = "Browser Used: " . $this->_browser;
+	$_logArray[] = "Data File: " . $this->_xls;
 	$_logArray[] = "Record Totals:";
 	$_logArray[] = "Locations: " . $this->_totals["locations"];
 	$_logArray[] = "Offloading Customer: " . $this->_totals["offloading"];
@@ -459,7 +460,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
              */
 
 	    // Define full path and file name for log file
-	    $_progressLogFile = $this->_logDir . DIRECTORY_SEPERATOR . basename(__FILE__, "php") . "_" . basename($_file, "xls") . "_" . $_dateTimeStarted;
+	    $_progressLogFile = $this->_logDir . DIRECTORY_SEPERATOR . basename(__FILE__, "php") . "_{$this->_wdport}_";
             echo $_progressLogFile . PHP_EOL;
 
 	    // If location data exists then continue
