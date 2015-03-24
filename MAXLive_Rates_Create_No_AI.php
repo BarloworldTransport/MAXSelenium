@@ -240,6 +240,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
     public function progressLogFile($_file, $_category, $_currentRecord, $_process, $_progress) {
 	$_logArray = (array) array();
 	$_logArray[] = "Script Name: " . basename(__FILE__);
+	$_logArray[] = "WebDriver Port: " . $this->_wdport;
+	$_logArray[] = "Browser Used: " . $this->_browser;
 	$_logArray[] = "Record Totals:";
 	$_logArray[] = "Locations: " . $this->_totals["locations"];
 	$_logArray[] = "Offloading Customer: " . $this->_totals["offloading"];
