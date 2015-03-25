@@ -321,7 +321,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             if ($value) {
             foreach ($value as $key2 => $value2) {
                 foreach ($value2 as $key3 => $value3) {
-                    $_data[$key][$key3][$key2] = $value3;
+		    // stringHyphenFix function used to convert any long hyphens to short hyphens (xls import issue)
+                    $_data[$key][$key3][$key2] = $this->stringHyphenFix($value3);
                 }
             }
             } else {
