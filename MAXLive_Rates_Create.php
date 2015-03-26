@@ -4,6 +4,7 @@ include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverWait.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
 include_once 'PHPUnit/Extensions/PHPExcel/Classes/PHPExcel.php';
+include_once 'automationLibrary.php';
 
 /**
  * MAXLive_Rates_Create.php
@@ -503,7 +504,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         $_queries["location to point"] = "select ID from udo_location where name='" . $_dataset["location to point"]["value"] . "' and _type='udo_Point' and active=1;";
                         $_queries["province from"] = "select ID from udo_location where name='" . $_dataset["province from"]["value"] . "' and _type='udo_Province' and active=1;";
                         $_queries["province to"] = "select ID from udo_location where name='" . $_dataset["province to"]["value"] . "' and _type='udo_Province' and active=1;";
-                                             
+                        
                         foreach ($_queries as $_sqlKey => $_sqlValue) {
                             $sqlResultA = $this->queryDB($_sqlValue);
                             if (count($sqlResultA) != 0) {
@@ -524,40 +525,44 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             } else {
                                 $_dataset[$_sqlKey]["id"] = NULL;
                             }
-                            /**echo "INFO: Location ID SQL Query output for row been processed:" . PHP_EOL;
-                            echo "DEBUG: Record: " . $this->lastRecord . PHP_EOL;
-                            echo "DEBUG: Data Key: " .$_sqlKey .  PHP_EOL;
-                            echo "DEBUG: SQL Query 1: " . $_sqlValue . PHP_EOL;
-                            echo "DEBUG: SQL Result 1:" . PHP_EOL;
-                            var_dump($sqlResultA);
-                            echo "DEBUG: SQL Query 2: " . $myQuery . PHP_EOL;
-                            echo "DEBUG: SQL Result 2:" . PHP_EOL;
-                            var_dump($sqlResultB);*/
+                        /**
+                         * echo "INFO: Location ID SQL Query output for row been processed:" .
+                         * PHP_EOL;
+                         * echo "DEBUG: Record: " . $this->lastRecord . PHP_EOL;
+                         * echo "DEBUG: Data Key: " .$_sqlKey . PHP_EOL;
+                         * echo "DEBUG: SQL Query 1: " . $_sqlValue . PHP_EOL;
+                         * echo "DEBUG: SQL Result 1:" . PHP_EOL;
+                         * var_dump($sqlResultA);
+                         * echo "DEBUG: SQL Query 2: " . $myQuery . PHP_EOL;
+                         * echo "DEBUG: SQL Result 2:" . PHP_EOL;
+                         * var_dump($sqlResultB);
+                         */
                         }
                         // : End
                         
-                        
-                        // : Get IDS and fleet names for Zones
-                        foreach ($_dataset as $_dataKey => $_dataValues) {
-                            if (strpos($_dataKey, "zone") !== FALSE) {
-                                $myQuery = "select ID, fleet from udo_zone where name='" . $_dataset[$_dataKey]["value"] . "';";
-                                $sqlResult = $this->queryDB($myQuery);
-                                if (count($sqlResult) != 0) {
-                                    $_dataset[$_dataKey]["id"] = intval($sqlResult[0]["ID"]);
-                                    $_dataset[$_dataKey]["other"] = $sqlResult[0]["fleet"];
-                                } else {
-                                    throw new Exception("Error: $_dataKey not found.");
-                                }
-                            }
-                        }
+			if ($_dataset["business unit"]["value"] != "Timber 24") { 
+                        	// : Get IDS and fleet names for Zones
+                        	foreach ($_dataset as $_dataKey => $_dataValues) {
+	                            if (strpos($_dataKey, "zone") !== FALSE) {
+	                                $myQuery = "select ID, fleet from udo_zone where name='" . $_dataset[$_dataKey]["value"] . "';";
+	                                $sqlResult = $this->queryDB($myQuery);
+	                                if (count($sqlResult) != 0) {
+	                                    $_dataset[$_dataKey]["id"] = intval($sqlResult[0]["ID"]);
+	                                    $_dataset[$_dataKey]["other"] = $sqlResult[0]["fleet"];
+	                                } else {
+	                                    throw new Exception("Error: $_dataKey not found.");
+	                                }
+	                            }
+	                        }
+			}
                         // : End
                         
                         // : Check if route and rate exists
                         
                         // Check and store route ID if exists
                         if (($_dataset["location from town"]["id"] != FALSE) && ($_dataset["location to town"]["id"] != FALSE)) {
-                            $myQuery = preg_replace("@%f@", $_dataset["location from town"]["value"], $this->_myqueries[7]);
-                            $myQuery = preg_replace("@%t@", $_dataset["location to town"]["value"], $myQuery);
+                            $myQuery = preg_replace("@%f@", $_dataset["location from town"]["id"], automationLibrary::SQL_QUERY_ROUTE);
+                            $myQuery = preg_replace("@%t@", $_dataset["location to town"]["id"], $myQuery);
                             $sqlResult = $this->queryDB($myQuery);
                             if (count($sqlResult) != 0) {
                                 $_dataset["rate"]["other"] = $sqlResult[0]["ID"];
@@ -1192,7 +1197,6 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                 echo "DEBUG: SQL Query: " . $myQuery . PHP_EOL;
                                 echo "DEBUG: SQL Results: " . PHP_EOL;
                                 var_dump($sqlResult);
-                                
                                 
                                 if (count($sqlResult) != 0) {
                                     $_dataset["rate"]["id"] = $sqlResult[0]["ID"];
