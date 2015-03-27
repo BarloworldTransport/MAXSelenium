@@ -234,7 +234,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
         unset($this);
     }
     // : End
-    public function progressLogFile($_file, $_category, $_currentRecord, $_process, $_progress)
+    public function progressLogFile($_file, $_category, $_currentRecord, $_passed, $_failed, $_process, $_progress)
     {
         $_logArray = (array) array();
         $_logArray[] = "Script Name: " . basename(__FILE__);
@@ -248,6 +248,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
         $_logArray[] = "Current Category of Data been processed: " . $_category;
         $_logArray[] = "Current Process: " . $_process;
         $_logArray[] = "Current Record: " . $_currentRecord;
+	$_logArray[] = "Records Passed: " . $_passed;
+	$_logArray[] = "Records Failed: " . $_failed;
         $_logArray[] = "Progress: " . $_progress;
         
         $_logstr = (string) "## BWT Automation Progress Log File" . PHP_EOL;
@@ -489,7 +491,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         foreach ($_locValue as $_key1 => $_value1) {
                             $_currentRecord .= "[$_key1]=>$_value1;";
                         }
-                        $this->progressLogFile($_progressLogFile, "locations", $_currentRecord, $_process, $_progressStr);
+                        $this->progressLogFile($_progressLogFile, "locations", $_currentRecord, $_recordsFailed, $_recordsProcessed, $_process, $_progressStr);
                         
                         // Get IDs for point and customer link location (if link exists)
                         $_sqlquery = preg_replace("/%n/", $_locValue['pointName'], automationLibrary::SQL_QUERY_LOCATION);
@@ -639,31 +641,44 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             
             // If offloading customer data exists then continue
             if (array_key_exists("offloading", $_data)) {
-                
+               
+                $_complete = 0;
+                $_currentRecordNum = 0;
+                $_recordsProcessed = 0;
+                $_recordsFailed = 0;
+ 
                 foreach ($_data['offloading'] as $_offloadKey => $_offloadValues) {
                     
+		    try {
+
                     $_offloadingCustomerLinkID = 0;
-                    
+                    $_bunitID = 0;
+                    $_currentRecord = "";
+                    $_recordsAll = $_recordsFailed + $_recordsProcessed;
+                    $_complete = (($_recordsAll / $this->_totals['offloading']) * 100);
+                    $_progressStr = "Offloading Customer Progress: " . strval($_recordsAll) . "/" . strval($this->_totals['offloading']) . ", Section Progress: {$_complete}%";
+                        
                     $_currentRecord = "";
                     foreach ($_offloadValues as $_key1 => $_value1) {
                         $_currentRecord .= "[$_key1]=>$_value1;";
                     }
+
+                    $this->progressLogFile($_progressLogFile, "offloading customers", $_currentRecord, $_recordsFailed, $_recordsProcessed, $_process, $_progressStr);
                     
                     // : If offloading customer does exist then check if offloading customer is linked to the customer and store the link ID
-                    $_sqlquery = preg_replace("/%o/", $_value1['tradingName'], automationLibrary::SQL_QUERY_OFFLOADING_CUSTOMER);
+                    $_sqlquery = preg_replace("/%o/", $_offloadValues['tradingName'], automationLibrary::SQL_QUERY_OFFLOADING_CUSTOMER);
                     $_sqlquery = preg_replace("/%c/", $_customerID, $_sqlquery);
                     $_sqlquery1 = $this->queryDB($_sqlquery);
-                    if (count($_sqlquery1) != 0) {
+                    
+		    if (count($_sqlquery1) != 0) {
                         $_offloadingCustomerLinkID = intval($_sqlquery1[0]["ID"]);
                     } else {
                         $_offloadingCustomerLinkID = 0;
                     }
                     // : End
-                    
-                    try {
                         
-                        // : Create and link Offloading Customer
-                        if ((! $_offloadingCustomerLinkID) || (! $_offloadingCustomerLinkID)) {
+			// : Create and link Offloading Customer
+                        if (! $_offloadingCustomerLinkID) {
                             
                             $_process = "createOffloadingCustomerCustomerLink";
                             // : Load customer data browser page for Customer
@@ -675,7 +690,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             {
                                 return $session->element("css selector", "#subtabselector");
                             });
-                            $this->_session->element("xpath", "//*[@id='subtabselector']/select/option[text()='Offloading Customers where Offloading Customer is " . $_data['customer']['tradingName'] . "']")->click();
+                            $this->_session->element("xpath", "//*[@id='subtabselector']/select/option[text()='Offloading Customers where Offloading Customer is " . $_data['customer'][1]['customerName'] . "']")->click();
                             
                             // Wait for element = Page heading
                             $e = $w->until(function ($session)
@@ -696,8 +711,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             $this->assertElementPresent("xpath", "//*[@id='udo_OffloadingCustomers-6__0_offloadingCustomer_id-6']");
                             $this->assertElementPresent("css selector", "input[type=submit][name=save]");
                             
-                            $this->_session->element("xpath", "//*[@id='udo_OffloadingCustomers-3__0_customer_id-3']/option[text()='" . $_data['customer']['tradingName'] . "']")->click();
-                            $this->_session->element("xpath", "//*[@id='udo_OffloadingCustomers-6__0_offloadingCustomer_id-6']/option[text()='" . $_data['offloading']['tradingName'] . "']")->click();
+                            $this->_session->element("xpath", "//*[@id='udo_OffloadingCustomers-3__0_customer_id-3']/option[text()='" . $_data['customer'][1]['customerName'] . "']")->click();
+                            $this->_session->element("xpath", "//*[@id='udo_OffloadingCustomers-6__0_offloadingCustomer_id-6']/option[text()='" . $_offloadValues['tradingName']  . "']")->click();
                             $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                             
                             // : Wait for Create Button to present on page before continuining
@@ -706,16 +721,37 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                 return $session->element("css selector", "#button-create");
                             });
                             // : End
+			}
                             
                             // : Create Business Unit Link for Offloading Customer Link
                             
-                            $myQuery = preg_replace("/%o/", $_dataset["offloading customer"]["value"], $this->_myqueries[1]);
-                            $myQuery = preg_replace("/%t/", $_dataset["customer"]["value"], $myQuery);
+                            $myQuery = preg_replace("/%o/", $_offloadValues["tradingName"], automationLibrary::SQL_QUERY_OFFLOADING_CUSTOMER);
+                            $myQuery = preg_replace("/%t/", $_customerID, $myQuery);
                             $sqlResult = $this->queryDB($myQuery);
-                            if (count($sqlResult) != 0) {
+
+			    if (count($sqlResult) != 0) {
+        	                $_offloadingCustomerLinkID = intval($sqlResult[0]["ID"]);
+                	    } else {
+	                        $_offloadingCustomerLinkID = 0;
+	                    }
+
+                            if ($_offloadingCustomerLinkID) {
+				foreach ($_data['bu'] as $buKey => $buValue) {
+				
+                            	$myQuery = preg_replace("/%s/", $_buValue['bunit'], automationLibrary::SQL_QUERY_BUNIT);
+        	                $sqlResultBU = $this->queryDB($myQuery);
+				if ($sqlResultBU) {
+					$_bID = $sqlResultBU[0]['ID'];
+
+                            	$myQuery = preg_replace("/%o/", $_offloadingCustomerLinkID, automationLibrary::SQL_QUERY_OFFLOAD_BU_LINK);
+	                        $myQuery = preg_replace("/%b/", $_bID, $myQuery);
+        	                $sqlResult = $this->queryDB($myQuery);
+
+				// Check if offloadingcustomer_bulink exists. If it doesnt exist then create the link
+				if (count($sqlResult) == 0) {
+
                                 $_process = "create business unit link for offloading customer link";
-                                $_dataset["offloading customer"]["link"] = $sqlResult[0]["ID"];
-                                $this->_session->open($this->_maxurl . automationLibrary::URL_OFFLOAD_CUST_BU . $_dataset["offloading customer"]["link"]);
+                                $this->_session->open($this->_maxurl . automationLibrary::URL_OFFLOAD_CUST_BU . $_offloadingCustomerLinkID);
                                 
                                 // Wait for element = #subtabselector
                                 $e = $w->until(function ($session)
@@ -740,7 +776,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                 $this->assertElementPresent("xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']");
                                 $this->assertElementPresent("css selector", "input[type=submit][name=save]");
                                 
-                                $this->_session->element("xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']/option[text()='" . $_dataset["business unit"]["value"] . "']")->click();
+                                $this->_session->element("xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']/option[text()='" . $buValue["bunit"] . "']")->click();
                                 $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                                 
                                 // Wait for element = #button-create
@@ -748,13 +784,18 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                 {
                                     return $session->element("xpath", "//div[@id='button-create']");
                                 });
+				}
+				}
+				}
                             } else {
-                                throw new Exception("Could not find offloading customer record: " . $_dataset["offloading customer"]["value"]);
+                                throw new Exception("Could not find offloading customer record: " . $_offloadValues['tradingName']);
                             }
-                        }
+		    	$_recordsProcessed++; 	
                     } catch (Exception $e) {
+			$_recordsFailed++;
                         $this->addErrorRecord($e->getMessage(), $_currentRecord, $_process);
                     }
+		    $_currentRecordNum++;
                     // : End
                 }
             }
@@ -799,7 +840,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             $_currentRecord .= "[$_key1]=>$_value1;";
                         }
                         
-                        $this->progressLogFile($_progressLogFile, "rates", $_currentRecord, "create rate", $_progressStr);
+                        $this->progressLogFile($_progressLogFile, "rates", $_currentRecord, $_recordsFailed, $_recordsProcessed, "create rate", $_progressStr);
                         
                         // Get truck description ID
                         $_sqlquery = preg_replace("/%d/", $_ratesValues['truckType'], automationLibrary::SQL_QUERY_TRUCK_TYPE);
