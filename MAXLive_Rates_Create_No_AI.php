@@ -438,7 +438,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
              * VARIABLE AND DATA PREP
              */
             
-            if ($_data['customer']) {
+            if ($_data['customer'] && $_data['bu']) {
+		$_buName = $_data['bu'][1]['bunit'];
                 echo $_data['customer'][1]['customerName'] . PHP_EOL;
                 $_sqlquery = preg_replace("/%t/", $_data['customer'][1]['customerName'], automationLibrary::SQL_QUERY_CUSTOMER);
                 $result = $this->queryDB($_sqlquery);
@@ -452,7 +453,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             } else {
                 throw new Exception(automationLibrary::ERR_NO_CUSTOMER_DATA);
             }
-            
+
             /**
              * END
              */
@@ -675,6 +676,9 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                     } else {
                         $_offloadingCustomerLinkID = 0;
                     }
+		    echo "INFO: SQL Query - Check if offloading customer exists - Fetch ID: " . $_sqlquery . PHP_EOL;
+		    echo "DEBUG: Result:" . PHP_EOL;
+		    var_dump($_sqlquery1);
                     // : End
                         
 			// : Create and link Offloading Customer
@@ -720,11 +724,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             {
                                 return $session->element("css selector", "#button-create");
                             });
-                            // : End
-			}
-                            
-                            // : Create Business Unit Link for Offloading Customer Link
-                            
+
+			    // Fetch ID of newly created offloadingcustomer link ID	
                             $myQuery = preg_replace("/%o/", $_offloadValues["tradingName"], automationLibrary::SQL_QUERY_OFFLOADING_CUSTOMER);
                             $myQuery = preg_replace("/%t/", $_customerID, $myQuery);
                             $sqlResult = $this->queryDB($myQuery);
@@ -735,20 +736,33 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
 	                        $_offloadingCustomerLinkID = 0;
 	                    }
 
+                            // : End
+			}
+                            
+                            // : Create Business Unit Link for Offloading Customer Link 
+			    echo "INFO: Code position - Create Business Unit Link - Outside" . PHP_EOL;
                             if ($_offloadingCustomerLinkID) {
-				foreach ($_data['bu'] as $buKey => $buValue) {
-				
-                            	$myQuery = preg_replace("/%s/", $_buValue['bunit'], automationLibrary::SQL_QUERY_BUNIT);
+				try {	
+			    echo "INFO: Code position - Create Business Unit Link - Inside" . PHP_EOL;
+                            	$myQuery = preg_replace("/%s/", $_buName, automationLibrary::SQL_QUERY_BUNIT);
         	                $sqlResultBU = $this->queryDB($myQuery);
+
+				echo "INFO: SQL Query - Fetch Business Unit ID " . $myQuery . PHP_EOL;
+				echo "DEBUG: SQL Result:" . PHP_EOL;
+				var_dump($sqlResultBU);
+
 				if ($sqlResultBU) {
 					$_bID = $sqlResultBU[0]['ID'];
 
-                            	$myQuery = preg_replace("/%o/", $_offloadingCustomerLinkID, automationLibrary::SQL_QUERY_OFFLOAD_BU_LINK);
-	                        $myQuery = preg_replace("/%b/", $_bID, $myQuery);
-        	                $sqlResult = $this->queryDB($myQuery);
-
+                            		$myQuery = preg_replace("/%o/", $_offloadingCustomerLinkID, automationLibrary::SQL_QUERY_OFFLOAD_BU_LINK);
+		                        $myQuery = preg_replace("/%b/", $_bID, $myQuery);
+        		                $sqlResult = $this->queryDB($myQuery);
+				echo "INFO: SQL Query - Fetch offloading customer link->BU link " . $myQuery . PHP_EOL;
+				echo "DEBUG: SQL Result:" . PHP_EOL;
+				var_dump($sqlResult);
+				
 				// Check if offloadingcustomer_bulink exists. If it doesnt exist then create the link
-				if (count($sqlResult) == 0) {
+				if (!$sqlResult) {
 
                                 $_process = "create business unit link for offloading customer link";
                                 $this->_session->open($this->_maxurl . automationLibrary::URL_OFFLOAD_CUST_BU . $_offloadingCustomerLinkID);
@@ -776,7 +790,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                 $this->assertElementPresent("xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']");
                                 $this->assertElementPresent("css selector", "input[type=submit][name=save]");
                                 
-                                $this->_session->element("xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']/option[text()='" . $buValue["bunit"] . "']")->click();
+                                $this->_session->element("xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']/option[text()='" . $_buName . "']")->click();
                                 $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                                 
                                 // Wait for element = #button-create
@@ -786,6 +800,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                 });
 				}
 				}
+				} catch (Exception $e) {
+					throw new Exception("Something during offloading customer link bu link create process: " . $e->getMessage()); 
 				}
                             } else {
                                 throw new Exception("Could not find offloading customer record: " . $_offloadValues['tradingName']);
