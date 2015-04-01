@@ -595,7 +595,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
         
         // : Report errors if any occured
         if ($this->_errors) {
-            $_errfile = dirname(__FILE__) . $this->_errdir . self::DS . "error_report_" . date("Y-m-d_His") . ".csv";
+            $_errfile = dirname(__FILE__) . self::DS . $this->_errdir . self::DS . "error_report_" . date("Y-m-d_His") . ".csv";
             $this->ExportToCSV($_errfile, $this->_errors);
             echo "Exported error report to the following path and file: " . $_errfile;
         }
@@ -628,7 +628,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
         try {
             $_img = $_session->screenshot();
             $_data = base64_decode($_img);
-            $_file = dirname(__FILE__) . $this->_scrdir . self::DS . date("Y-m-d_His") . $_filename;
+            $_file = dirname(__FILE__) . self::DS . $this->_scrdir . self::DS . date("Y-m-d_His") . $_filename;
             $_success = file_put_contents($_file, $_data);
             if ($_success) {
                 return $_file;
