@@ -539,7 +539,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                          */
                         }
                         // : End
-                        
+                       
+
 			if ($_dataset["business unit"]["value"] != "Timber 24") { 
                         	// : Get IDS and fleet names for Zones
                         	foreach ($_dataset as $_dataKey => $_dataValues) {
@@ -770,10 +771,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                         }
                                     }
                                 } catch (Exception $e) {
-                                    $_erCount = count($this->_error);
-                                    $this->_error[$_erCount + 1]["error"] = $e->getMessage();
-                                    $this->_error[$_erCount + 1]["record"] = $this->lastRecord . ". Object data that failed: " . $_currentLocation;
-                                    $this->_error[$_erCount + 1]["type"] = $_process;
+				    automationLibrary::addErrorRecord($this->_error, $this->_session, $this->_scrDir, $e->getMessage(), $this->lastRecord . ". Object data that failed: " . $_currentLocation, $_process);
                                 }
                             }
                         }
@@ -889,10 +887,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                     }
                                 }
                             } catch (Exception $e) {
-                                $_erCount = count($this->_error);
-                                $this->_error[$_erCount + 1]["error"] = $e->getMessage();
-                                $this->_error[$_erCount + 1]["record"] = $this->lastRecord . ". Object data that failed: " . $_currentLocation;
-                                $this->_error[$_erCount + 1]["type"] = $_process;
+				    automationLibrary::addErrorRecord($this->_error, $this->_session, $this->_scrDir, $e->getMessage(), $this->lastRecord . ". Object data that failed: " . $_currentLocation, $_process);
                             }
                         }
                         
@@ -1039,10 +1034,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                 }
                             }
                         } catch (Exception $e) {
-                            $_erCount = count($this->_error);
-                            $this->_error[$_erCount + 1]["error"] = $e->getMessage();
-                            $this->_error[$_erCount + 1]["record"] = $this->lastRecord . ". Object data that failed: " . $_dataset["offloading customer"]["value"];
-                            $this->_error[$_erCount + 1]["type"] = $_process;
+			    automationLibrary::addErrorRecord($this->_error, $this->_session, $this->_scrDir, $e->getMessage(), $this->lastRecord . ". Object data that failed: " . $_currentLocation, $_process);
                         }
                         // : End
                         
@@ -1102,7 +1094,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                 {
                                     return $session->element("xpath", "//*[@id='udo_Rates-31__0_route_id-31']");
                                 });
-                                
+
+                                automationLibrary::CONSOLE_OUTPUT("BU Value", "Output the value of [business unit][value]", "sql", "na", $_dataset["business unit"]["value"]);
                                 // : Create route if it does not exist
                                 if (! $_dataset["rate"]["other"]) {
                                     try {
@@ -1166,10 +1159,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                         }
                                         $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                                     } catch (Exception $e) {
-                                        $_erCount = count($this->_error);
-                                        $this->_error[$_erCount + 1]["error"] = $e->getMessage();
-                                        $this->_error[$_erCount + 1]["record"] = $this->lastRecord;
-                                        $this->_error[$_erCount + 1]["type"] = $_process;
+			    		automationLibrary::addErrorRecord($this->_error, $this->_session, $this->_scrDir, $e->getMessage(), $this->lastRecord . ". Object data that failed: " . $_currentLocation, $_process);
                                     }
                                     
                                     if (count($_allWin > 1)) {
@@ -1348,24 +1338,14 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             }
                             // : End
                         } catch (Exception $e) {
-                            $_erCount = count($this->_error);
-                            $this->_error[$_erCount + 1]["error"] = $e->getMessage();
-                            $this->_error[$_erCount + 1]["record"] = $this->lastRecord;
-                            $this->_error[$_erCount + 1]["type"] = $_process;
+		            automationLibrary::addErrorRecord($this->_error, $this->_session, $this->_scrDir, $e->getMessage(), $this->lastRecord . ". Object data that failed: " . $_currentLocation, $_process);
                         }
                         
                         // : End
                         
                         // : End
                     } catch (Exception $e) {
-                        echo "Error: " . $e->getMessage() . PHP_EOL;
-                        echo "Time of error: " . date("Y-m-d H:i:s") . PHP_EOL;
-                        echo "Last record: " . $this->lastRecord;
-                        $this->takeScreenshot();
-                        $_erCount = count($this->_error);
-                        $this->_error[$_erCount + 1]["error"] = $e->getMessage();
-                        $this->_error[$_erCount + 1]["record"] = $this->lastRecord;
-                        $this->_error[$_erCount + 1]["type"] = "Route and Rate";
+		        automationLibrary::addErrorRecord($this->_error, $this->_session, $this->_scrDir, $e->getMessage(), $this->lastRecord, "Route and Rate");
                     }
                 }
                 // : End
@@ -1393,17 +1373,20 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             $this->_session->close();
             // : End
             
-            // : If errors occured. Create xls of entries that failed.
+            // : End
+            
+	    // : If errors occured. Create xls of entries that failed.
             if (count($this->_error) != 0) {
                 $_xlsfilename = (dirname(__FILE__) . $this->_errDir . self::DS . date("Y-m-d_His_") . basename(__FILE__, ".php") . ".xlsx");
-                $this->writeExcelFile($_xlsfilename, $this->_error, $_xlsColumns);
+                automationLibrary::writeExcelFile($_xlsfilename, $this->_error, $_xlsColumns, basename(__FILE__, ".php"), "error_report", "error_report");
                 if (file_exists($_xlsfilename)) {
                     print("Excel error report written successfully to file: $_xlsfilename");
                 } else {
                     print("Excel error report write unsuccessful");
                 }
             }
-            // : End
+	    // : End
+
         } else {
             throw new Exception($this->getFunctionErrorMsg());
         }

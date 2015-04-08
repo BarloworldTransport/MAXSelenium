@@ -78,14 +78,178 @@ class automationLibrary {
     // : End
     
     // : Public Methods
+
+    /**
+     * automationLibrary::CONSOLE_OUTPUT($_heading, $_description, $_type, $_query, $_data)
+     * Output debug information onto screen
+     * Heading: What debug information we are displaying title
+     * Description: A short description about the debug information
+     * Type: Only 'sql' type available at the moment for displaying SQL Debug Data
+     * Query: SQL query ran
+     * Data: SQL results returned from the above query
+     *
+     * @param string: $_heading
+     * @param string: $_description
+     * @param string: $_type
+     * @param string: $_query
+     * @param array: $_data            
+     */
     public static function CONSOLE_OUTPUT($_heading, $_description, $_type, $_query, $_data) {
         switch ($_type) {
             case "sql" :
             default : {
-                echo "INFO: " . $_heading . ". Query run: " . $_query . PHP_EOL;
-                echo "DEBUG: " . $_description . PHP_EOL;
+		printf("INFO: %s. Query run: %s" . PHP_EOL, $_heading, $_query);
+		printf("DEBUG: %s" . PHP_EOL, $_description); 
                 var_dump($_data);
             }
+        }
+    }
+
+
+    /**
+     * automationLibrary::stringHypenFix($_value)
+     * Replace long hyphens in string to short hyphens as part of a problem
+     * created when importing data from spreadsheets
+     *
+     * @param string: $_value            
+     * @param string: $_result            
+     */
+    public static function stringHypenFix($_value)
+    {
+        $_result = preg_replace("/–/", "-", $_value);
+        return $_result;
+    }
+
+    /**
+     * automationLibrary::addErrorRecord(&$_errArr, &$_session, $_scrDir, $_errmsg, $_record, $_process)
+     * Add error record to error array
+     *
+     * @param array: $_erArrr
+     * @param object: $_session
+     * @param string: $_scrDir
+     * @param string: $_errmsg
+     * @param string: $_record
+     * @param string: $_process
+     */
+    public static function addErrorRecord(&$_errArr, $_session, $_scrDir, $_errmsg, $_record, $_process)
+    {
+        $_erCount = count($_errArr);
+        $_errArr[$_erCount + 1]["error"] = $_errmsg;
+        $_errArr[$_erCount + 1]["record"] = $_record;
+        $_errArr[$_erCount + 1]["type"] = $_process;
+        self::takeScreenshot($_session, $_scrDir);
+    }
+
+
+    /**
+     * MAXLive_Subcontractors::writeExcelFile($excelFile, $excelData)
+     * Create, Write and Save Excel Spreadsheet from collected data obtained from the variance report
+     *
+     * @param $excelFile, $excelData            
+     */
+    public static function writeExcelFile($excelFile, $excelData, $columns, $author, $title, $subject)
+    {
+        try {
+            // Check data validility
+            if (count($excelData) != 0) {
+                
+                // : Create new PHPExcel object
+                print("<pre>");
+                print(date('H:i:s') . " Create new PHPExcel object" . PHP_EOL);
+                $objPHPExcel = new PHPExcel();
+                // : End
+                
+                // : Set properties
+                print(date('H:i:s') . " Set properties" . PHP_EOL);
+                $objPHPExcel->getProperties()->setCreator($author);
+                $objPHPExcel->getProperties()->setLastModifiedBy($author);
+                $objPHPExcel->getProperties()->setTitle($title);
+                $objPHPExcel->getProperties()->setSubject($subject);
+                // : End
+                
+                // : Setup Workbook Preferences
+                print(date('H:i:s') . " Setup workbook preferences" . PHP_EOL);
+                $objPHPExcel->getDefaultStyle()
+                    ->getFont()
+                    ->setName('Arial');
+                $objPHPExcel->getDefaultStyle()
+                    ->getFont()
+                    ->setSize(8);
+                $objPHPExcel->getActiveSheet()
+                    ->getPageSetup()
+                    ->setOrientation(PHPExcel_Worksheet_PageSetup::ORIENTATION_LANDSCAPE);
+                $objPHPExcel->getActiveSheet()
+                    ->getPageSetup()
+                    ->setPaperSize(PHPExcel_Worksheet_PageSetup::PAPERSIZE_A4);
+                $objPHPExcel->getActiveSheet()
+                    ->getPageSetup()
+                    ->setFitToWidth(1);
+                $objPHPExcel->getActiveSheet()
+                    ->getPageSetup()
+                    ->setFitToHeight(0);
+                // : End
+                
+                // : Set Column Headers
+                $alphaVar = range('A', 'Z');
+                print(date('H:i:s') . " Setup column headers" . PHP_EOL);
+                
+                $i = 0;
+                foreach ($columns as $key) {
+                    $objPHPExcel->getActiveSheet()->setCellValue($alphaVar[$i] . "1", $key);
+                    $objPHPExcel->getActiveSheet()
+                        ->getStyle($alphaVar[$i] . '1')
+                        ->getFont()
+                        ->setBold(true);
+                    $i ++;
+                }
+                
+                // : End
+                
+                // : Add data from $excelData array
+                print(date('H:i:s') . " Add data from error array" . PHP_EOL);
+                $rowCount = (int) 2;
+                $objPHPExcel->setActiveSheetIndex(0);
+                foreach ($excelData as $values) {
+                    $i = 0;
+                    foreach ($values as $key => $value) {
+                        $objPHPExcel->getActiveSheet()
+                            ->getCell($alphaVar[$i] . strval($rowCount))
+                            ->setValueExplicit($value, PHPExcel_Cell_DataType::TYPE_STRING);
+                        $i ++;
+                    }
+                    $rowCount ++;
+                }
+                // : End
+                
+                // : Setup Column Widths
+                for ($i = 0; $i <= count($columns); $i ++) {
+                    $objPHPExcel->getActiveSheet()
+                        ->getColumnDimension($alphaVar[$i])
+                        ->setAutoSize(true);
+                }
+                // : End
+                
+                // : Rename sheet
+                print(date('H:i:s') . " Rename sheet" . PHP_EOL);
+                $objPHPExcel->getActiveSheet()->setTitle($title);
+                // : End
+                
+                // : Save spreadsheet to Excel 2007 file format
+                print(date('H:i:s') . " Write to Excel2007 format" . PHP_EOL);
+                print("</pre>" . PHP_EOL);
+                $objWriter = new PHPExcel_Writer_Excel2007($objPHPExcel);
+                $objWriter->save($excelFile);
+                $objPHPExcel->disconnectWorksheets();
+                unset($objPHPExcel);
+                unset($objWriter);
+                // : End
+            } else {
+                print("<pre>");
+                print_r("ERROR: The function was passed an empty array");
+                print("</pre>");
+            }
+        } catch (Exception $e) {
+            echo "Caught exception: ", $e->getMessage(), "\n";
         }
     }
     // : End
@@ -94,5 +258,37 @@ class automationLibrary {
     // : End
     
     // : Private Methods
+
+    /**
+     * automationLibrary::takeScreenshot()
+     * This is a function description for a selenium test function
+     *
+     * @param object: $_session            
+     */
+    private static function takeScreenshot($_session, $_scrDir)
+    {
+        $_params = func_get_args();
+        $_img = $_session->screenshot();
+        $_data = base64_decode($_img);
+        $_pathname_extra = (string) "";
+        
+        if ($_params && is_array($_params)) {
+            if (array_key_exists(2, $_params)) {
+                $_pathname_extra = $_params[2];
+            }
+        }
+        // Suport for variable length arguments (only 1 extra argument supported
+        if ($_pathname_extra) {
+            $_file = $_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_${_pathname_extra}_WebDriver.png";
+        } else {
+            $_file = $_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_WebDriver.png";
+        }
+        $_success = file_put_contents($_file, $_data);
+        if ($_success) {
+            return $_file;
+        } else {
+            return FALSE;
+        }
+    }
     // : End
 }

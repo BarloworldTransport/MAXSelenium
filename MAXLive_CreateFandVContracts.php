@@ -163,6 +163,7 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase {
 		// : Pull F and V Contract data from correctly formatted xls spreadsheet
 		$_datadir = preg_replace ( '/\//', self::DS, $this->_dataDir );
 		$file = dirname ( __FILE__ ) . $_datadir . $this->_xls;
+		echo $file . PHP_EOL;
 		if (file_exists ( $file )) {
 			
 			// Initiate Session
