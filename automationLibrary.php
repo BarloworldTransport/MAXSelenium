@@ -62,6 +62,7 @@ class automationLibrary {
     const ERR_SQL_QUERY_NO_RESULTS_REQ_DATA = "FATAL: Required data searched from the database was not found using the following SQL query: %s";
     const ERR_COULD_NOT_FIND_RECORD_USING_URL = "ERROR: Could not find %d after creating it using the following URL: %u";
     const ERR_PROCESS_FAILED_UNEXPECTEDLY = "ERROR: Caught error while busy with process %s with error message: %e";
+    const ERR_NO_DATE_RANGE_VALUE = "ERROR: Could not find DateRangeValue for Record: %s";
     # Constants - URL addresses
     const URL_CUSTOMER = "/DataBrowser?browsePrimaryObject=461&browsePrimaryInstance=";
     const URL_PB = "/Planningboard";
