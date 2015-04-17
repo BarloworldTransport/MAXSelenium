@@ -140,10 +140,54 @@ class automationLibrary {
         $_errArr[$_erCount + 1]["type"] = $_process;
         self::takeScreenshot($_session, $_scrDir);
     }
+    
+    /**
+     * automationLibrary::getSelectedOptionValue($_using, $_value, &$_session)
+     * This is a function description for a selenium test function
+     *
+     * @param string: $_using
+     * @param string: $_value
+     * @param object: $_session
+     */
+    public static function getSelectedOptionValue($_using, $_value, &$_session) {
+        try {
+            $_result = FALSE;
+            $_cnt = count ( $_session->elements ( $_using, $_value ) );
+            for($x = 1; $x <= $_cnt; $x ++) {
+                $_selected = $_session->element ( $_using, $_value . "[$x]" )->attribute ( "selected" );
+                if ($_selected) {
+                    $_result = $_session->element ( $_using, $_value . "[$x]" )->attribute ( "value" );
+                    break;
+                }
+            }
+        } catch ( Exception $e ) {
+            $_result = FALSE;
+        }
+        return ($_result);
+    }
+    
+    /**
+     * automationLibrary::assertElementPresent($_using, $_value, &$_session, &$_phpunit_fw_obj)
+     * This is a function description for a selenium test function
+     *
+     * @param string: $_using
+     * @param string: $_value
+     * @param object: $_session
+     * @param object: $_phpunit_fw_obj
+     */
+    public static function assertElementPresent($_using, $_value, &$_session, &$_phpunit_fw_obj) {
+        $e = $_session->element ( $_using, $_value );
+        try {
+            $_phpunit_fw_obj->assertEquals ( count ( $e ), 1 );
+        } catch (Exception $e) {
+            return FALSE;
+        }
+        return TRUE;
+    }
 
 
     /**
-     * MAXLive_Subcontractors::writeExcelFile($excelFile, $excelData)
+     * automationLibrary::writeExcelFile($excelFile, $excelData)
      * Create, Write and Save Excel Spreadsheet from collected data obtained from the variance report
      *
      * @param $excelFile, $excelData            
