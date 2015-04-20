@@ -155,6 +155,12 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			// Log into MAX
 			maxLoginLogout::maxLogin($this->_session, $w, $this, $this->_username, $this->_password, $this->_welcome, $this->_maxurl);
 			
+			
+			
+			// Log out of MAX
+			maxLoginLogout::maxLogout($this->_session, $w, $this);
+			$this->_session->close();
+			
 		} catch ( Exception $e ) {
 			$_errmsg = preg_replace ( "/%h/", $this->_maxurl, self::LOGIN_FAIL );
 			$_errmsg = preg_replace ( "/%s/", $e->getMessage (), $_errmsg );

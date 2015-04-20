@@ -154,12 +154,43 @@ class maxLoginLogout
         });
         automationLibrary::assertElementPresent('css selector', 'input[id=identification]', $_session, $_phpunit_fw_obj);
         // Terminate session
-        $_session->close();
         } catch (Exception $e) {
             // Store error message into static array
             self::$_errors[] = $e->getMessage();
             return FALSE;    
         }
+        
+        return TRUE;
+        // : End
+    }
+    
+    /**
+     * MAX_LoginLogout::maxLogout
+     * Log out of MAX
+     */
+    public static function maxSearch(&$_session, &$w, &$_phpunit_fw_obj, $_tripNumber)
+    {
+        try {
+
+            automationLibrary::assertElementPresent('css selector', 'input.inputtext', $_session, $_phpunit_fw_obj);
+            automationLibrary::assertElementPresent('css selector', 'div.search-button-image', $_session, $_phpunit_fw_obj);
+            $_session->element('css selector', 'input.inputtext')->sendKeys("tripNumber:$_tripNumber");
+            $_session->element('css selector', 'div.search-button-image')->click();
+
+            self::$_tmp = $_tripNumber;
+            
+            // Wait for page to load and for elements to be present on page
+            $e = $w->until(function ($session)
+            {
+                return $session->element('xpath', '//a[text()="' . self::$_tmp . '"]');
+            });
+            
+        } catch (Exception $e) {
+            // Store error message into static array
+            self::$_errors[] = $e->getMessage();
+            return FALSE;
+        }
+    
         return TRUE;
         // : End
     }
