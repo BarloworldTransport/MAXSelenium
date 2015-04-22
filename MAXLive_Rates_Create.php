@@ -274,6 +274,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             "offloading customer",
             "province from",
             "province to",
+            "country from",
+            "country to",
             "location from town",
             "location to town",
             "location from point",
@@ -515,8 +517,22 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                     $_queries["location from point"] = "select ID from udo_location where name='" . $_dataset["location from point"]["value"] . "' and _type='udo_Point' and active=1;";
                                     $_queries["location to town"] = "select ID from udo_location where name='" . $_dataset["location to town"]["value"] . "' and _type='udo_City' and active=1;";
                                     $_queries["location to point"] = "select ID from udo_location where name='" . $_dataset["location to point"]["value"] . "' and _type='udo_Point' and active=1;";
-                                    $_queries["province from"] = "select ID from udo_location where name='" . $_dataset["province from"]["value"] . "' and _type='udo_Province' and active=1;";
-                                    $_queries["province to"] = "select ID from udo_location where name='" . $_dataset["province to"]["value"] . "' and _type='udo_Province' and active=1;";
+                                    
+                                    if ($_dataset["country from"]["value"] == "South Africa") {
+                                        // If country is South Africa capture Province as parent
+                                        $_queries["province from"] = "select ID from udo_location where name='" . $_dataset["province from"]["value"] . "' and _type='udo_Province' and active=1;";
+                                    } else {
+                                        // If country is not South Africa capture Province as country
+                                        $_queries["province from"] = "select ID from udo_location where name='" . $_dataset["country from"]["value"] . "' and _type='udo_Country' and active=1;";
+                                    }
+                                    
+                                    if ($_dataset["country to"]["value"] == "South Africa") {
+                                        // If country is South Africa capture Province as parent
+                                        $_queries["province to"] = "select ID from udo_location where name='" . $_dataset["province to"]["value"] . "' and _type='udo_Province' and active=1;";
+                                    } else {
+                                        // If country is not South Africa capture Province as country
+                                        $_queries["province to"] = "select ID from udo_location where name='" . $_dataset["country to"]["value"] . "' and _type='udo_Country' and active=1;";
+                                    }
                                     break;
                                 }
                         }
