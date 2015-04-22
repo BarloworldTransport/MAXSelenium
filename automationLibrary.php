@@ -3,7 +3,7 @@ include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriver.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverWait.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
-include_once dirname ( __FILE__ ) . '/ReadExcelFile.php';
+include_once dirname(__FILE__) . '/ReadExcelFile.php';
 include_once 'PHPUnit/Extensions/PHPExcel/Classes/PHPExcel.php';
 
 /**
@@ -27,59 +27,94 @@ include_once 'PHPUnit/Extensions/PHPExcel/Classes/PHPExcel.php';
  *       You should have received a copy of the GNU General Public License
  *       along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-class automationLibrary {
+class automationLibrary
+{
     // : Constants
-    # Constants - SQL Queries
+    // Constants - SQL Queries
     const SQL_QUERY_OBJREG = "select ID from objectregistry where handle = '%s';";
+
     const SQL_QUERY_ZONE = "select ID from udo_zone where name='%s';";
+
     const SQL_QUERY_ROUTE = "select ID from udo_route where locationFrom_id=%f and locationTo_id=%t;";
+
     const SQL_QUERY_RATE = "select ID from udo_rates where route_id=%ro and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and model='%m' and businessUnit_id=%b and rateType_id=%r;";
+
     const SQL_QUERY_CUSTOMER = "select ID from udo_customer where tradingName='%t';";
+
     const SQL_QUERY_OFFLOADING_CUSTOMER = "select ID from udo_offloadingcustomers where offloadingCustomer_id IN (select ID from udo_customer where tradingName='%o') and customer_id=%c;";
+
     const SQL_QUERY_CUSTOMER_LOCATION_LINK = "select ID from udo_customerlocations where location_id=%l and customer_id=%c;";
+
     const SQL_QUERY_LOCATION = "select ID from udo_location where name = '%n' and _type='%t';";
+
     const SQL_QUERY_TRUCK_TYPE = "select ID from udo_truckdescription where description='%d';";
+
     const SQL_QUERY_RATE_TYPE = "select ID from udo_ratetype where name='%s';";
+
     const SQL_QUERY_BUNIT = "select ID from udo_businessunit where name='%s';";
+
     const SQL_QUERY_CUSTOMER_LOCATION_BU_LINK = "select ID from udo_customerlocationsbusinessunit_link where customerLocations_id=%l and businessUnit_id=%b;";
+
     const SQL_QUERY_OFFLOAD_BU_LINK = "select ID from udo_offloadingcustomersbusinessunit_link where offloadingCustomers_id=%o and businessUnit_id=%b;";
-    # Constants - Location Types
+    // Constants - Location Types
     const _TYPE_CITY = "udo_City";
+
     const _TYPE_CONTINENT = "udo_Continent";
+
     const _TYPE_DEPOT = "udo_Depot";
+
     const _TYPE_MILL = "udo_Mill";
+
     const _TYPE_PLANTATION = "udo_Plantation";
+
     const _TYPE_POINT = "udo_Point";
+
     const _TYPE_PROVINCE = "udo_Province";
+
     const _TYPE_SUBURB = "udo_Suburb";
+
     const _TYPE_TOLLGATE = "udo_TollGate";
-    # Constants - Object Registry Objects
+    // Constants - Object Registry Objects
     const OBJREG_CUSTOMER = "udo_Customer";
-    # Constants - Error Messages
+    // Constants - Error Messages
     const ERR_COULD_NOT_FIND_ELEMENT = "ERROR: Could not find the expected element on page: %s";
+
     const ERR_NO_CUSTOMER_DATA = "FATAL: Could not find customer data when attempting to access the imported data from array.";
+
     const ERR_SQL_QUERY_NO_RESULTS_REQ_DATA = "FATAL: Required data searched from the database was not found using the following SQL query: %s";
+
     const ERR_COULD_NOT_FIND_RECORD_USING_URL = "ERROR: Could not find %d after creating it using the following URL: %u";
+
     const ERR_PROCESS_FAILED_UNEXPECTEDLY = "ERROR: Caught error while busy with process %s with error message: %e";
+
     const ERR_NO_DATE_RANGE_VALUE = "ERROR: Could not find DateRangeValue for Record: %s";
-    # Constants - URL addresses
+    // Constants - URL addresses
     const URL_CUSTOMER = "/DataBrowser?browsePrimaryObject=461&browsePrimaryInstance=";
+
     const URL_PB = "/Planningboard";
+
     const URL_POINT = "/Country_Tab/points?&tab_id=52";
+
     const URL_CITY = "/Country_Tab/cities?&tab_id=50";
+
     const URL_CUST_LOCATION_BU = "/DataBrowser?browsePrimaryObject=495&browsePrimaryInstance=";
+
     const URL_OFFLOAD_CUST_BU = "/DataBrowser?browsePrimaryObject=494&browsePrimaryInstance=";
-    const URL_RATEVAL = "/DataBrowser?&browsePrimaryObject=udo_Rates&browsePrimaryInstance=%s&browseSecondaryObject=DateRangeValue&relationshipType=Rate"; 
-    const URL_LIVE = "https://login.max.bwtsgroup.com"; 
+
+    const URL_RATEVAL = "/DataBrowser?&browsePrimaryObject=udo_Rates&browsePrimaryInstance=%s&browseSecondaryObject=DateRangeValue&relationshipType=Rate";
+
+    const URL_LIVE = "https://login.max.bwtsgroup.com";
+
     const URL_TEST = "http://max.mobilize.biz";
+
+    const URL_API_GET = "/api_request/Data/get?objectRegistry=";
     // : End
     
     // : Properties
     // : End
     
     // : Public Methods
-
+    
     /**
      * automationLibrary::CONSOLE_OUTPUT($_heading, $_description, $_type, $_query, $_data)
      * Output debug information onto screen
@@ -89,23 +124,24 @@ class automationLibrary {
      * Query: SQL query ran
      * Data: SQL results returned from the above query
      *
-     * @param string: $_heading
-     * @param string: $_description
-     * @param string: $_type
-     * @param string: $_query
+     * @param string: $_heading            
+     * @param string: $_description            
+     * @param string: $_type            
+     * @param string: $_query            
      * @param array: $_data            
      */
-    public static function CONSOLE_OUTPUT($_heading, $_description, $_type, $_query, $_data) {
+    public static function CONSOLE_OUTPUT($_heading, $_description, $_type, $_query, $_data)
+    {
         switch ($_type) {
-            case "sql" :
-            default : {
-		printf("INFO: %s. Query run: %s" . PHP_EOL, $_heading, $_query);
-		printf("DEBUG: %s" . PHP_EOL, $_description); 
-                var_dump($_data);
-            }
+            case "sql":
+            default:
+                {
+                    printf("INFO: %s. Query run: %s" . PHP_EOL, $_heading, $_query);
+                    printf("DEBUG: %s" . PHP_EOL, $_description);
+                    var_dump($_data);
+                }
         }
     }
-
 
     /**
      * automationLibrary::stringHypenFix($_value)
@@ -122,15 +158,123 @@ class automationLibrary {
     }
 
     /**
+     * automationLibrary::maxApiGetData($_host, $_object, $_filter, $_api)
+     * Send POST to MAX API to fetch data from the database
+     *
+     * @param string: $_object            
+     * @param string: $_filter            
+     * @param string: $_host            
+     * @param string: $_api            
+     */
+    public static function maxApiGetData($_host, $_object, $_filter, $_api)
+    {
+        
+        // : Verify given data before proceeding
+        
+        // : End
+        try {
+            $ch = curl_init();
+            
+            $_url = $_host . self::URL_API_GET . $_object . "&filter=" . $_filter;
+            curl_setopt($ch, CURLOPT_URL, $_url);
+            curl_setopt($ch, CURLOPT_USERPWD, $_api);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            
+            $output = curl_exec($ch);
+            
+            curl_close($ch);
+            
+            $_httpUrlData = explode("\n", $output);
+            if ($_httpUrlData) {
+                $xmlStartLine = (int) 0;
+                $xmlEndLine = (int) 0;
+                $sqlQueryStart = (int) 0;
+                $sqlSelect = (int) 0;
+                $sqlWhere = (int) 0;
+                $sqlLimit = (int) 0;
+                $xmlDef = (int) 0;
+                $_xmlData = (array) array();
+                $_httpData = (array) array();
+                $_sqlData = (array) array();
+                $_result = (array) array();
+                
+                // Sort the data
+                foreach ($_httpUrlData as $_key => $_value) {
+                    if (strpos($_value, '<response>') !== FALSE) {
+                        $xmlStartLine = $_key;
+                    } else 
+                        if (strpos($_value, '</response>') !== FALSE) {
+                            $xmlEndLine = $_key;
+                        } else 
+                            if (strpos($_value, 'SELECT') !== FALSE) {
+                                $sqlSelect = $_key;
+                            } else 
+                                if (strpos($_value, 'WHERE') !== FALSE) {
+                                    $sqlWhere = $_key;
+                                } else 
+                                    if (strpos($_value, 'LIMIT') !== FALSE) {
+                                        $sqlLimit = $_key;
+                                    } else 
+                                        if (strpos($_value, '<?xml version="1.0" encoding="UTF-8"?>') !== FALSE) {
+                                            $xmlDef = $_key;
+                                        }
+                }
+                
+                // : Construct the SQL Query into an array
+                if ($sqlLimit == 0 && $sqlWhere && $sqlLimit) {
+                    
+                    for ($x = $sqlLimit; $x <= $sqlLimit; $x ++) {
+                        $_sqlData[] = $_httpUrlData[$x];
+                    }
+                }
+                // : End
+                
+                // : Construct the HTTP Data into an array
+                if ($xmlDef && $sqlWhere && $sqlLimit) {
+                    
+                    $_startX = $sqlLimit + 2;
+                    $_endX = $xmlDef - 2;
+                    for ($x = $_startX; $x <= $_endX; $x ++) {
+                        $_httpData[] = $_httpUrlData[$x];
+                    }
+                }
+                // : End
+                
+                // : Construct the XML Data into an array
+                if ($xmlEndLine != FALSE && $xmlStartLine != FALSE) {
+                    for ($x = $xmlStartLine; $x <= $xmlEndLine; $x ++) {
+                        $_xmlData[] = $_httpUrlData[$x];
+                    }
+                }
+                // : End
+                
+                $_result["sql"] = $_sqlData;
+                $_result["html"] = $_httpData;
+                $_result["xml"] = $_xmlData;
+                
+                if ($_result["html"] && $_result["xml"]) {
+                    return $_result;
+                } else {
+                    return FALSE;
+                }
+            } else {
+                return FALSE;
+            }
+        } catch (Exception $e) {
+            return FALSE;
+        }
+    }
+
+    /**
      * automationLibrary::addErrorRecord(&$_errArr, &$_session, $_scrDir, $_errmsg, $_record, $_process)
      * Add error record to error array
      *
-     * @param array: $_erArrr
-     * @param object: $_session
-     * @param string: $_scrDir
-     * @param string: $_errmsg
-     * @param string: $_record
-     * @param string: $_process
+     * @param array: $_erArrr            
+     * @param object: $_session            
+     * @param string: $_scrDir            
+     * @param string: $_errmsg            
+     * @param string: $_record            
+     * @param string: $_process            
      */
     public static function addErrorRecord(&$_errArr, $_session, $_scrDir, $_errmsg, $_record, $_process)
     {
@@ -140,51 +284,52 @@ class automationLibrary {
         $_errArr[$_erCount + 1]["type"] = $_process;
         self::takeScreenshot($_session, $_scrDir);
     }
-    
+
     /**
      * automationLibrary::getSelectedOptionValue($_using, $_value, &$_session)
      * This is a function description for a selenium test function
      *
-     * @param string: $_using
-     * @param string: $_value
-     * @param object: $_session
+     * @param string: $_using            
+     * @param string: $_value            
+     * @param object: $_session            
      */
-    public static function getSelectedOptionValue($_using, $_value, &$_session) {
+    public static function getSelectedOptionValue($_using, $_value, &$_session)
+    {
         try {
             $_result = FALSE;
-            $_cnt = count ( $_session->elements ( $_using, $_value ) );
-            for($x = 1; $x <= $_cnt; $x ++) {
-                $_selected = $_session->element ( $_using, $_value . "[$x]" )->attribute ( "selected" );
+            $_cnt = count($_session->elements($_using, $_value));
+            for ($x = 1; $x <= $_cnt; $x ++) {
+                $_selected = $_session->element($_using, $_value . "[$x]")->attribute("selected");
                 if ($_selected) {
-                    $_result = $_session->element ( $_using, $_value . "[$x]" )->attribute ( "value" );
+                    $_result = $_session->element($_using, $_value . "[$x]")->attribute("value");
                     break;
                 }
             }
-        } catch ( Exception $e ) {
+        } catch (Exception $e) {
             $_result = FALSE;
         }
         return ($_result);
     }
-    
+
     /**
      * automationLibrary::assertElementPresent($_using, $_value, &$_session, &$_phpunit_fw_obj)
      * This is a function description for a selenium test function
      *
-     * @param string: $_using
-     * @param string: $_value
-     * @param object: $_session
-     * @param object: $_phpunit_fw_obj
+     * @param string: $_using            
+     * @param string: $_value            
+     * @param object: $_session            
+     * @param object: $_phpunit_fw_obj            
      */
-    public static function assertElementPresent($_using, $_value, &$_session, &$_phpunit_fw_obj) {
-        $e = $_session->element ( $_using, $_value );
+    public static function assertElementPresent($_using, $_value, &$_session, &$_phpunit_fw_obj)
+    {
+        $e = $_session->element($_using, $_value);
         try {
-            $_phpunit_fw_obj->assertEquals ( count ( $e ), 1 );
+            $_phpunit_fw_obj->assertEquals(count($e), 1);
         } catch (Exception $e) {
             return FALSE;
         }
         return TRUE;
     }
-
 
     /**
      * automationLibrary::writeExcelFile($excelFile, $excelData)
@@ -298,12 +443,12 @@ class automationLibrary {
         }
     }
     // : End
-
+    
     // : Magic Methods
     // : End
     
     // : Private Methods
-
+    
     /**
      * automationLibrary::takeScreenshot()
      * This is a function description for a selenium test function

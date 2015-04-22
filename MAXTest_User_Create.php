@@ -64,6 +64,7 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 	protected $_scrdir;
 	protected $_errors = array ();
 	protected $_tmp;
+	protected $_apiuserpwd;
 	
 	// : Public Functions
 	// : Accessors
@@ -82,7 +83,7 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			return FALSE;
 		}
 		$data = parse_ini_file ( $ini );
-		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
+		if ((array_key_exists ( "apiuserpwd", $data ) && $data ["apiuserpwd"]) && (array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
 			$this->_username = $data ["username"];
 			$this->_password = $data ["password"];
 			$this->_welcome = $data ["welcome"];
@@ -93,6 +94,7 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			$this->_datadir = $data ["datadir"];
 			$this->_scrdir = $data ["screenshotdir"];
 			$this->_errdir = $data ["errordir"];
+			$this->_apiuserpwd = $data ["apiuserpwd"];
 			switch ($this->_mode) {
 				case "live" :
 					$this->_maxurl = self::LIVE_URL;
@@ -152,6 +154,9 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			$this->_session->setPageLoadTimeout ( 60 );
 			$w = new PHPWebDriver_WebDriverWait ( $session, 30 );
 			
+			$_result = automationLibrary::maxApiGetData($this->_maxurl, "person", "email%20like%20%27cwright@bwtsgroup.com%27", $this->_apiuserpwd);
+			var_dump($_result);
+			exit;
 			// Log into MAX
 			maxLoginLogout::maxLogin($this->_session, $w, $this, $this->_username, $this->_password, $this->_welcome, $this->_maxurl);
 			
