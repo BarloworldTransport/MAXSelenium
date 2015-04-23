@@ -10,6 +10,7 @@ require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
 require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
 require_once 'automationLibrary.php';
 require_once 'MAX_LoginLogout.php';
+require_once "MAX_API_Get.php";
 
 // : End
 
@@ -160,7 +161,11 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			// Log into MAX
 			maxLoginLogout::maxLogin($this->_session, $w, $this, $this->_username, $this->_password, $this->_welcome, $this->_maxurl);
 			
-			
+			$_maxapiget = new MAX_API_Get("live");
+			$_maxapiget->setObject("person");
+			$_maxapiget->setFilter("email like 'cwright@bwtsgroup.com'");
+			$_maxapiget->runApiQuery();
+			$_data = $_maxapiget->getData();
 			
 			// Log out of MAX
 			maxLoginLogout::maxLogout($this->_session, $w, $this);
