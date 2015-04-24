@@ -4,8 +4,6 @@ error_reporting(E_ALL);
 
 // : Includes
 
-//require_once 'automationLibrary.php';
-
 // : End
 
 /**
@@ -57,81 +55,163 @@ class maxLoginLogout
     // : End - Constants
     
     // : Variables
-    public static $_tmp;
-    public static $_errors = array();
+    public $_tmp;
+    protected $_maxurl;
+    protected $_autoLibObj;
+    protected $_errors = array();
     // : End
     
+    // : Magic Functions
+    /**
+     * MAX_LoginLogout::__construct
+     * Class constructor
+     */
+     public function __construct(&$_autoObj, $_maxurl)
+     {    
+        if (is_object($_autoObj) && is_string($_maxurl)) {
+            
+            // Save referenced automation library object containing session and phpunit objects
+            $this->_autoLibObj = $_autoObj;
+            $this->_maxurl = $_maxurl;
+            
+        }  
+     }
+    
+     /**
+     * MAX_LoginLogout::__destruct
+     * Class destructor
+     */
+     public function __destruct() {
+        unset($this);
+     }
+    
+     // : End - Magic Functions
+     
+     // : Public Functions
     /**
      * MAX_LoginLogout::maxLogin
      * Log into MAX
      */
-    public static function maxLogin(&$_session, &$w, &$_phpunit_fw_obj, $_uname, $_pwd, $_welcome, $_maxurl)
+    public function getLastError()
+    {
+        $_result = "";
+        end($this->_errors);
+        $_result = $this->_errors[key($this->_errors)];
+        reset($this->_errors);
+        return $_result;
+    }
+
+    /**
+     * MAX_LoginLogout::maxLogin
+     * Log into MAX
+     */
+    public function maxLogin($_uname, $_pwd, $_welcome, $_version = automationLibrary::DEFAULT_MAX_VERSION)
     {
         try {
             // : Log into MAX
-            // Load MAX home page
-            $session = $_session;
-            $_session->open($_maxurl);
             
-            // : Wait for page to load and for elements to be present on page
-            $e = $w->until(function ($session)
-            {
-                return $session->element('css selector', "#contentFrame");
-            });
-            
-            $iframe = $_session->element('css selector', '#contentFrame');
-            $_session->switch_to_frame($iframe);
-            
-            $e = $w->until(function ($session)
-            {
-                return $session->element('css selector', 'input[id=identification]');
-            });
-            // : End
-            
-            // : Assert element present
-            automationLibrary::assertElementPresent('css selector', 'input[id=identification]', $_session, $_phpunit_fw_obj);
-            automationLibrary::assertElementPresent('css selector', 'input[id=password]', $_session, $_phpunit_fw_obj);
-            automationLibrary::assertElementPresent('css selector', 'input[name=submit][type=submit]', $_session, $_phpunit_fw_obj);
-            // : End
-            
-            // Send keys to input text box
-            $e = $_session->element('css selector', 'input[id=identification]')->sendKeys($_uname);
-            // Send keys to input text box
-            $e = $_session->element('css selector', 'input[id=password]')->sendKeys($_pwd);
-            
-            // Click login button
-            $_session->element('css selector', 'input[name=submit][type=submit]')->click();
-            // Switch out of frame
-            $_session->switch_to_frame();
-            
-            // : Wait for page to load and for elements to be present on page
-            $e = $w->until(function ($session)
-            {
-                return $session->element('css selector', "#contentFrame");
-            });
-            $iframe = $_session->element('css selector', '#contentFrame');
-            $_session->switch_to_frame($iframe);
-            
-            self::$_tmp = $_welcome;
-            $e = $w->until(function ($session)
-            {
-                return $session->element("xpath", "//*[text()='" . self::$_tmp . "']");
-            });
-            automationLibrary::assertElementPresent("xpath", "//*[text()='" . $_welcome . "']", $_session, $_phpunit_fw_obj);
-            // Switch out of frame
-            $_session->switch_to_frame();
-            // : End
-            
-            // : Load Planningboard to rid of iframe loading on every page from here on
-            $_session->open($_maxurl . self::PB_URL);
-            $e = $w->until(function ($session)
-            {
-                return $session->element("xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]");
-            });
-            // : End
+            switch (intval($_version)) {
+                case 2:
+                    {
+                        // Load MAX home page
+                        $session = $this->_autoLibObj->_sessionObj;
+                        $this->_autoLibObj->_sessionObj->open($this->_maxurl);
+                        
+                        // : Wait for page to load and for elements to be present on page
+                        $e = $this->_autoLibObj->_wObj->until(function ($session)
+                        {
+                            return $session->element('css selector', "#contentFrame");
+                        });
+                        
+                        $iframe = $this->_autoLibObj->_sessionObj->element('css selector', '#contentFrame');
+                        $this->_autoLibObj->_sessionObj->switch_to_frame($iframe);
+                        
+                        $e = $this->_autoLibObj->_wObj->until(function ($session)
+                        {
+                            return $session->element('css selector', 'input[id=identification]');
+                        });
+                        // : End
+                        
+                        // : Assert element present
+                        $this->_autoLibObj->assertElementPresent('css selector', 'input[id=identification]');
+                        $this->_autoLibObj->assertElementPresent('css selector', 'input[id=password]');
+                        $this->_autoLibObj->assertElementPresent('css selector', 'input[name=submit][type=submit]');
+                        // : End
+                        
+                        // Send keys to input text box
+                        $e = $this->_autoLibObj->_sessionObj->element('css selector', 'input[id=identification]')->sendKeys($_uname);
+                        // Send keys to input text box
+                        $e = $this->_autoLibObj->_sessionObj->element('css selector', 'input[id=password]')->sendKeys($_pwd);
+                        
+                        // Click login button
+                        $this->_autoLibObj->_sessionObj->element('css selector', 'input[name=submit][type=submit]')->click();
+                        // Switch out of frame
+                        $this->_autoLibObj->_sessionObj->switch_to_frame();
+                        
+                        // : Wait for page to load and for elements to be present on page
+                        $e = $this->_autoLibObj->_wObj->until(function ($session)
+                        {
+                            return $session->element('css selector', "#contentFrame");
+                        });
+                        $iframe = $this->_autoLibObj->_sessionObj->element('css selector', '#contentFrame');
+                        $this->_autoLibObj->_sessionObj->switch_to_frame($iframe);
+                        
+                        self::$_tmp = $_welcome;
+                        $e = $this->_autoLibObj->_wObj->until(function ($session)
+                        {
+                            return $session->element("xpath", "//*[text()='" . self::$_tmp . "']");
+                        });
+                        $this->_autoLibObj->assertElementPresent("xpath", "//*[text()='" . $_welcome . "']");
+                        // Switch out of frame
+                        $this->_autoLibObj->_sessionObj->switch_to_frame();
+                        // : End
+                        
+                        // : Load Planningboard to rid of iframe loading on every page from here on
+                        $this->_autoLibObj->_sessionObj->open($this->_maxurl . self::PB_URL);
+                        $e = $this->_autoLibObj->_wObj->until(function ($session)
+                        {
+                            return $session->element("xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]");
+                        });
+                        // : End
+                        
+                        break;
+                    }
+                case 3:
+                    {
+                        // Load MAX home page
+                        $session = $this->_autoLibObj->_sessionObj;
+                        $this->_autoLibObj->_sessionObj->open($this->_maxurl);
+                        
+                        $e = $this->_autoLibObj->_wObj->until(function ($session)
+                        {
+                            return $session->element("xpath", "//*[text()='Sign In']");
+                        });
+
+                        // : Assert element present
+                        $this->_autoLibObj->assertElementPresent('css selector', '#identification');
+                        $this->_autoLibObj->assertElementPresent('css selector', '#password');
+                        $this->_autoLibObj->assertElementPresent('css selector', '#btn_Sign_In');
+                        // : End
+                        
+                        // Send keys to input text box
+                        $e = $this->_autoLibObj->_sessionObj->element('css selector', '#identification')->sendKeys($_uname);
+                        // Send keys to input text box
+                        $e = $this->_autoLibObj->_sessionObj->element('css selector', '#password')->sendKeys($_pwd);
+                        
+                        // Click login button
+                        $this->_autoLibObj->_sessionObj->element('css selector', '#btn_Sign_In')->click();
+                        
+                        $e = $this->_autoLibObj->_wObj->until(function ($session)
+                        {
+                            return $session->element("xpath", "//*[text()='My Tasks']");
+                        });
+                        
+                        break;
+                    }
+            }
         } catch (Exception $e) {
             // Store error message into static array
-            self::$_errors[] = $e->getMessage();
+            $this->_errors[] = $e->getMessage();
             return FALSE;
         }
         return TRUE;
@@ -141,56 +221,57 @@ class maxLoginLogout
      * MAX_LoginLogout::maxLogout
      * Log out of MAX
      */
-    public static function maxLogout(&$_session, &$w, &$_phpunit_fw_obj)
+    public function maxLogout($_version = automationLibrary::DEFAULT_MAX_VERSION)
     {
         try {
-        // : Tear Down
-        // Click the logout link
-        $_session->element('xpath', "//*[contains(@href,'/logout')]")->click();
-        // Wait for page to load and for elements to be present on page
-        $e = $w->until(function ($session)
-        {
-            return $session->element('css selector', 'input[id=identification]');
-        });
-        automationLibrary::assertElementPresent('css selector', 'input[id=identification]', $_session, $_phpunit_fw_obj);
-        // Terminate session
+            // : Tear Down
+            // Click the logout link
+            $session = $this->_autoLibObj->_sessionObj;
+            $this->_autoLibObj->_sessionObj->element('xpath', "//*[contains(@href,'/logout')]")->click();
+            // Wait for page to load and for elements to be present on page
+            $e = $_this->_autoLibObj->_wObj->until(function ($session)
+            {
+                return $session->element('css selector', 'input[id=identification]');
+            });
+            $this->_autoLibObj->assertElementPresent('css selector', 'input[id=identification]');
+            // Terminate session
         } catch (Exception $e) {
             // Store error message into static array
-            self::$_errors[] = $e->getMessage();
-            return FALSE;    
+            $this->_errors[] = $e->getMessage();
+            return FALSE;
         }
         
         return TRUE;
         // : End
     }
-    
+
     /**
      * MAX_LoginLogout::maxLogout
-     * Log out of MAX
+     * Use search box in MAX V2
      */
-    public static function maxSearch(&$_session, &$w, &$_phpunit_fw_obj, $_tripNumber)
+    public function maxSearch($_tripNumber)
     {
         try {
-
-            automationLibrary::assertElementPresent('css selector', 'input.inputtext', $_session, $_phpunit_fw_obj);
-            automationLibrary::assertElementPresent('css selector', 'div.search-button-image', $_session, $_phpunit_fw_obj);
-            $_session->element('css selector', 'input.inputtext')->sendKeys("tripNumber:$_tripNumber");
-            $_session->element('css selector', 'div.search-button-image')->click();
-
-            self::$_tmp = $_tripNumber;
+            $session = $this->_autoLibObj->_sessionObj;
+            
+            $this->_autoLibObj->assertElementPresent('css selector', 'input.inputtext');
+            $this->_autoLibObj->assertElementPresent('css selector', 'div.search-button-image');
+            $_autoLibObj->_sessionObj->element('css selector', 'input.inputtext')->sendKeys("tripNumber:$_tripNumber");
+            $_autoLibObj->_sessionObj->element('css selector', 'div.search-button-image')->click();
+            
+            $this->_tmp = $_tripNumber;
             
             // Wait for page to load and for elements to be present on page
-            $e = $w->until(function ($session)
+            $e = $_this->_autoLibObj->_wObj->until(function ($session)
             {
                 return $session->element('xpath', '//a[text()="' . self::$_tmp . '"]');
             });
-            
         } catch (Exception $e) {
             // Store error message into static array
-            self::$_errors[] = $e->getMessage();
+            $this->_errors[] = $e->getMessage();
             return FALSE;
         }
-    
+        
         return TRUE;
         // : End
     }

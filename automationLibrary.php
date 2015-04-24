@@ -30,6 +30,7 @@ include_once 'PHPUnit/Extensions/PHPExcel/Classes/PHPExcel.php';
 class automationLibrary
 {
     // : Constants
+    
     // Constants - SQL Queries
     const SQL_QUERY_OBJREG = "select ID from objectregistry where handle = '%s';";
 
@@ -56,6 +57,7 @@ class automationLibrary
     const SQL_QUERY_CUSTOMER_LOCATION_BU_LINK = "select ID from udo_customerlocationsbusinessunit_link where customerLocations_id=%l and businessUnit_id=%b;";
 
     const SQL_QUERY_OFFLOAD_BU_LINK = "select ID from udo_offloadingcustomersbusinessunit_link where offloadingCustomers_id=%o and businessUnit_id=%b;";
+    
     // Constants - Location Types
     const _TYPE_CITY = "udo_City";
 
@@ -74,8 +76,10 @@ class automationLibrary
     const _TYPE_SUBURB = "udo_Suburb";
 
     const _TYPE_TOLLGATE = "udo_TollGate";
+    
     // Constants - Object Registry Objects
     const OBJREG_CUSTOMER = "udo_Customer";
+    
     // Constants - Error Messages
     const ERR_COULD_NOT_FIND_ELEMENT = "ERROR: Could not find the expected element on page: %s";
 
@@ -88,6 +92,7 @@ class automationLibrary
     const ERR_PROCESS_FAILED_UNEXPECTEDLY = "ERROR: Caught error while busy with process %s with error message: %e";
 
     const ERR_NO_DATE_RANGE_VALUE = "ERROR: Could not find DateRangeValue for Record: %s";
+    
     // Constants - URL addresses
     const URL_CUSTOMER = "/DataBrowser?browsePrimaryObject=461&browsePrimaryInstance=";
 
@@ -106,11 +111,54 @@ class automationLibrary
     const URL_LIVE = "https://login.max.bwtsgroup.com";
 
     const URL_TEST = "http://max.mobilize.biz";
+    
+    const URL_LIVE_V3 = "https://max.bwtrans.co.za";
+    
+    const URL_TEST_V3 = "http://max3.mobilize.biz";
 
     const URL_API_GET = "/api_request/Data/get?objectRegistry=";
+    
+    // Constants - Miscellaneous
+    const DEFAULT_MAX_VERSION = 2;
     // : End
     
     // : Properties
+    public $_sessionObj;
+    public $_phpunitObj;
+    public $_wObj;
+    protected $_mode;
+    protected $_version;
+    // : End
+    
+    // : Magic Methods
+    
+    /**
+     * automationLibrary::__construct(&$_session, &$_phpunit_fw_obj, $_w, $_mode, $_version)
+     * Class constructor
+     */
+    public function __construct(&$_session, &$_phpunit_fw_obj, &$_w, $_mode, $_version) {
+    
+        if (is_object($_session) && is_object($_phpunit_fw_obj) && $_w && $_mode && $_version) {
+            // : Save referenced session and phpunit objects to affect the referenced active session been passed
+            $this->_sessionObj = $_session;
+            $this->_phpunitObj = $_phpunit_fw_obj;
+            $this->_wObj = $_w;
+            // : End
+    
+            // : Save some local object instance variables
+            $this->_mode = $_mode;
+            $this->_version = $_version;
+            // : End
+        }
+    }
+    
+    /**
+     * automationLibrary::__destruct()
+     * Class destructor
+     */
+    public function __destruct() {
+        unset($this);
+    }
     // : End
     
     // : Public Methods
@@ -130,7 +178,7 @@ class automationLibrary
      * @param string: $_query            
      * @param array: $_data            
      */
-    public static function CONSOLE_OUTPUT($_heading, $_description, $_type, $_query, $_data)
+    public function CONSOLE_OUTPUT($_heading, $_description, $_type, $_query, $_data)
     {
         switch ($_type) {
             case "sql":
@@ -142,6 +190,43 @@ class automationLibrary
                 }
         }
     }
+    
+    public static function getMAXURL($_mode, $_version) {
+        $_result = (string)"";
+        
+        if ($_mode == "live" && $_version == 2) {
+            $_result = self::URL_LIVE;
+        } else if ($_mode == "test" && $_version == 2) {
+            $_result = self::URL_TEST;
+        } else if ($_mode == "live" && $_version == 3) {
+            $_result = self::URL_LIVE_V3;
+        } else if ($_mode == "test" && $_version == 3) {
+            $_result = self::URL_TEST_V3;
+        } else {
+            $_result = FALSE;
+        }
+        return $_result;
+    }
+    
+    /**
+     * automationLibrary::addErrorRecord(&$_errArr, $_scrDir, $_errmsg, $_record, $_process)
+     * Add error record to error array
+     *
+     * @param array: $_erArrr
+     * @param object: $this->_sessionObj
+     * @param string: $_scrDir
+     * @param string: $_errmsg
+     * @param string: $_record
+     * @param string: $_process
+     */
+    public function addErrorRecord(&$_errArr, $_scrDir, $_errmsg, $_record, $_process)
+    {
+        $_erCount = count($_errArr);
+        $_errArr[$_erCount + 1]["error"] = $_errmsg;
+        $_errArr[$_erCount + 1]["record"] = $_record;
+        $_errArr[$_erCount + 1]["type"] = $_process;
+        self::takeScreenshot($this->_sessionObj, $_scrDir);
+    }
 
     /**
      * automationLibrary::stringHypenFix($_value)
@@ -151,157 +236,29 @@ class automationLibrary
      * @param string: $_value            
      * @param string: $_result            
      */
-    public static function stringHypenFix($_value)
+    public function stringHypenFix($_value)
     {
         $_result = preg_replace("/–/", "-", $_value);
         return $_result;
     }
 
     /**
-     * automationLibrary::maxApiGetData($_host, $_object, $_filter, $_api)
-     * Send POST to MAX API to fetch data from the database
-     *
-     * @param string: $_object            
-     * @param string: $_filter            
-     * @param string: $_host            
-     * @param string: $_api            
-     */
-    public static function maxApiGetData($_host, $_object, $_filter, $_api)
-    {
-        
-        // : Verify given data before proceeding
-        
-        // : End
-        try {
-            $ch = curl_init();
-            
-            $_url = $_host . self::URL_API_GET . $_object . "&filter=" . $_filter;
-            curl_setopt($ch, CURLOPT_URL, $_url);
-            curl_setopt($ch, CURLOPT_USERPWD, $_api);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            
-            $output = curl_exec($ch);
-            
-            curl_close($ch);
-            
-            $_httpUrlData = explode("\n", $output);
-            if ($_httpUrlData) {
-                $xmlStartLine = (int) 0;
-                $xmlEndLine = (int) 0;
-                $sqlQueryStart = (int) 0;
-                $sqlSelect = (int) 0;
-                $sqlWhere = (int) 0;
-                $sqlLimit = (int) 0;
-                $xmlDef = (int) 0;
-                $_xmlData = (array) array();
-                $_httpData = (array) array();
-                $_sqlData = (array) array();
-                $_result = (array) array();
-                
-                // Sort the data
-                foreach ($_httpUrlData as $_key => $_value) {
-                    if (strpos($_value, '<response>') !== FALSE) {
-                        $xmlStartLine = $_key;
-                    } else 
-                        if (strpos($_value, '</response>') !== FALSE) {
-                            $xmlEndLine = $_key;
-                        } else 
-                            if (strpos($_value, 'SELECT') !== FALSE) {
-                                $sqlSelect = $_key;
-                            } else 
-                                if (strpos($_value, 'WHERE') !== FALSE) {
-                                    $sqlWhere = $_key;
-                                } else 
-                                    if (strpos($_value, 'LIMIT') !== FALSE) {
-                                        $sqlLimit = $_key;
-                                    } else 
-                                        if (strpos($_value, '<?xml version="1.0" encoding="UTF-8"?>') !== FALSE) {
-                                            $xmlDef = $_key;
-                                        }
-                }
-                
-                // : Construct the SQL Query into an array
-                if ($sqlLimit == 0 && $sqlWhere && $sqlLimit) {
-                    
-                    for ($x = $sqlLimit; $x <= $sqlLimit; $x ++) {
-                        $_sqlData[] = $_httpUrlData[$x];
-                    }
-                }
-                // : End
-                
-                // : Construct the HTTP Data into an array
-                if ($xmlDef && $sqlWhere && $sqlLimit) {
-                    
-                    $_startX = $sqlLimit + 2;
-                    $_endX = $xmlDef - 2;
-                    for ($x = $_startX; $x <= $_endX; $x ++) {
-                        $_httpData[] = $_httpUrlData[$x];
-                    }
-                }
-                // : End
-                
-                // : Construct the XML Data into an array
-                if ($xmlEndLine != FALSE && $xmlStartLine != FALSE) {
-                    for ($x = $xmlStartLine; $x <= $xmlEndLine; $x ++) {
-                        $_xmlData[] = $_httpUrlData[$x];
-                    }
-                }
-                // : End
-                
-                $_result["sql"] = $_sqlData;
-                $_result["html"] = $_httpData;
-                $_result["xml"] = $_xmlData;
-                
-                if ($_result["html"] && $_result["xml"]) {
-                    return $_result;
-                } else {
-                    return FALSE;
-                }
-            } else {
-                return FALSE;
-            }
-        } catch (Exception $e) {
-            return FALSE;
-        }
-    }
-
-    /**
-     * automationLibrary::addErrorRecord(&$_errArr, &$_session, $_scrDir, $_errmsg, $_record, $_process)
-     * Add error record to error array
-     *
-     * @param array: $_erArrr            
-     * @param object: $_session            
-     * @param string: $_scrDir            
-     * @param string: $_errmsg            
-     * @param string: $_record            
-     * @param string: $_process            
-     */
-    public static function addErrorRecord(&$_errArr, $_session, $_scrDir, $_errmsg, $_record, $_process)
-    {
-        $_erCount = count($_errArr);
-        $_errArr[$_erCount + 1]["error"] = $_errmsg;
-        $_errArr[$_erCount + 1]["record"] = $_record;
-        $_errArr[$_erCount + 1]["type"] = $_process;
-        self::takeScreenshot($_session, $_scrDir);
-    }
-
-    /**
-     * automationLibrary::getSelectedOptionValue($_using, $_value, &$_session)
+     * automationLibrary::getSelectedOptionValue($_using, $_value, &$this->_sessionObj)
      * This is a function description for a selenium test function
      *
      * @param string: $_using            
      * @param string: $_value            
-     * @param object: $_session            
+     * @param object: $this->_sessionObj            
      */
-    public static function getSelectedOptionValue($_using, $_value, &$_session)
+    public function getSelectedOptionValue($_using, $_value)
     {
         try {
             $_result = FALSE;
-            $_cnt = count($_session->elements($_using, $_value));
+            $_cnt = count($this->_sessionObj->elements($_using, $_value));
             for ($x = 1; $x <= $_cnt; $x ++) {
-                $_selected = $_session->element($_using, $_value . "[$x]")->attribute("selected");
+                $_selected = $this->_sessionObj->element($_using, $_value . "[$x]")->attribute("selected");
                 if ($_selected) {
-                    $_result = $_session->element($_using, $_value . "[$x]")->attribute("value");
+                    $_result = $this->_sessionObj->element($_using, $_value . "[$x]")->attribute("value");
                     break;
                 }
             }
@@ -312,23 +269,55 @@ class automationLibrary
     }
 
     /**
-     * automationLibrary::assertElementPresent($_using, $_value, &$_session, &$_phpunit_fw_obj)
+     * automationLibrary::assertElementPresent($_using, $_value, &$this->_sessionObj, &$this->_phpunitObj)
      * This is a function description for a selenium test function
      *
      * @param string: $_using            
      * @param string: $_value            
-     * @param object: $_session            
-     * @param object: $_phpunit_fw_obj            
+     * @param object: $this->_sessionObj            
+     * @param object: $this->_phpunitObj            
      */
-    public static function assertElementPresent($_using, $_value, &$_session, &$_phpunit_fw_obj)
+    public function assertElementPresent($_using, $_value)
     {
-        $e = $_session->element($_using, $_value);
+        $e = $this->_sessionObj->element($_using, $_value);
         try {
-            $_phpunit_fw_obj->assertEquals(count($e), 1);
+            $this->_phpunitObj->assertEquals(count($e), 1);
         } catch (Exception $e) {
             return FALSE;
         }
         return TRUE;
+    }
+    
+    /**
+     * automationLibrary::takeScreenshot()
+     * This is a function description for a selenium test function
+     *
+     * @param object: $_session
+     */
+    public function takeScreenshot($_scrDir)
+    {
+        $_params = func_get_args();
+        $_img = $this->_sessionObj->screenshot();
+        $_data = base64_decode($_img);
+        $_pathname_extra = (string) "";
+    
+        if ($_params && is_array($_params)) {
+            if (array_key_exists(2, $_params)) {
+                $_pathname_extra = $_params[2];
+            }
+        }
+        // Suport for variable length arguments (only 1 extra argument supported
+        if ($_pathname_extra) {
+            $_file = $_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_${_pathname_extra}_WebDriver.png";
+    } else {
+        $_file = $_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_WebDriver.png";
+    }
+    $_success = file_put_contents($_file, $_data);
+    if ($_success) {
+        return $_file;
+    } else {
+        return FALSE;
+    }
     }
 
     /**
@@ -337,7 +326,7 @@ class automationLibrary
      *
      * @param $excelFile, $excelData            
      */
-    public static function writeExcelFile($excelFile, $excelData, $columns, $author, $title, $subject)
+    public function writeExcelFile($excelFile, $excelData, $columns, $author = NULL, $title = NULL, $subject = NULL)
     {
         try {
             // Check data validility
@@ -351,10 +340,16 @@ class automationLibrary
                 
                 // : Set properties
                 print(date('H:i:s') . " Set properties" . PHP_EOL);
-                $objPHPExcel->getProperties()->setCreator($author);
-                $objPHPExcel->getProperties()->setLastModifiedBy($author);
-                $objPHPExcel->getProperties()->setTitle($title);
-                $objPHPExcel->getProperties()->setSubject($subject);
+                if ($author) {
+                    $objPHPExcel->getProperties()->setCreator($author);
+                    $objPHPExcel->getProperties()->setLastModifiedBy($author);
+                }
+                if ($title) {
+                    $objPHPExcel->getProperties()->setTitle($title);
+                }
+                if ($subject) {
+                    $objPHPExcel->getProperties()->setSubject($subject);
+                }
                 // : End
                 
                 // : Setup Workbook Preferences
@@ -444,41 +439,6 @@ class automationLibrary
     }
     // : End
     
-    // : Magic Methods
-    // : End
-    
     // : Private Methods
-    
-    /**
-     * automationLibrary::takeScreenshot()
-     * This is a function description for a selenium test function
-     *
-     * @param object: $_session            
-     */
-    private static function takeScreenshot($_session, $_scrDir)
-    {
-        $_params = func_get_args();
-        $_img = $_session->screenshot();
-        $_data = base64_decode($_img);
-        $_pathname_extra = (string) "";
-        
-        if ($_params && is_array($_params)) {
-            if (array_key_exists(2, $_params)) {
-                $_pathname_extra = $_params[2];
-            }
-        }
-        // Suport for variable length arguments (only 1 extra argument supported
-        if ($_pathname_extra) {
-            $_file = $_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_${_pathname_extra}_WebDriver.png";
-        } else {
-            $_file = $_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_WebDriver.png";
-        }
-        $_success = file_put_contents($_file, $_data);
-        if ($_success) {
-            return $_file;
-        } else {
-            return FALSE;
-        }
-    }
     // : End
 }

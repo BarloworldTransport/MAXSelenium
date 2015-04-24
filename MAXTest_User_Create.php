@@ -66,6 +66,7 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 	protected $_errors = array ();
 	protected $_tmp;
 	protected $_apiuserpwd;
+	protected $_version;
 	
 	// : Public Functions
 	// : Accessors
@@ -84,7 +85,7 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			return FALSE;
 		}
 		$data = parse_ini_file ( $ini );
-		if ((array_key_exists ( "apiuserpwd", $data ) && $data ["apiuserpwd"]) && (array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
+		if ((array_key_exists ( "version", $data ) && $data ["version"]) &&(array_key_exists ( "apiuserpwd", $data ) && $data ["apiuserpwd"]) && (array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
 			$this->_username = $data ["username"];
 			$this->_password = $data ["password"];
 			$this->_welcome = $data ["welcome"];
@@ -95,14 +96,12 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			$this->_datadir = $data ["datadir"];
 			$this->_scrdir = $data ["screenshotdir"];
 			$this->_errdir = $data ["errordir"];
+			$this->_version = $data ["version"];
 			$this->_apiuserpwd = $data ["apiuserpwd"];
-			switch ($this->_mode) {
-				case "live" :
-					$this->_maxurl = self::LIVE_URL;
-					break;
-				default :
-					$this->_maxurl = self::TEST_URL;
-			}
+			
+			// Determine MAX URL to be used for this test run
+            $this->_maxurl = automationLibrary::getMAXURL($this->_mode, $this->_version);
+			
 		} else {
 			echo "The correct data is not present in user_data.ini. Please confirm. Fields are username, password, welcome and mode" . PHP_EOL;
 			return FALSE;
@@ -155,20 +154,24 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			$this->_session->setPageLoadTimeout ( 60 );
 			$w = new PHPWebDriver_WebDriverWait ( $session, 30 );
 			
-			$_result = automationLibrary::maxApiGetData($this->_maxurl, "person", "email%20like%20%27cwright@bwtsgroup.com%27", $this->_apiuserpwd);
-			var_dump($_result);
-			exit;
-			// Log into MAX
-			maxLoginLogout::maxLogin($this->_session, $w, $this, $this->_username, $this->_password, $this->_welcome, $this->_maxurl);
+			$_autoLib = new automationLibrary($this->_session, $this, $w, $this->_mode, $this->_version);
+			$_maxLoginLogout = new maxLoginLogout($_autoLib, $this->_maxurl);
 			
-			$_maxapiget = new MAX_API_Get("live");
+			// Log into MAX
+			if (!$_maxLoginLogout->maxLogin($this->_username, $this->_password, $this->_welcome)) {
+			    throw new Exception($_maxLoginLogout->getLastError());
+			}
+			
+			// : MAX api_request/get? - Check if user exists
+			/*$_maxapiget = new MAX_API_Get($this->_mode);
 			$_maxapiget->setObject("person");
 			$_maxapiget->setFilter("email like 'cwright@bwtsgroup.com'");
 			$_maxapiget->runApiQuery();
-			$_data = $_maxapiget->getData();
+			$_data = $_maxapiget->getData();*/
+			// : End
 			
 			// Log out of MAX
-			maxLoginLogout::maxLogout($this->_session, $w, $this);
+			//maxLoginLogout::maxLogout($this->_session, $w, $this, $this->_version);
 			$this->_session->close();
 			
 		} catch ( Exception $e ) {
