@@ -68,6 +68,8 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	protected $_tmpVar;
 	protected $_errors = array ();
 	protected $_tmp;
+	protected $_rules_on;
+	protected $_rules_off;
 	
 	// : Public Functions
 	
@@ -102,7 +104,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			return FALSE;
 		}
 		$data = parse_ini_file ( $ini );
-		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"]) && ((array_key_exists("reportdir", $data)) && ($data["reportdir"]))) {
+		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"]) && ((array_key_exists("reportdir", $data)) && ($data["reportdir"])) && ((array_key_exists("ruleson", $data)) && ($data["ruleson"])) && ((array_key_exists("rulesoff", $data)) && ($data["rulesoff"]))) {
 			$this->_username = $data ["username"];
 			$this->_password = $data ["password"];
 			$this->_welcome = $data ["welcome"];
@@ -115,6 +117,8 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			$this->_errdir = $data ["errordir"];
 			$this->_report_dir = $data ["reportdir"];
 			$this->_file1 = $data ["file1"];
+			$this->_rules_on = $data["ruleson"];
+			$this->_rules_off = $data["rulesoff"];
 			switch ($this->_mode) {
 				case "live" :
 					$this->_maxurl = self::LIVE_URL;
@@ -275,6 +279,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		}
 		
 		// : Turn off refuel update actions
+		if (strtolower($this->_rules_off) == "true" || $this->_rules_off == "1") {
 		try {
 			$this->_session->open ( $this->_maxurl . self::ADMIN_URL );
 			$e = $w->until ( function ($session) {
@@ -370,6 +375,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			// : End
 		} catch ( Exception $e ) {
 			throw new Exception ( "Could not continue. Failed to update Refuel Update Actions before starting to run the script.\n Reason:{$e->getMessage()}" );
+		}
 		}
 		// : End
 		
@@ -666,6 +672,8 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		}
 		
 		// : Turn on refuel update actions
+		
+		if (strtolower($this->_rules_on) == "true" || $this->_rules_on == "1") {
 		try {
 			
 			// : Set main window to default and close all windows if there is more than one open
@@ -772,6 +780,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			// : End
 		} catch ( Exception $e ) {
 			throw new Exception ( "Could not continue. Failed to update Refuel Update Actions before starting to run the script.\n Reason:{$e->getMessage()}" );
+		}
 		}
 		// : End
 		
