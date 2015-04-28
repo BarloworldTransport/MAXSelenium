@@ -783,15 +783,16 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		}
 		}
 		// : End
-		
+		try {	
 		// : Report errors if any occured
 		if ($this->_errors) {
 			$_errfile =  realpath($this->_errdir) . self::DS . $this->getReportFileName () . ".csv";
 			$this->ExportToCSV ( $_errfile, $this->_errors );
 			echo "Exported error report to the following path and file: " . $_errfile;
 		}
+		}
 		// : End
-		
+		try {
 		// : Report all successful completed refuel orders
 		$_orders = ( array ) array ();
 		foreach ( $this->_data as $key => $value ) {
@@ -799,6 +800,8 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			if (array_key_exists ( "OrderNumber", $value )) {
 				$_orders [$key] = $value;
 			}
+		} catch (Exception $e) {
+			// Add some error handling code here
 		}
 		
 		if ($_orders) {
@@ -806,10 +809,18 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			$this->ExportToCSV ( $_ordersfile, $_orders );
 			echo "Exported successfully created refuels report to the following path and file: " . $_ordersfile;
 		}
+		} catch (Exception $e) {
+			
+			// Add some error handling code here
+		}
 		// : End
 		
 		// : Tear Down
 		// Click the logout link
+		$this->_session->open ( $this->_maxurl . self::PB_URL );
+		$e = $w->until ( function ($session) {
+			return $session->element ( "xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]" );
+		} );
 		$this->_session->element ( 'xpath', "//*[contains(@href,'/logout')]" )->click ();
 		// Wait for page to load and for elements to be present on page
 		$e = $w->until ( function ($session) {
