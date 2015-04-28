@@ -64,6 +64,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	protected $_datadir;
 	protected $_errdir;
 	protected $_scrdir;
+	protected $_report_dir;
 	protected $_tmpVar;
 	protected $_errors = array ();
 	protected $_tmp;
@@ -101,7 +102,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			return FALSE;
 		}
 		$data = parse_ini_file ( $ini );
-		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
+		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"]) && ((array_key_exists("reportdir", $data) && ($data["reportdir"))) {
 			$this->_username = $data ["username"];
 			$this->_password = $data ["password"];
 			$this->_welcome = $data ["welcome"];
@@ -112,6 +113,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			$this->_datadir = $data ["datadir"];
 			$this->_scrdir = $data ["screenshotdir"];
 			$this->_errdir = $data ["errordir"];
+			$this->_report_dir = $data ["reportdir"];
 			$this->_file1 = $data ["file1"];
 			switch ($this->_mode) {
 				case "live" :
@@ -657,7 +659,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 					$this->_errors [$_num] [$key] = $value;
 				}
 				$this->_errors [$_num] ["errormsg"] = $e->getMessage ();
-				$_scrshotfn = dirname(__FILE__) . $this->_scrdir . self::DS . date("Y-m-d_H:i:s") . $recVal["Truck"] . substr($e->getMessage(), 1, 10);
+				$_scrshotfn = realpath($this->_scrdir) . self::DS . date("Y-m-d_H:i:s") . $recVal["Truck"] . substr($e->getMessage(), 1, 10);
 				$this->takeScreenshot ( $this->_session, $_scrshotfn );
 				// : End
 			}
@@ -775,7 +777,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		
 		// : Report errors if any occured
 		if ($this->_errors) {
-			$_errfile = dirname ( __FILE__ ) . self::DS . $this->_errdir . self::DS . "error_report_" . $this->getReportFileName () . ".csv";
+			$_errfile =  realpath($this->_errdir) . self::DS . $this->getReportFileName () . ".csv";
 			$this->ExportToCSV ( $_errfile, $this->_errors );
 			echo "Exported error report to the following path and file: " . $_errfile;
 		}
@@ -791,7 +793,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		}
 		
 		if ($_orders) {
-			$_ordersfile = dirname ( __FILE__ ) . self::DS . "export" . self::DS . $this->getReportFileName () . ".csv";
+			$_ordersfile = realpath($this->_report_dir) . self::DS . $this->getReportFileName () . ".csv";
 			$this->ExportToCSV ( $_ordersfile, $_orders );
 			echo "Exported successfully created refuels report to the following path and file: " . $_ordersfile;
 		}
@@ -823,10 +825,9 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
         try {
             $_img = $_session->screenshot();
             $_data = base64_decode($_img);
-            $_file = realpath($this->_scrdir) . self::DS . date("Y-m-d_His") . $_filename;
-            $_success = file_put_contents($_file, $_data);
+            $_success = file_put_contents($_filename, $_data);
             if ($_success) {
-                return $_file;
+                return $_filename;
             } else {
                 return FALSE;
             }
