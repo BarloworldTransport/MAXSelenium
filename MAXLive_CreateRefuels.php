@@ -185,7 +185,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		// : End
 		
 		// Build file path string
-		$_file1 = dirname ( __FILE__ ) . self::DS . $this->_datadir . self::DS . $this->_file1;
+		$_file1 = realpath($this->_datadir) . self::DS . $this->_file1;
 		
 		// : Import CSV files data
 		if (file_exists ( $_file1 )) {
@@ -823,7 +823,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
         try {
             $_img = $_session->screenshot();
             $_data = base64_decode($_img);
-            $_file = dirname(__FILE__) . $this->_scrdir . self::DS . date("Y-m-d_His") . $_filename;
+            $_file = realpath($this->_scrdir) . self::DS . date("Y-m-d_His") . $_filename;
             $_success = file_put_contents($_file, $_data);
             if ($_success) {
                 return $_file;
