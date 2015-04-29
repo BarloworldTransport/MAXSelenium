@@ -790,6 +790,8 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			$this->ExportToCSV ( $_errfile, $this->_errors );
 			echo "Exported error report to the following path and file: " . $_errfile;
 		}
+		} catch (Exception $e) {
+			// : Add some error handling code here
 		}
 		// : End
 		try {
@@ -800,10 +802,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			if (array_key_exists ( "OrderNumber", $value )) {
 				$_orders [$key] = $value;
 			}
-		} catch (Exception $e) {
-			// Add some error handling code here
 		}
-		
 		if ($_orders) {
 			$_ordersfile = realpath($this->_report_dir) . self::DS . $this->getReportFileName () . ".csv";
 			$this->ExportToCSV ( $_ordersfile, $_orders );
