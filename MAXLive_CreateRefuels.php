@@ -183,7 +183,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		
 		// : Queries to run throughout script
 		$_queries = ( array ) array (
-				"select f.name from udo_fleettrucklink as ftl left join udo_truck as t on (t.id=ftl.truck_id) left join udo_fleet as f on (f.id=ftl.fleet_id) left join daterangevalue as drv on (drv.objectInstanceId=ftl.id) where t.id=%s and drv.type='FleetTruckLink' and (drv.endDate IS NULL or drv.endDate > DATE(CONCAT(CURDATE(), ' 00:00:00')));",
+				"select f.name from udo_fleettrucklink as ftl left join udo_truck as t on (t.id=ftl.truck_id) left join udo_fleet as f on (f.id=ftl.fleet_id) left join daterangevalue as drv on (drv.objectInstanceId=ftl.id) where f.name!='Entire Active Fleet' and t.id=%s and drv.type='FleetTruckLink' and (drv.endDate IS NULL or drv.endDate > DATE(CONCAT(CURDATE(), ' 00:00:00')));",
 				"select id, fleetnum from udo_truck where fleetnum='%s';",
 				"select d.nickname, CONCAT(p.first_name, ' ', p.last_name) as fullname, d.staffNumber from udo_driver as d left join person as p on (p.id=d.person_id) where d.staffNumber = '%s';",
 				"select r.id, ron.orderNumber from udo_refuel as r left join udo_refuelordernumber as ron on (ron.id=r.refuelOrderNumber_id) where ron.orderNumber=%s;" 
@@ -215,8 +215,8 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		try {
 			// Initialize session
 			$session = $this->_session;
-			$this->_session->setPageLoadTimeout ( 60 );
-			$w = new PHPWebDriver_WebDriverWait ( $session, 10 );
+			$this->_session->setPageLoadTimeout ( 90 );
+			$w = new PHPWebDriver_WebDriverWait ( $session, 20 );
 			
 			// : Log into MAX
 			// Load MAX home page
