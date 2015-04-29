@@ -70,6 +70,8 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	protected $_tmp;
 	protected $_rules_on;
 	protected $_rules_off;
+	protected $_page_timeout;
+	protected $_element_timeout;
 	
 	// : Public Functions
 	
@@ -104,7 +106,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			return FALSE;
 		}
 		$data = parse_ini_file ( $ini );
-		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"]) && ((array_key_exists("reportdir", $data)) && ($data["reportdir"])) && ((array_key_exists("ruleson", $data)) && ($data["ruleson"])) && ((array_key_exists("rulesoff", $data)) && ($data["rulesoff"]))) {
+		if ((array_key_exists ( "pagetimeout", $data ) && $data ["pagetimeout"]) && (array_key_exists ( "elementtimeout", $data ) && $data ["elementtimeout"]) && (array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"]) && ((array_key_exists("reportdir", $data)) && ($data["reportdir"])) && ((array_key_exists("ruleson", $data)) && ($data["ruleson"])) && ((array_key_exists("rulesoff", $data)) && ($data["rulesoff"]))) {
 			$this->_username = $data ["username"];
 			$this->_password = $data ["password"];
 			$this->_welcome = $data ["welcome"];
@@ -119,6 +121,8 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			$this->_file1 = $data ["file1"];
 			$this->_rules_on = $data["ruleson"];
 			$this->_rules_off = $data["rulesoff"];
+			$this->_page_timeout = $data["pagetimeout"];
+			$this->_element_timeout = $data["elementtimeout"];
 			switch ($this->_mode) {
 				case "live" :
 					$this->_maxurl = self::LIVE_URL;
@@ -186,7 +190,8 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 				"select f.name from udo_fleettrucklink as ftl left join udo_truck as t on (t.id=ftl.truck_id) left join udo_fleet as f on (f.id=ftl.fleet_id) left join daterangevalue as drv on (drv.objectInstanceId=ftl.id) where f.name!='Entire Active Fleet' and t.id=%s and drv.type='FleetTruckLink' and (drv.endDate IS NULL or drv.endDate > DATE(CONCAT(CURDATE(), ' 00:00:00')));",
 				"select id, fleetnum from udo_truck where fleetnum='%s';",
 				"select d.nickname, CONCAT(p.first_name, ' ', p.last_name) as fullname, d.staffNumber from udo_driver as d left join person as p on (p.id=d.person_id) where d.staffNumber = '%s';",
-				"select r.id, ron.orderNumber from udo_refuel as r left join udo_refuelordernumber as ron on (ron.id=r.refuelOrderNumber_id) where ron.orderNumber=%s;" 
+				"select r.id, ron.orderNumber from udo_refuel as r left join udo_refuelordernumber as ron on (ron.id=r.refuelOrderNumber_id) where ron.orderNumber=%s;",
+		        "select count(ftl.truck_id) as linked_trucks, f.name from udo_fleettrucklink as ftl left join udo_fleet as f on (f.id=ftl.fleet_id) left join udo_truck as t on (t.id=ftl.truck_id) left join daterangevalue as drv on (drv.objectInstanceId=ftl.id) where ftl.fleet_id IN (select ftl.fleet_id from udo_fleettrucklink as ftl left join udo_truck as t on (t.id=ftl.truck_id) left join udo_fleet as f on (f.id=ftl.fleet_id) left join daterangevalue as drv on (drv.objectInstanceId=ftl.id) where f.name!='Entire Active Fleet' and t.id=%s and drv.type='FleetTruckLink' and (drv.endDate IS NULL or drv.endDate > DATE(CONCAT(CURDATE(), ' 00:00:00')))) and drv.type='FleetTruckLink' and (drv.endDate IS NULL or drv.endDate > DATE(CONCAT(CURDATE(), ' 00:00:00'))) group by ftl.fleet_id order by linked_trucks;" 
 		);
 		// : End
 		
@@ -215,8 +220,8 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		try {
 			// Initialize session
 			$session = $this->_session;
-			$this->_session->setPageLoadTimeout ( 90 );
-			$w = new PHPWebDriver_WebDriverWait ( $session, 20 );
+			$this->_session->setPageLoadTimeout ( intval($this->_page_timeout) );
+			$w = new PHPWebDriver_WebDriverWait ( $session, intval($this->_element_timeout) );
 			
 			// : Log into MAX
 			// Load MAX home page
@@ -412,10 +417,11 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 				if ($_result) {
 					// : Check if truck is linked to a fleet and if so get the first fleet returned in the query results
 					$_truckid = $_result [0] ["id"];
-					$_query = preg_replace ( "/%s/", $_truckid, $_queries [0] );
+					$_query = preg_replace ( "/%s/", $_truckid, $_queries [4] );
 					$_result2 = $_sqldb->getDataFromQuery ( $_query );
 					if ($_result2) {
 						$_fleetname = $_result2 [0] ["name"];
+						$_counttrucks = $_result2 [0] ["linked_trucks"];
 					}
 					// : End
 				}
