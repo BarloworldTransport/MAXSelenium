@@ -108,6 +108,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
     protected $_welcome;
 
     protected $_mode;
+    
+    protected $_version;
 
     protected $_dataDir;
 
@@ -204,7 +206,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             return FALSE;
         }
         $data = parse_ini_file($ini);
-        if ((array_key_exists("browser", $data) && $data["browser"]) && (array_key_exists("wdport", $data) && $data["wdport"]) && (array_key_exists("csv", $data) && $data["csv"]) && (array_key_exists("errordir", $data) && $data["errordir"]) && (array_key_exists("screenshotdir", $data) && $data["screenshotdir"]) && (array_key_exists("datadir", $data) && $data["datadir"]) && (array_key_exists("ip", $data) && $data["ip"]) && (array_key_exists("username", $data) && $data["username"]) && (array_key_exists("password", $data) && $data["password"]) && (array_key_exists("welcome", $data) && $data["welcome"]) && (array_key_exists("mode", $data) && $data["mode"])) {
+        if ((array_key_exists("version", $data) && $data["version"]) && (array_key_exists("browser", $data) && $data["browser"]) && (array_key_exists("wdport", $data) && $data["wdport"]) && (array_key_exists("csv", $data) && $data["csv"]) && (array_key_exists("errordir", $data) && $data["errordir"]) && (array_key_exists("screenshotdir", $data) && $data["screenshotdir"]) && (array_key_exists("datadir", $data) && $data["datadir"]) && (array_key_exists("ip", $data) && $data["ip"]) && (array_key_exists("username", $data) && $data["username"]) && (array_key_exists("password", $data) && $data["password"]) && (array_key_exists("welcome", $data) && $data["welcome"]) && (array_key_exists("mode", $data) && $data["mode"])) {
             $this->_username = $data["username"];
             $this->_password = $data["password"];
             $this->_welcome = $data["welcome"];
@@ -217,13 +219,11 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             $this->_proxyip = $data["proxy"];
             $this->_browser = $data["browser"];
             $this->_csv = $data["csv"];
-            switch ($this->_mode) {
-                case "live":
-                    $this->_maxurl = self::LIVE_URL;
-                    break;
-                default:
-                    $this->_maxurl = self::TEST_URL;
-            }
+            $this->_version = $data["version"];
+            
+            // Determine MAX URL to be used for this test run
+            $this->_maxurl = automationLibrary::getMAXURL($this->_mode, $this->_version);
+            
         } else {
             echo "The correct data is not present in " . self::INI_FILE . ". Please confirm. Fields are username, password, welcome and mode" . PHP_EOL;
             return FALSE;
@@ -353,8 +353,11 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                 // : Initiate Session
                 $session = $this->_session;
                 $this->_session->setPageLoadTimeout(90);
+                
                 // Create a reference to the session object for use with waiting for elements to be present
                 $w = new PHPWebDriver_WebDriverWait($this->_session);
+                
+                $_autoLib = new automationLibrary($this->_session, $this, $w, $this->_mode, $this->_version);
                 // : End
                 
                 // : Login
@@ -795,7 +798,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                             }
                                         }
                                     } catch (Exception $e) {
-                                        automationLibrary::addErrorRecord($this->_error, $this->_session, $this->_scrDir, $e->getMessage(), $this->lastRecord . ". Object data that failed: " . $_currentLocation, $_process);
+                                        $_autoLib->addErrorRecord($this->_error, $this->_scrDir, $e->getMessage(), $this->lastRecord . ". Object data that failed: " . $_currentLocation, $_process);
                                     }
                                 }
                             }
@@ -911,7 +914,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                         }
                                     }
                                 } catch (Exception $e) {
-                                    automationLibrary::addErrorRecord($this->_error, $this->_session, $this->_scrDir, $e->getMessage(), $this->lastRecord . ". Object data that failed: " . $_currentLocation, $_process);
+                                    $_autoLib->addErrorRecord($this->_error, $this->_scrDir, $e->getMessage(), $this->lastRecord . ". Object data that failed: " . $_currentLocation, $_process);
                                 }
                             }
                         }
@@ -1060,7 +1063,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                     }
                                 }
                             } catch (Exception $e) {
-                                automationLibrary::addErrorRecord($this->_error, $this->_session, $this->_scrDir, $e->getMessage(), $this->lastRecord . ". Object data that failed: " . $_currentLocation, $_process);
+                                $_autoLib->addErrorRecord($this->_error, $this->_scrDir, $e->getMessage(), $this->lastRecord . ". Object data that failed: " . $_currentLocation, $_process);
                             }
                         }
                         // : End
@@ -1136,7 +1139,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                     return $session->element("xpath", "//*[@id='udo_Rates-31__0_route_id-31']");
                                 });
                                 
-                                automationLibrary::CONSOLE_OUTPUT("BU Value", "Output the value of [business unit][value]", "sql", "na", $_dataset["business unit"]["value"]);
+                                $_autoLib->CONSOLE_OUTPUT("BU Value", "Output the value of [business unit][value]", "sql", "na", $_dataset["business unit"]["value"]);
                                 // : Create route if it does not exist
                                 if (! $_dataset["rate"]["other"]) {
                                     try {
@@ -1231,7 +1234,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                         
                                         $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                                     } catch (Exception $e) {
-                                        automationLibrary::addErrorRecord($this->_error, $this->_session, $this->_scrDir, $e->getMessage(), $this->lastRecord . ". Object data that failed: " . $_currentLocation, $_process);
+                                        
+                                        $_autoLib->addErrorRecord($this->_error, $this->_scrDir, $e->getMessage(), $this->lastRecord . ". Object data that failed: " . $_currentLocation, $_process);
                                     }
                                     
                                     if (count($_allWin > 1)) {
@@ -1433,7 +1437,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                     }
                                     $_errorData = "Date Range Values: " . PHP_EOL . implode(",", $_dateRangeValues) . PHP_EOL . "SQL Query Dump: " . PHP_EOL . $myQuery . PHP_EOL . "SQL Result Dump:" . PHP_EOL . $_result;
                                     $_errmsg = preg_replace("/%s/", $_drvKey, automationLibrary::ERR_NO_DATE_RANGE_VALUE);
-                                    automationLibrary::addErrorRecord($this->_error, $this->_session, $this->_scrDir, $_errmsg, $this->lastRecord . PHP_EOL . $_errorData, $_process);
+                                    $_autoLib->addErrorRecord($this->_error, $this->_scrDir, $_errmsg, $this->lastRecord . PHP_EOL . $_errorData, $_process);
                                 }
                                 } catch (Exception $e) {
 
@@ -1441,14 +1445,14 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             }
                             // : End
                         } catch (Exception $e) {
-                            automationLibrary::addErrorRecord($this->_error, $this->_session, $this->_scrDir, $e->getMessage(), $this->lastRecord, $_process);
+                            $_autoLib->addErrorRecord($this->_error, $this->_scrDir, $e->getMessage(), $this->lastRecord, $_process);
                         }
                         
                         // : End
                         
                         // : End
                     } catch (Exception $e) {
-                        automationLibrary::addErrorRecord($this->_error, $this->_session, $this->_scrDir, $e->getMessage(), $this->lastRecord, "Route and Rate");
+                        $_autoLib->addErrorRecord($this->_error, $this->_scrDir, $e->getMessage(), $this->lastRecord, "Route and Rate");
                     }
                 }
                 // : End
@@ -1481,7 +1485,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             // : If errors occured. Create xls of entries that failed.
             if (count($this->_error) != 0) {
                 $_xlsfilename = (dirname(__FILE__) . $this->_errDir . self::DS . date("Y-m-d_His_") . basename(__FILE__, ".php") . ".xlsx");
-                automationLibrary::writeExcelFile($_xlsfilename, $this->_error, $_xlsColumns, basename(__FILE__, ".php"), "error_report", "error_report");
+                $_autoLib->writeExcelFile($_xlsfilename, $this->_error, $_xlsColumns, basename(__FILE__, ".php"), "error_report", "error_report");
                 if (file_exists($_xlsfilename)) {
                     print("Excel error report written successfully to file: $_xlsfilename");
                 } else {

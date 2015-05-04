@@ -225,7 +225,7 @@ class automationLibrary
         $_errArr[$_erCount + 1]["error"] = $_errmsg;
         $_errArr[$_erCount + 1]["record"] = $_record;
         $_errArr[$_erCount + 1]["type"] = $_process;
-        self::takeScreenshot($this->_sessionObj, $_scrDir);
+        $this->takeScreenshot($_scrDir);
     }
 
     /**
