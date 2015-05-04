@@ -630,10 +630,10 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-3_0_0_cost-3']" )->sendKeys ( $recVal ["Cost"] );
 						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-10__0_full_or_Partial-10']/option[text()='{$recVal["FullPartial"]}']" )->click ();
 						
-						$_note = $this->_session->element ( "xpath", "//*[@id='formfield']/textarea" )->text ();
+						$_note = $this->_session->element ( "xpath", "//*[@name='udo_Refuel[0][notes]']" )->text ();
 						if (! $_note) {
-							$this->_session->element ( "xpath", "//*[@id='formfield']/textarea" )->clear ();
-							$this->_session->element ( "xpath", "//*[@id='formfield']/textarea" )->sendKeys ( "This refuel was created by an automation script. Reference no: {$recVal["Note"]}" );
+							$this->_session->element ( "xpath", "//*[@name='udo_Refuel[0][notes]']" )->clear ();
+							$this->_session->element ( "xpath", "//*[@name='udo_Refuel[0][notes]']" )->sendKeys ( "This refuel was created by an automation script. Reference no: {$recVal["Note"]}" );
 						}
 						$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
 						
