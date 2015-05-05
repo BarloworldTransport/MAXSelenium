@@ -317,7 +317,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
         // : End
         
         // Construct full path and filename for csv file using script home dir and data dir path to file
-        $_file = dirname(__FILE__) . $this->_dataDir . self::DS . $this->_csv;
+        $_file = $this->_dataDir . self::DS . $this->_csv;
         
         /*
          * Will be used at a later stage to make validation more dynamic $_headers = ( array ) array ( 0 => array("customer", "!offload"), 1 => array("offload", "customer"), 2 => array("location", "from", "town"), 3 => array("location", "from", "point"), 4 => array("location","to","town"), 5 => array("location","to","point"), 6 => array("rate","type"), 7 => array("rate"), 8 => array("expected","kms"), 9 => array("expected","empty","kms"), 10 => array("days","per","trip"), 11 => array("truck","type"), 12 => array("lead", "kms"), 13 => array("minimum","tons"), 14 => array("contrib","model"), 15 => array("business","unit") );

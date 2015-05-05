@@ -161,9 +161,10 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase {
 	public function testCreateContracts() {
 		
 		// : Pull F and V Contract data from correctly formatted xls spreadsheet
-		$_datadir = preg_replace ( '/\//', self::DS, $this->_dataDir );
-		$file = dirname ( __FILE__ ) . $_datadir . $this->_xls;
+		
+		$file = realpath($this->_dataDir) . self::DS . $this->_xls;
 		echo $file . PHP_EOL;
+
 		if (file_exists ( $file )) {
 			
 			// Initiate Session
@@ -661,7 +662,7 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase {
 			}
 			// : If errors occured. Create xls of entries that failed.
 			if (count ( $this->_error ) != 0) {
-				$_xlsfilename = (dirname ( __FILE__ ) . $this->_errDir . self::DS . date ( "Y-m-d_His_" ) . $this->_wdport . "_MAXLiveFandV.xlsx");
+				$_xlsfilename =realpath($this->_errDir) . self::DS . date ( "Y-m-d_His_" ) . $this->_wdport . "_MAXLiveFandV.xlsx";
 				$this->writeExcelFile ( $_xlsfilename, $this->_error, $_xlsColumns );
 				if (file_exists ( $_xlsfilename )) {
 					print ("Excel error report written successfully to file: $_xlsfilename") ;
@@ -762,7 +763,7 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase {
 	private function takeScreenshot() {
 		$_img = $this->_session->screenshot ();
 		$_data = base64_decode ( $_img );
-		$_file = dirname ( __FILE__ ) . $this->_scrDir . DIRECTORY_SEPARATOR . date ( "Y-m-d_His" ) . "_F&VContracts.png";
+		$_file = realpath($this->_scrDir) . self::DS . date ( "Y-m-d_His" ) . "_F&VContracts.png";
 		$_success = file_put_contents ( $_file, $_data );
 		if ($_success) {
 			return $_file;
