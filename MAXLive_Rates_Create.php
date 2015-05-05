@@ -663,7 +663,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                                         }
                                             // : End
                                             // Build string for sql query like search for location
-                                            $_searchStr = preg_replace("@\s@", "%", $_aLocation["value"]) . "%";
+                                            //$_searchStr = preg_replace("@\s@", "%", $_aLocation["value"]) . "%"; - TEMPORARILY REMOVED - NEED BETTER LOGIC
+                                            $_searchStr = $_aLocation["value"];
                                             $myQuery = "select ID, name from udo_location where name like '" . $_searchStr . "' and _type='" . $_type . "' and active=1;";
                                             $result = $this->queryDB($myQuery);
                                             
