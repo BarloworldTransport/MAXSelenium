@@ -619,7 +619,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         
                         // : End
                         
-                        if ($_dataset["business unit"]["value"] != "Timber 24" && $_ratesonly == "false") {
+                        if ($_dataset["business unit"]["value"] != "Timber 24" && $this->_ratesonly == "false") {
                             
                             for ($i = 0; $i < 2; $i ++) {
                                 // : Check locations exist and create them if they dont exist
@@ -811,7 +811,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         
                         // : Check locations are linked to customer
                         
-                        if ($_dataset["business unit"]["value"] != "Timber 24" && $_ratesonly == "false") {
+                        if ($_dataset["business unit"]["value"] != "Timber 24" && $this->_ratesonly == "false") {
                             foreach ($_dataset as $_dataKey => $_dataValues) {
                                 
                                 try {
