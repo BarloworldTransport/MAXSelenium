@@ -118,6 +118,8 @@ class automationLibrary
 
     const URL_API_GET = "/api_request/Data/get?objectRegistry=";
     
+    const URL_LOCATION_ROUTE = "/Country_Tab/routes?&tab_id=113";
+    
     // Constants - Miscellaneous
     const DEFAULT_MAX_VERSION = 2;
     // : End
