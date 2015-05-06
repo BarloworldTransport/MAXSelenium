@@ -127,6 +127,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
 
     protected $_csv;
 
+    protected $_ratesonly;
+
     protected $_maxurl;
 
     protected $_error = array();
@@ -206,7 +208,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             return FALSE;
         }
         $data = parse_ini_file($ini);
-        if ((array_key_exists("version", $data) && $data["version"]) && (array_key_exists("browser", $data) && $data["browser"]) && (array_key_exists("wdport", $data) && $data["wdport"]) && (array_key_exists("csv", $data) && $data["csv"]) && (array_key_exists("errordir", $data) && $data["errordir"]) && (array_key_exists("screenshotdir", $data) && $data["screenshotdir"]) && (array_key_exists("datadir", $data) && $data["datadir"]) && (array_key_exists("ip", $data) && $data["ip"]) && (array_key_exists("username", $data) && $data["username"]) && (array_key_exists("password", $data) && $data["password"]) && (array_key_exists("welcome", $data) && $data["welcome"]) && (array_key_exists("mode", $data) && $data["mode"])) {
+        if ((array_key_exists("ratesonly", $data) && $data["ratesonly"]) && (array_key_exists("version", $data) && $data["version"]) && (array_key_exists("browser", $data) && $data["browser"]) && (array_key_exists("wdport", $data) && $data["wdport"]) && (array_key_exists("csv", $data) && $data["csv"]) && (array_key_exists("errordir", $data) && $data["errordir"]) && (array_key_exists("screenshotdir", $data) && $data["screenshotdir"]) && (array_key_exists("datadir", $data) && $data["datadir"]) && (array_key_exists("ip", $data) && $data["ip"]) && (array_key_exists("username", $data) && $data["username"]) && (array_key_exists("password", $data) && $data["password"]) && (array_key_exists("welcome", $data) && $data["welcome"]) && (array_key_exists("mode", $data) && $data["mode"])) {
             $this->_username = $data["username"];
             $this->_password = $data["password"];
             $this->_welcome = $data["welcome"];
@@ -220,6 +222,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             $this->_browser = $data["browser"];
             $this->_csv = $data["csv"];
             $this->_version = $data["version"];
+            $this->_ratesonly = $data["ratesonly"];
             
             // Determine MAX URL to be used for this test run
             $this->_maxurl = automationLibrary::getMAXURL($this->_mode, $this->_version);
@@ -616,7 +619,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         
                         // : End
                         
-                        if ($_dataset["business unit"]["value"] != "Timber 24") {
+                        if ($_dataset["business unit"]["value"] != "Timber 24" && $_ratesonly == "false") {
                             
                             for ($i = 0; $i < 2; $i ++) {
                                 // : Check locations exist and create them if they dont exist
@@ -808,17 +811,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         
                         // : Check locations are linked to customer
                         
-                        /**
-                         * Get all currently open windows
-                         * $_winAll = $this->_session->window_handles ();
-                         * // Set window focus to main window
-                         * $this->_session->focusWindow ( $_winAll [0] );
-                         * // If there is more than 1 window open then close all but main window
-                         * if (count ( $_winAll ) > 1) {
-                         * $this->clearWindows ();
-                         * }
-                         */
-                        if ($_dataset["business unit"]["value"] != "Timber 24") {
+                        if ($_dataset["business unit"]["value"] != "Timber 24" && $_ratesonly == "false") {
                             foreach ($_dataset as $_dataKey => $_dataValues) {
                                 
                                 try {
@@ -923,7 +916,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         // : End
                         
                         // : Check offloading customer exists
-                        if ($_dataset["business unit"]["value"] != "Timber 24") {
+                        if ($_dataset["business unit"]["value"] != "Timber 24" && $this->_ratesonly == "false") {
                             
                             try {
                                 
