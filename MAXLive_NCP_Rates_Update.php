@@ -162,7 +162,7 @@ class MAXLive_NCP_Rates_Update extends PHPUnit_Framework_TestCase {
 				"Script" 
 		);
 		// Build file path string
-		$_file = dirname ( __FILE__ ) . $this->_dataDir . self::DS . $this->_xls;
+		$_file = realpath($this->_dataDir) . self::DS . $this->_xls;
 
 		// : Pull data from correctly formatted xls spreadsheet
 		if ($cPR = new RatesReadXLSData ( $_file, $_sheetnames )) {
@@ -402,7 +402,7 @@ class MAXLive_NCP_Rates_Update extends PHPUnit_Framework_TestCase {
 			// : End
 			// : If errors occured. Create xls of entries that failed.
 			if (count ( $this->_error ) != 0) {
-				$_xlsfilename = (dirname ( __FILE__ ) . $this->_errDir . self::DS . date ( "Y-m-d_His_" ) . "MAXLiveNCP_" . ".xlsx");
+				$_xlsfilename = (realpath($this->_errDir) . self::DS . date ( "Y-m-d_His_" ) . "MAXLiveNCP_" . ".xlsx");
 				$this->writeExcelFile ( $_xlsfilename, $this->_error, $_xlsColumns );
 				if (file_exists ( $_xlsfilename )) {
 					print ("Excel error report written successfully to file: $_xlsfilename") ;
@@ -538,7 +538,7 @@ class MAXLive_NCP_Rates_Update extends PHPUnit_Framework_TestCase {
 	private function takeScreenshot() {
 		$_img = $this->_session->screenshot ();
 		$_data = base64_decode ( $_img );
-		$_file = dirname ( __FILE__ ) . $this->_scrDir . DIRECTORY_SEPARATOR . date ( "Y-m-d_His" ) . "_WebDriver.png";
+		$_file = realpath($this->_scrDir) . self::DS . date ( "Y-m-d_His" ) . "_WebDriver.png";
 		$_success = file_put_contents ( $_file, $_data );
 		if ($_success) {
 			return $_file;

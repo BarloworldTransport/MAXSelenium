@@ -64,9 +64,14 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	protected $_datadir;
 	protected $_errdir;
 	protected $_scrdir;
+	protected $_report_dir;
 	protected $_tmpVar;
 	protected $_errors = array ();
 	protected $_tmp;
+	protected $_rules_on;
+	protected $_rules_off;
+	protected $_page_timeout;
+	protected $_element_timeout;
 	
 	// : Public Functions
 	
@@ -101,7 +106,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			return FALSE;
 		}
 		$data = parse_ini_file ( $ini );
-		if ((array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"])) {
+		if ((array_key_exists ( "pagetimeout", $data ) && $data ["pagetimeout"]) && (array_key_exists ( "elementtimeout", $data ) && $data ["elementtimeout"]) && (array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "file1", $data ) && $data ["file1"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"]) && (array_key_exists ( "wdport", $data ) && $data ["wdport"]) && (array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"]) && ((array_key_exists("reportdir", $data)) && ($data["reportdir"])) && ((array_key_exists("ruleson", $data)) && ($data["ruleson"])) && ((array_key_exists("rulesoff", $data)) && ($data["rulesoff"]))) {
 			$this->_username = $data ["username"];
 			$this->_password = $data ["password"];
 			$this->_welcome = $data ["welcome"];
@@ -112,7 +117,12 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 			$this->_datadir = $data ["datadir"];
 			$this->_scrdir = $data ["screenshotdir"];
 			$this->_errdir = $data ["errordir"];
+			$this->_report_dir = $data ["reportdir"];
 			$this->_file1 = $data ["file1"];
+			$this->_rules_on = $data["ruleson"];
+			$this->_rules_off = $data["rulesoff"];
+			$this->_page_timeout = $data["pagetimeout"];
+			$this->_element_timeout = $data["elementtimeout"];
 			switch ($this->_mode) {
 				case "live" :
 					$this->_maxurl = self::LIVE_URL;
@@ -177,15 +187,16 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		
 		// : Queries to run throughout script
 		$_queries = ( array ) array (
-				"select f.name from udo_fleettrucklink as ftl left join udo_truck as t on (t.id=ftl.truck_id) left join udo_fleet as f on (f.id=ftl.fleet_id) left join daterangevalue as drv on (drv.objectInstanceId=ftl.id) where t.id=%s and drv.type='FleetTruckLink' and (drv.endDate IS NULL or drv.endDate > DATE(CONCAT(CURDATE(), ' 00:00:00')));",
+				"select f.name from udo_fleettrucklink as ftl left join udo_truck as t on (t.id=ftl.truck_id) left join udo_fleet as f on (f.id=ftl.fleet_id) left join daterangevalue as drv on (drv.objectInstanceId=ftl.id) where f.name!='Entire Active Fleet' and t.id=%s and drv.type='FleetTruckLink' and (drv.endDate IS NULL or drv.endDate > DATE(CONCAT(CURDATE(), ' 00:00:00')));",
 				"select id, fleetnum from udo_truck where fleetnum='%s';",
 				"select d.nickname, CONCAT(p.first_name, ' ', p.last_name) as fullname, d.staffNumber from udo_driver as d left join person as p on (p.id=d.person_id) where d.staffNumber = '%s';",
-				"select r.id, ron.orderNumber from udo_refuel as r left join udo_refuelordernumber as ron on (ron.id=r.refuelOrderNumber_id) where ron.orderNumber=%s;" 
+				"select r.id, ron.orderNumber from udo_refuel as r left join udo_refuelordernumber as ron on (ron.id=r.refuelOrderNumber_id) where ron.orderNumber=%s;",
+		        "select count(ftl.truck_id) as linked_trucks, f.name from udo_fleettrucklink as ftl left join udo_fleet as f on (f.id=ftl.fleet_id) left join udo_truck as t on (t.id=ftl.truck_id) left join daterangevalue as drv on (drv.objectInstanceId=ftl.id) where ftl.fleet_id IN (select ftl.fleet_id from udo_fleettrucklink as ftl left join udo_truck as t on (t.id=ftl.truck_id) left join udo_fleet as f on (f.id=ftl.fleet_id) left join daterangevalue as drv on (drv.objectInstanceId=ftl.id) where f.name!='Entire Active Fleet' and t.id=%s and drv.type='FleetTruckLink' and (drv.endDate IS NULL or drv.endDate > DATE(CONCAT(CURDATE(), ' 00:00:00')))) and drv.type='FleetTruckLink' and (drv.endDate IS NULL or drv.endDate > DATE(CONCAT(CURDATE(), ' 00:00:00'))) group by ftl.fleet_id order by linked_trucks;" 
 		);
 		// : End
 		
 		// Build file path string
-		$_file1 = dirname ( __FILE__ ) . self::DS . $this->_datadir . self::DS . $this->_file1;
+		$_file1 = realpath($this->_datadir) . self::DS . $this->_file1;
 		
 		// : Import CSV files data
 		if (file_exists ( $_file1 )) {
@@ -209,8 +220,8 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		try {
 			// Initialize session
 			$session = $this->_session;
-			$this->_session->setPageLoadTimeout ( 60 );
-			$w = new PHPWebDriver_WebDriverWait ( $session, 10 );
+			$this->_session->setPageLoadTimeout ( intval($this->_page_timeout) );
+			$w = new PHPWebDriver_WebDriverWait ( $session, intval($this->_element_timeout) );
 			
 			// : Log into MAX
 			// Load MAX home page
@@ -273,6 +284,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		}
 		
 		// : Turn off refuel update actions
+		if (strtolower($this->_rules_off) == "true" || $this->_rules_off == "1") {
 		try {
 			$this->_session->open ( $this->_maxurl . self::ADMIN_URL );
 			$e = $w->until ( function ($session) {
@@ -369,6 +381,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		} catch ( Exception $e ) {
 			throw new Exception ( "Could not continue. Failed to update Refuel Update Actions before starting to run the script.\n Reason:{$e->getMessage()}" );
 		}
+		}
 		// : End
 		
 		// : End
@@ -404,10 +417,11 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 				if ($_result) {
 					// : Check if truck is linked to a fleet and if so get the first fleet returned in the query results
 					$_truckid = $_result [0] ["id"];
-					$_query = preg_replace ( "/%s/", $_truckid, $_queries [0] );
+					$_query = preg_replace ( "/%s/", $_truckid, $_queries [4] );
 					$_result2 = $_sqldb->getDataFromQuery ( $_query );
 					if ($_result2) {
 						$_fleetname = $_result2 [0] ["name"];
+						$_counttrucks = $_result2 [0] ["linked_trucks"];
 					}
 					// : End
 				}
@@ -616,10 +630,10 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-3_0_0_cost-3']" )->sendKeys ( $recVal ["Cost"] );
 						$this->_session->element ( "xpath", "//*[@id='udo_Refuel-10__0_full_or_Partial-10']/option[text()='{$recVal["FullPartial"]}']" )->click ();
 						
-						$_note = $this->_session->element ( "xpath", "//*[@id='formfield']/textarea" )->text ();
+						$_note = $this->_session->element ( "xpath", "//*[@name='udo_Refuel[0][notes]']" )->text ();
 						if (! $_note) {
-							$this->_session->element ( "xpath", "//*[@id='formfield']/textarea" )->clear ();
-							$this->_session->element ( "xpath", "//*[@id='formfield']/textarea" )->sendKeys ( "This refuel was created by an automation script. Reference no: {$recVal["Note"]}" );
+							$this->_session->element ( "xpath", "//*[@name='udo_Refuel[0][notes]']" )->clear ();
+							$this->_session->element ( "xpath", "//*[@name='udo_Refuel[0][notes]']" )->sendKeys ( "This refuel was created by an automation script. Reference no: {$recVal["Note"]}" );
 						}
 						$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
 						
@@ -657,13 +671,15 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 					$this->_errors [$_num] [$key] = $value;
 				}
 				$this->_errors [$_num] ["errormsg"] = $e->getMessage ();
-				$_scrshotfn = dirname(__FILE__) . $this->_scrdir . self::DS . date("Y-m-d_H:i:s") . $recVal["Truck"] . substr($e->getMessage(), 1, 10);
+				$_scrshotfn = realpath($this->_scrdir) . self::DS . date("Y-m-d_H:i:s") . $recVal["Truck"] . substr($e->getMessage(), 1, 10);
 				$this->takeScreenshot ( $this->_session, $_scrshotfn );
 				// : End
 			}
 		}
 		
 		// : Turn on refuel update actions
+		
+		if (strtolower($this->_rules_on) == "true" || $this->_rules_on == "1") {
 		try {
 			
 			// : Set main window to default and close all windows if there is more than one open
@@ -771,16 +787,20 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		} catch ( Exception $e ) {
 			throw new Exception ( "Could not continue. Failed to update Refuel Update Actions before starting to run the script.\n Reason:{$e->getMessage()}" );
 		}
+		}
 		// : End
-		
+		try {	
 		// : Report errors if any occured
 		if ($this->_errors) {
-			$_errfile = dirname ( __FILE__ ) . self::DS . $this->_errdir . self::DS . "error_report_" . $this->getReportFileName () . ".csv";
+			$_errfile =  realpath($this->_errdir) . self::DS . $this->getReportFileName () . ".csv";
 			$this->ExportToCSV ( $_errfile, $this->_errors );
 			echo "Exported error report to the following path and file: " . $_errfile;
 		}
+		} catch (Exception $e) {
+			// : Add some error handling code here
+		}
 		// : End
-		
+		try {
 		// : Report all successful completed refuel orders
 		$_orders = ( array ) array ();
 		foreach ( $this->_data as $key => $value ) {
@@ -789,16 +809,23 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 				$_orders [$key] = $value;
 			}
 		}
-		
 		if ($_orders) {
-			$_ordersfile = dirname ( __FILE__ ) . self::DS . "export" . self::DS . $this->getReportFileName () . ".csv";
+			$_ordersfile = realpath($this->_report_dir) . self::DS . $this->getReportFileName () . ".csv";
 			$this->ExportToCSV ( $_ordersfile, $_orders );
 			echo "Exported successfully created refuels report to the following path and file: " . $_ordersfile;
+		}
+		} catch (Exception $e) {
+			
+			// Add some error handling code here
 		}
 		// : End
 		
 		// : Tear Down
 		// Click the logout link
+		$this->_session->open ( $this->_maxurl . self::PB_URL );
+		$e = $w->until ( function ($session) {
+			return $session->element ( "xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]" );
+		} );
 		$this->_session->element ( 'xpath', "//*[contains(@href,'/logout')]" )->click ();
 		// Wait for page to load and for elements to be present on page
 		$e = $w->until ( function ($session) {
@@ -823,10 +850,9 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
         try {
             $_img = $_session->screenshot();
             $_data = base64_decode($_img);
-            $_file = dirname(__FILE__) . $this->_scrdir . self::DS . date("Y-m-d_His") . $_filename;
-            $_success = file_put_contents($_file, $_data);
+            $_success = file_put_contents($_filename, $_data);
             if ($_success) {
-                return $_file;
+                return $_filename;
             } else {
                 return FALSE;
             }
