@@ -295,10 +295,10 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
         $_objectregistry_id = (int) 0;
         
         // Construct full path and filename for csv file using script home dir and data dir path to file
-        $_file = dirname(__FILE__) . $this->_dataDir . DIRECTORY_SEPARATOR . $this->_xls;
+        $_file = realpath($this->_dataDir) . DIRECTORY_SEPARATOR . $this->_xls;
         echo $_file . PHP_EOL;
         
-        $_progressLogFile = $this->_logDir . DIRECTORY_SEPARATOR . "progressLogFile_" . basename(__FILE__, ".php") . "_{$this->_wdport}";
+        $_progressLogFile = realpath($this->_logDir) . DIRECTORY_SEPARATOR . "progressLogFile_" . basename(__FILE__, ".php") . "_{$this->_wdport}";
         echo $_progressLogFile . PHP_EOL;
         
         // : Error report columns for the spreadsheet data
@@ -1328,9 +1328,9 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
         }
         
         if ($_pathname_extra) {
-            $_file = $this->_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_${_pathname_extra}_WebDriver.png";
+            $_file = realpath($this->_scrDir) . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_${_pathname_extra}_WebDriver.png";
         } else {
-            $_file = $this->_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_WebDriver.png";
+            $_file = realpath($this->_scrDir) . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_WebDriver.png";
         }
         $_success = file_put_contents($_file, $_data);
         if ($_success) {
