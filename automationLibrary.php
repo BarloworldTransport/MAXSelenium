@@ -104,7 +104,7 @@ class automationLibrary
 
     const URL_CUST_LOCATION_BU = "/DataBrowser?browsePrimaryObject=495&browsePrimaryInstance=";
 
-    const URL_OFFLOAD_CUST_BU = "/DataBrowser?browsePrimaryObject=494&browsePrimaryInstance=";
+    const URL_OFFLOAD_CUST_BU = "/DataBrowser?browsePrimaryObject=494&browsePrimaryInstance=%d&browseSecondaryObject=989&useDataViewForSecondary=897&tab_id=";
 
     const URL_RATEVAL = "/DataBrowser?&browsePrimaryObject=udo_Rates&browsePrimaryInstance=%s&browseSecondaryObject=DateRangeValue&relationshipType=Rate";
 
@@ -139,7 +139,7 @@ class automationLibrary
      * Class constructor
      */
     public function __construct(&$_session, &$_phpunit_fw_obj, &$_w, $_mode, $_version) {
-    
+
         if (is_object($_session) && is_object($_phpunit_fw_obj) && $_w && $_mode && $_version) {
             // : Save referenced session and phpunit objects to affect the referenced active session been passed
             $this->_sessionObj = $_session;

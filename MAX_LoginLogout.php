@@ -69,7 +69,6 @@ class maxLoginLogout
      public function __construct(&$_autoObj, $_maxurl)
      {    
         if (is_object($_autoObj) && is_string($_maxurl)) {
-            
             // Save referenced automation library object containing session and phpunit objects
             $this->_autoLibObj = $_autoObj;
             $this->_maxurl = $_maxurl;
@@ -156,10 +155,10 @@ class maxLoginLogout
                         $iframe = $this->_autoLibObj->_sessionObj->element('css selector', '#contentFrame');
                         $this->_autoLibObj->_sessionObj->switch_to_frame($iframe);
                         
-                        self::$_tmp = $_welcome;
+                        $this->_tmp = $_welcome;
                         $e = $this->_autoLibObj->_wObj->until(function ($session)
                         {
-                            return $session->element("xpath", "//*[text()='" . self::$_tmp . "']");
+                            return $session->element("xpath", "//*[text()='" . $this->_tmp . "']");
                         });
                         $this->_autoLibObj->assertElementPresent("xpath", "//*[text()='" . $_welcome . "']");
                         // Switch out of frame
@@ -229,7 +228,7 @@ class maxLoginLogout
             $session = $this->_autoLibObj->_sessionObj;
             $this->_autoLibObj->_sessionObj->element('xpath', "//*[contains(@href,'/logout')]")->click();
             // Wait for page to load and for elements to be present on page
-            $e = $_this->_autoLibObj->_wObj->until(function ($session)
+            $e = $this->_autoLibObj->_wObj->until(function ($session)
             {
                 return $session->element('css selector', 'input[id=identification]');
             });
@@ -262,7 +261,7 @@ class maxLoginLogout
             $this->_tmp = $_tripNumber;
             
             // Wait for page to load and for elements to be present on page
-            $e = $_this->_autoLibObj->_wObj->until(function ($session)
+            $e = $this->_autoLibObj->_wObj->until(function ($session)
             {
                 return $session->element('xpath', '//a[text()="' . self::$_tmp . '"]');
             });
