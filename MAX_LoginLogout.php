@@ -108,7 +108,6 @@ class maxLoginLogout
     {
         try {
             // : Log into MAX
-            
             switch (intval($_version)) {
                 case 2:
                     {
@@ -187,18 +186,18 @@ class maxLoginLogout
                         });
 
                         // : Assert element present
-                        $this->_autoLibObj->assertElementPresent('css selector', '#identification');
-                        $this->_autoLibObj->assertElementPresent('css selector', '#password');
-                        $this->_autoLibObj->assertElementPresent('css selector', '#btn_Sign_In');
+                        $this->_autoLibObj->assertElementPresent("xpath", "//*[@id='identification']");
+                        $this->_autoLibObj->assertElementPresent("xpath", "//*[@id='password']");
+                        $this->_autoLibObj->assertElementPresent("xpath", "//*[@id='btn_Sign_In']");
                         // : End
                         
                         // Send keys to input text box
-                        $e = $this->_autoLibObj->_sessionObj->element('css selector', '#identification')->sendKeys($_uname);
+                        $e = $this->_autoLibObj->_sessionObj->element("xpath", "//*[@id='identification']")->sendKeys($_uname);
                         // Send keys to input text box
-                        $e = $this->_autoLibObj->_sessionObj->element('css selector', '#password')->sendKeys($_pwd);
+                        $e = $this->_autoLibObj->_sessionObj->element("xpath", "//*[@id='password']")->sendKeys($_pwd);
                         
                         // Click login button
-                        $this->_autoLibObj->_sessionObj->element('css selector', '#btn_Sign_In')->click();
+                        $this->_autoLibObj->_sessionObj->element("xpath", "//*[@id='btn_Sign_In']")->click();
                         
                         $e = $this->_autoLibObj->_wObj->until(function ($session)
                         {
@@ -224,16 +223,40 @@ class maxLoginLogout
     {
         try {
             // : Tear Down
-            // Click the logout link
             $session = $this->_autoLibObj->_sessionObj;
-            $this->_autoLibObj->_sessionObj->element('xpath', "//*[contains(@href,'/logout')]")->click();
-            // Wait for page to load and for elements to be present on page
-            $e = $this->_autoLibObj->_wObj->until(function ($session)
-            {
-                return $session->element('css selector', 'input[id=identification]');
-            });
-            $this->_autoLibObj->assertElementPresent('css selector', 'input[id=identification]');
-            // Terminate session
+            
+            switch (intval($_version)) {
+                case 2: {
+                    // Click the logout link
+                    $this->_autoLibObj->_sessionObj->element('xpath', "//*[contains(@href,'/logout')]")->click();
+                    // Wait for page to load and for elements to be present on page
+                    $e = $this->_autoLibObj->_wObj->until(function ($session)
+                    {
+                        return $session->element('css selector', 'input[id=identification]');
+                    });
+                    $this->_autoLibObj->assertElementPresent('css selector', 'input[id=identification]');       
+                }
+                case 3:
+                default: {
+                    // Click the logout link
+                    $this->_autoLibObj->_sessionObj->element("xpath", "//*[@id='loggedinUser']")->click();
+
+                    /*$e = $this->_autoLibObj->_wObj->until(function ($session)
+                    {
+                        //return $session->element("xpath", "//*[not(contains(@style,'display:none')) and (@id='admin-dropdown')]/li/a[@][@id=logout]");
+                        return $session->element("xpath", "//a[id='logout']");
+                    });*/
+                    sleep(2);
+                    $this->_autoLibObj->_sessionObj->element("xpath", "//*[@id='admin-dropdown']/li[5]")->click();
+                    
+                    // Wait for page to load and for elements to be present on page
+                    
+                    $e = $this->_autoLibObj->_wObj->until(function ($session)
+                    {
+                        return $session->element("xpath", "//*[text()='Sign In']");
+                    });                  
+                }
+            }
         } catch (Exception $e) {
             // Store error message into static array
             $this->_errors[] = $e->getMessage();

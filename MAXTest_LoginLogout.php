@@ -10,6 +10,9 @@ require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
 require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
 require_once 'PullDataFromMySQLQuery.php';
 require_once 'FileParser.php';
+require_once 'automationLibrary.php';
+require_once 'MAX_LoginLogout.php';
+require_once "MAX_API_Get.php";
 
 // : End
 
@@ -64,6 +67,8 @@ class MAXTest_LoginLogout extends PHPUnit_Framework_TestCase {
 	protected $_scrdir;
 	protected $_errors = array ();
 	protected $_tmp;
+	protected $_apiuserpwd;
+	protected $_version;
 	
 	// : Public Functions
 	// : Accessors
@@ -93,13 +98,11 @@ class MAXTest_LoginLogout extends PHPUnit_Framework_TestCase {
 			$this->_datadir = $data ["datadir"];
 			$this->_scrdir = $data ["screenshotdir"];
 			$this->_errdir = $data ["errordir"];
-			switch ($this->_mode) {
-				case "live" :
-					$this->_maxurl = self::LIVE_URL;
-					break;
-				default :
-					$this->_maxurl = self::TEST_URL;
-			}
+			$this->_version = $data ["version"];
+			$this->_apiuserpwd = $data ["apiuserpwd"];
+				
+			// Determine MAX URL to be used for this test run
+			$this->_maxurl = automationLibrary::getMAXURL($this->_mode, $this->_version);
 		} else {
 			echo "The correct data is not present in user_data.ini. Please confirm. Fields are username, password, welcome and mode" . PHP_EOL;
 			return FALSE;
@@ -141,74 +144,20 @@ class MAXTest_LoginLogout extends PHPUnit_Framework_TestCase {
 			$this->_session->setPageLoadTimeout ( 60 );
 			$w = new PHPWebDriver_WebDriverWait ( $session, 10 );
 			
-			// : Log into MAX
-			// Load MAX home page
-			$this->_session->open ( $this->_maxurl );
+			$_autoLib = new automationLibrary($this->_session, $this, $w, $this->_mode, $this->_version);
+			$_maxLoginLogout = new maxLoginLogout($_autoLib, $this->_maxurl);
+				
+			// Log into MAX
+			if (!$_maxLoginLogout->maxLogin($this->_username, $this->_password, $this->_welcome, $this->_version)) {
+			    throw new Exception($_maxLoginLogout->getLastError());
+			}
 			
-			// : Wait for page to load and for elements to be present on page
-			$e = $w->until ( function ($session) {
-				return $session->element ( 'css selector', "#contentFrame" );
-			} );
-			
-			$iframe = $this->_session->element ( 'css selector', '#contentFrame' );
-			$this->_session->switch_to_frame ( $iframe );
-			
-			$e = $w->until ( function ($session) {
-				return $session->element ( 'css selector', 'input[id=identification]' );
-			} );
-			// : End
-			
-			// : Assert element present
-			$this->assertElementPresent ( 'css selector', 'input[id=identification]' );
-			$this->assertElementPresent ( 'css selector', 'input[id=password]' );
-			$this->assertElementPresent ( 'css selector', 'input[name=submit][type=submit]' );
-			// : End
-			
-			// Send keys to input text box
-			$e = $this->_session->element ( 'css selector', 'input[id=identification]' )->sendKeys ( $this->_username );
-			// Send keys to input text box
-			$e = $this->_session->element ( 'css selector', 'input[id=password]' )->sendKeys ( $this->_password );
-			
-			// Click login button
-			$this->_session->element ( 'css selector', 'input[name=submit][type=submit]' )->click ();
-			// Switch out of frame
-			$this->_session->switch_to_frame ();
-			
-			// : Wait for page to load and for elements to be present on page
-			$e = $w->until ( function ($session) {
-				return $session->element ( 'css selector', "#contentFrame" );
-			} );
-			$iframe = $this->_session->element ( 'css selector', '#contentFrame' );
-			$this->_session->switch_to_frame ( $iframe );
-			$e = $w->until ( function ($session) {
-				return $session->element ( "xpath", "//*[text()='" . $this->_welcome . "']" );
-			} );
-			$this->assertElementPresent ( "xpath", "//*[text()='" . $this->_welcome . "']" );
-			// Switch out of frame
-			$this->_session->switch_to_frame ();
-			// : End
-			
-			// : Load Planningboard to rid of iframe loading on every page from here on
-			$this->_session->open ( $this->_maxurl . self::PB_URL );
-			$e = $w->until ( function ($session) {
-				return $session->element ( "xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]" );
-			} );
-			// : End
-		} catch ( Exception $e ) {
-			$_errmsg = preg_replace ( "/%h/", $this->_maxurl, self::LOGIN_FAIL );
-			$_errmsg = preg_replace ( "/%s/", $e->getMessage (), $_errmsg );
-			throw new Exception ( $_errmsg );
-			unset ( $_errmsg );
+			if (!$_maxLoginLogout->maxLogout($this->_version)) {
+			    throw new Exception($_maxLoginLogout->getLastError());
+			}
+		} catch (Exception $e) {
+		    print($e->getMessage());
 		}
-		
-		// : Tear Down
-		// Click the logout link
-		$this->_session->element ( 'xpath', "//*[contains(@href,'/logout')]" )->click ();
-		// Wait for page to load and for elements to be present on page
-		$e = $w->until ( function ($session) {
-			return $session->element ( 'css selector', 'input[id=identification]' );
-		} );
-		$this->assertElementPresent ( 'css selector', 'input[id=identification]' );
 		// Terminate session
 		$this->_session->close ();
 		// : End
