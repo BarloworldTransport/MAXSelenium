@@ -494,15 +494,76 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         }
                         $this->progressLogFile($_progressLogFile, "locations", $_currentRecord, $_recordsFailed, $_recordsProcessed, $_process, $_progressStr);
                         
-                        // Get IDs for point and customer link location (if link exists)
+                        // Get IDS for point and customer link location (checking if customer location link exists)
                         $_sqlquery = preg_replace("/%n/", $_locValue['pointName'], automationLibrary::SQL_QUERY_LOCATION);
                         $_sqlquery = preg_replace("/%t/", automationLibrary::_TYPE_POINT, $_sqlquery);
                         $result = $this->queryDB($_sqlquery);
                         if (count($result) != 0) {
                             $_locationID = intval($result[0]["ID"]);
                         } else {
-                            $_errmsg = preg_replace("/%s/", $_sqlquery, automationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
-                            throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
+
+                            // Adding code here to add the location if it does not exist
+                            // Open the Locations - Points page to add a new location to MAX
+                            try {
+
+                                $this->_session->open($this->_maxurl . automationLibrary::URL_POINT);
+
+                                // Wait for label to be present: Point 
+                                $e = $w->until(function ($session)
+                                {
+                                    return $session->element("xpath", "//*[@id='itemlist_top_tabs']/table/tbody/tr/td[2]/nobr[contains(text(),'Point')]");
+                                });
+
+                                $this->assertElementPresent("css selector", "div.toolbar-cell-create");
+                                $this->_session->element("css selector", "div.toolbar-cell-create")->click();
+
+                                // Wait for label to be present: Capture the details of Point
+                                $e = $w->until(function ($session)
+                                {
+                                    return $session->element("xpath", "//*[@id='formheading']/table/tbody/tr/td[contains(text(),'Capture the details of Point')");
+                                });
+                                
+                                // : Check elements are present on the page that are expected to be present for adding a new point
+                                $this->assertElementPresent("xpath", "udo_Point[0][name]");
+                                $this->assertElementPresent("xpath", "udo_Point[0][parent_id]");
+                                $this->assertElementPresent("xpath", "checkbox_udo_Point_0_active");
+                                $this->assertElementPresent("xpath", "udo_Point[0][pointType_id][1]");
+                                $this->assertElementPresent("xpath", "udo_Point[0][pointType_id][2]");
+                                $this->assertElementPresent("css selector", "input[name=save][type=submit]");
+                                // : End
+
+                                // : Complete fields to create the new point
+                                $this->_session->element("xpath", "udo_Point[0][name]")->sendKeys($_locValue['pointName']);
+                                $this->_session->element("xpath", "udo_Point[0][parent_id]")->sendKeys($_locValue['parentTree']);;
+                                $this->_session->element("xpath", "checkbox_udo_Point_0_active")->click();
+                                $this->_session->element("xpath", "udo_Point[0][pointType_id][1]")->click();
+                                $this->_session->element("xpath", "udo_Point[0][pointType_id][2]")->click();
+                                $this->_session->element("css selector", "input[name=save][type=submit]")->click();
+                                // : End
+                                
+                                // Wait for label to be present: Point 
+                                $e = $w->until(function ($session)
+                                {
+                                    return $session->element("xpath", "//*[@id='itemlist_top_tabs']/table/tbody/tr/td[2]/nobr[contains(text(),'Point')]");
+                                });
+
+                            catch (Exception $e) {
+                                $_errmsg = preg_replace("/%s/", $_locValue['pointName'], automationLibrary::ERR_FAILED_CREATING_POINT);
+                                throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
+                            }
+                                
+                            // : Check if the point has been created/exists    
+                            $_sqlquery = preg_replace("/%n/", $_locValue['pointName'], automationLibrary::SQL_QUERY_LOCATION);
+                            $_sqlquery = preg_replace("/%t/", automationLibrary::_TYPE_POINT, $_sqlquery);
+                            $result = $this->queryDB($_sqlquery);
+
+                            if (count($result) != 0) {
+                                $_locationID = intval($result[0]["ID"]);
+                            } else {
+                                $_errmsg = preg_replace("/%s/", $_sqlquery, automationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
+                                throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
+                            }
+                            // : End
                         }
                         
                         $_sqlquery = preg_replace("/%l/", $_locationID, automationLibrary::SQL_QUERY_CUSTOMER_LOCATION_LINK);

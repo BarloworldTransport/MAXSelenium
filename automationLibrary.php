@@ -92,6 +92,8 @@ class automationLibrary
     const ERR_PROCESS_FAILED_UNEXPECTEDLY = "ERROR: Caught error while busy with process %s with error message: %e";
 
     const ERR_NO_DATE_RANGE_VALUE = "ERROR: Could not find DateRangeValue for Record: %s";
+
+    const ERR_FAILED_CREATING_POINT = "ERROR: An error occured while creating the following location: %s";
     
     // Constants - URL addresses
     const URL_CUSTOMER = "/DataBrowser?browsePrimaryObject=461&browsePrimaryInstance=";
