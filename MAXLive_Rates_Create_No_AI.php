@@ -329,6 +329,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                 $_data[$key] = NULL;
             }
         }
+
         // : End
         // : Store total of records for each section of data
         
@@ -511,44 +512,44 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                 // Wait for label to be present: Point 
                                 $e = $w->until(function ($session)
                                 {
-                                    return $session->element("xpath", "//*[@id='itemlist_top_tabs']/table/tbody/tr/td[2]/nobr[contains(text(),'Point')]");
+                                    return $session->element("css selector", "div.toolbar-cell-create");
                                 });
 
-                                $this->assertElementPresent("css selector", "div.toolbar-cell-create");
                                 $this->_session->element("css selector", "div.toolbar-cell-create")->click();
 
                                 // Wait for label to be present: Capture the details of Point
                                 $e = $w->until(function ($session)
                                 {
-                                    return $session->element("xpath", "//*[@id='formheading']/table/tbody/tr/td[contains(text(),'Capture the details of Point')");
+                                    return $session->element("xpath", "//*[@id='formheading']/table/tbody/tr/td[contains(text(),'Capture the details of Point')]");
                                 });
                                 
                                 // : Check elements are present on the page that are expected to be present for adding a new point
-                                $this->assertElementPresent("xpath", "udo_Point[0][name]");
-                                $this->assertElementPresent("xpath", "udo_Point[0][parent_id]");
-                                $this->assertElementPresent("xpath", "checkbox_udo_Point_0_active");
-                                $this->assertElementPresent("xpath", "udo_Point[0][pointType_id][1]");
-                                $this->assertElementPresent("xpath", "udo_Point[0][pointType_id][2]");
+                                $this->assertElementPresent("xpath", "//*[@name='udo_Point[0][name]']");
+                                $this->assertElementPresent("xpath", "//*[@name='udo_Point[0][parent_id]']");
+                                $this->assertElementPresent("xpath", "//*[@name='checkbox_udo_Point_0_active']");
+                                $this->assertElementPresent("xpath", "//*[@name='udo_Point[0][pointType_id][1]']");
+                                $this->assertElementPresent("xpath", "//*[@name='udo_Point[0][pointType_id][2]']");
                                 $this->assertElementPresent("css selector", "input[name=save][type=submit]");
                                 // : End
 
                                 // : Complete fields to create the new point
-                                $this->_session->element("xpath", "udo_Point[0][name]")->sendKeys($_locValue['pointName']);
-                                $this->_session->element("xpath", "udo_Point[0][parent_id]")->sendKeys($_locValue['parentTree']);;
-                                $this->_session->element("xpath", "checkbox_udo_Point_0_active")->click();
-                                $this->_session->element("xpath", "udo_Point[0][pointType_id][1]")->click();
-                                $this->_session->element("xpath", "udo_Point[0][pointType_id][2]")->click();
+                                $this->_session->element("xpath", "//*[@name='udo_Point[0][name]']")->sendKeys($_locValue['pointName']);
+                                $this->_session->element("xpath", "//*[@name='udo_Point[0][parent_id]']")->sendKeys($_locValue['parentTree']);;
+                                $this->_session->element("xpath", "//*[@name='checkbox_udo_Point_0_active']")->click();
+                                $this->_session->element("xpath", "//*[@name='udo_Point[0][pointType_id][1]']")->click();
+                                $this->_session->element("xpath", "//*[@name='udo_Point[0][pointType_id][2]']")->click();
                                 $this->_session->element("css selector", "input[name=save][type=submit]")->click();
                                 // : End
                                 
                                 // Wait for label to be present: Point 
                                 $e = $w->until(function ($session)
                                 {
-                                    return $session->element("xpath", "//*[@id='itemlist_top_tabs']/table/tbody/tr/td[2]/nobr[contains(text(),'Point')]");
+                                    return $session->element("css selector", "div.toolbar-cell-create");
                                 });
 
-                            catch (Exception $e) {
+                            } catch (Exception $e) {
                                 $_errmsg = preg_replace("/%s/", $_locValue['pointName'], automationLibrary::ERR_FAILED_CREATING_POINT);
+                                die($_errmsg);
                                 throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
                             }
                                 
