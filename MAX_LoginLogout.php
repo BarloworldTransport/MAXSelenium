@@ -55,7 +55,7 @@ class maxLoginLogout
     // : End - Constants
     
     // : Variables
-    public $_tmp;
+    protected $_tmp;
     protected $_maxurl;
     protected $_autoLibObj;
     protected $_errors = array();
@@ -180,24 +180,30 @@ class maxLoginLogout
                         $session = $this->_autoLibObj->_sessionObj;
                         $this->_autoLibObj->_sessionObj->open($this->_maxurl);
                         
+                        
+                        print("step0" . PHP_EOL);
+                        
                         $e = $this->_autoLibObj->_wObj->until(function ($session)
                         {
-                            return $session->element("xpath", "//*[text()='Sign In']");
-                        });
+                            return $session->element("xpath", "//h1[contains(text(),'Sign In')]");
+                        });                        
+
+                        print("step1" . PHP_EOL);
 
                         // : Assert element present
-                        $this->_autoLibObj->assertElementPresent("xpath", "//*[@id='identification']");
-                        $this->_autoLibObj->assertElementPresent("xpath", "//*[@id='password']");
-                        $this->_autoLibObj->assertElementPresent("xpath", "//*[@id='btn_Sign_In']");
+                        $this->_autoLibObj->assertElementPresent("xpath", "//input[@id='identification' and @ng-controller='TextBoxCtrl']");
+                        $this->_autoLibObj->assertElementPresent("xpath", "//input[@id='password' and @ng-controller='TextBoxCtrl']");
+                        $this->_autoLibObj->assertElementPresent("xpath", "//button[@id='btn_Sign_In' and @type='submit']");
                         // : End
+                        print("step2" . PHP_EOL);
                         
                         // Send keys to input text box
-                        $e = $this->_autoLibObj->_sessionObj->element("xpath", "//*[@id='identification']")->sendKeys($_uname);
+                        $e = $this->_autoLibObj->_sessionObj->element("xpath", "//input[@id='identification' and @ng-controller='TextBoxCtrl']")->sendKeys($_uname);
                         // Send keys to input text box
-                        $e = $this->_autoLibObj->_sessionObj->element("xpath", "//*[@id='password']")->sendKeys($_pwd);
+                        $e = $this->_autoLibObj->_sessionObj->element("xpath", "//input[@id='password' and @ng-controller='TextBoxCtrl']")->sendKeys($_pwd);
                         
                         // Click login button
-                        $this->_autoLibObj->_sessionObj->element("xpath", "//*[@id='btn_Sign_In']")->click();
+                        $this->_autoLibObj->_sessionObj->element("xpath", "//button[@id='btn_Sign_In' and @type='submit']")->click();
                         
                         $e = $this->_autoLibObj->_wObj->until(function ($session)
                         {
@@ -209,6 +215,7 @@ class maxLoginLogout
             }
         } catch (Exception $e) {
             // Store error message into static array
+            print($e->getMessage());
             $this->_errors[] = $e->getMessage();
             return FALSE;
         }

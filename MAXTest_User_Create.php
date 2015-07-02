@@ -11,6 +11,7 @@ require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
 require_once 'automationLibrary.php';
 require_once 'MAX_LoginLogout.php';
 require_once "MAX_API_Get.php";
+require_once "MAX_Users.php";
 
 // : End
 
@@ -118,15 +119,6 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 		unset ( $this );
 	}
 	// : End
-	public function _runArrayRecur($_xmlObject, $_instCnt = 0) {
-		$_array = array();
-		foreach ( (array) $_xmlObject as $_index => $_node) {
-			if ($_instCnt < 100) {
-				$_array[$_index] = is_object($_node) ? $this->_runArrayRecur($_node, $_instCnt++) : $_node;
-			} 
-		}
-		return $_array;
-	}
 	
 	public function setUp() {
 		// This would be the url of the host running the server-standalone.jar
@@ -156,11 +148,18 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			
 			$_autoLib = new automationLibrary($this->_session, $this, $w, $this->_mode, $this->_version);
 			$_maxLoginLogout = new maxLoginLogout($_autoLib, $this->_maxurl);
+			$_maxUserLib = new maxUsers($_autoLib, $this->_maxurl, "dummy", "user002", "dummyuser002@max.co.za", "fleet controller", "Barloworld Transport", "BU - Dedicated");
 			
-			// Log into MAX
-			if (!$_maxLoginLogout->maxLogin($this->_username, $this->_password, $this->_welcome)) {
+			// : Log into MAX
+			if (!$_maxLoginLogout->maxLogin($this->_username, $this->_password, $this->_welcome, $this->_version)) {
 			    throw new Exception($_maxLoginLogout->getLastError());
 			}
+			// : End
+			
+			if (!$_maxUserLib->maxCreateNewUser($this->_version)) {
+			    throw new Exception($_maxUserLib->getLastError());
+			}			
+			
 			
 			// : MAX api_request/get? - Check if user exists
 			/*$_maxapiget = new MAX_API_Get($this->_mode);
@@ -170,8 +169,13 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			$_data = $_maxapiget->getData();*/
 			// : End
 			
-			// Log out of MAX
-			//maxLoginLogout::maxLogout($this->_session, $w, $this, $this->_version);
+			// : Log out of MAX
+			if (!$_maxLoginLogout->maxLogout($this->_session, $w, $this, $this->_version)) {
+			    throw new Exception($_maxLoginLogout->getLastError());
+			}
+			// : End
+			
+			// Close session
 			$this->_session->close();
 			
 		} catch ( Exception $e ) {
