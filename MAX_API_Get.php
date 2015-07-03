@@ -32,9 +32,13 @@ class MAX_API_Get
     
     // : Constants
     const INI_FILE = "api_data.ini";
+
     const LIVE_URL = "https://login.max.bwtsgroup.com";
+
     const TEST_URL = "http://max.mobilize.biz";
+
     const API_URL = "/api_request/Data/get?objectRegistry=";
+
     const DS = DIRECTORY_SEPARATOR;
     // : End - Constants
     
@@ -42,14 +46,23 @@ class MAX_API_Get
     
     // Define array containing all valid objectRegistry entries that can be used to get data using the MAX Get API
     protected $_data = array();
+
     protected $_sqlQueryString;
+
     protected $_xmlResponseString;
+
     protected $_htmlDataString;
+
     protected $_apiObject;
+
     protected $_apiFilter;
+
     protected $_maxurl;
+
     protected $_apiuserpwd;
+
     protected $_errors;
+
     protected $_maxObjects = array(
         "ObjectRegistry",
         "Condition",
@@ -298,6 +311,7 @@ class MAX_API_Get
     public function getData()
     {
         if ($this->_data) {
+            
             if (is_array($this->_data)) {
                 return $this->_data;
             } else {
@@ -307,7 +321,7 @@ class MAX_API_Get
             return FALSE;
         }
     }
-    
+
     /**
      * MAX_API_Get::getLastStatus()
      * Get status reponse given in XML file returned in result
@@ -321,13 +335,13 @@ class MAX_API_Get
      * MAX_API_Get::getObjects()
      * Get list of available objectRegistry objects that can be used to get data
      */
-    public function getObjects() {
-        try {
-            $_result = implode("," . PHP_EOL ,$this->_maxObjects);
-        } catch (Exception $e) {
+    public function getObjects()
+    {
+        if ($this->_maxObjects) {
+            return $this->_maxObjects;
+        } else {
             return FALSE;
         }
-        return $_result;
     }
     
     // : Setters
@@ -335,7 +349,8 @@ class MAX_API_Get
      * MAX_API_Get::clearResults()
      * Reset data and query
      */
-    public function clearResults() {
+    public function clearResults()
+    {
         $this->_data = array();
         $this->_sqlQueryString = "";
         $this->_xmlResponseString = "";
@@ -343,20 +358,22 @@ class MAX_API_Get
         $this->_apiObject = "";
         $this->_apiFilter = "";
     }
-    
+
     /**
      * MAX_API_Get::setFilter()
      * Set filter string for the API query
      */
-    public function setFilter($_filterStr) {
+    public function setFilter($_filterStr)
+    {
         $this->_apiFilter = $_filterStr;
     }
-    
+
     /**
      * MAX_API_Get::setObject()
      * Set the objectRegistry object for the API query
      */
-    public function setObject($_objectStr) {
+    public function setObject($_objectStr)
+    {
         $_findMatch = preg_grep("/^$_objectStr$/i", $this->_maxObjects);
         if ($_findMatch) {
             $this->_apiObject = $_objectStr;
@@ -370,13 +387,13 @@ class MAX_API_Get
      * MAX_API_Get::runApiQuery()
      * Run the API query
      */
-    public function runApiQuery() {
+    public function runApiQuery()
+    {
         if ($this->_apiObject && $this->_apiFilter) {
             
             $_result = $this->splitResultIntoDataArray($this->maxApiGetData());
-
+            
             if ($_result) {
-                $this->_sqlQueryString = $_result['sql'];
                 $this->_xmlResponseString = $_result['xml'];
                 $this->_htmlDataString = $_result['html'];
                 
@@ -389,6 +406,19 @@ class MAX_API_Get
         }
     }
     
+    /**
+     * MAX_API_Get::getApiDetailURLString()
+     * Build and return the URL using the Object Handle value for MAX V3 Detail API
+     */
+    public function getApiDetailURLString($_id) {
+        if ($this->_apiObject && $_id) {
+            $_url = sprintf("/#/detail/%s/%d". $this->_apiObject, $_id);
+            if ($_url) {
+                return $_url;
+            }
+        }
+    }
+    
     // : End - Public Functions
     
     // : Magic
@@ -396,35 +426,32 @@ class MAX_API_Get
     /**
      * MAX_API_Get::__construct()
      * Class constructor
-     *         
      */
     public function __construct($_mode)
     {
         try {
             
-            $ini = dirname ( realpath ( __FILE__ ) ) . self::DS . "ini" . self::DS . self::INI_FILE;
+            $ini = dirname(realpath(__FILE__)) . self::DS . "ini" . self::DS . self::INI_FILE;
             
-            if (is_file ( $ini ) === FALSE) {
+            if (is_file($ini) === FALSE) {
                 echo "No " . self::INI_FILE . " file found. Please create it and populate it with the following data: username=x@y.com, password=`your password`, your name shown on MAX the welcome page welcome=`Joe Soap` and mode=`test` or `live`" . PHP_EOL;
                 return FALSE;
             }
-            $data = parse_ini_file ( $ini );
-            if ((array_key_exists ( "apiuserpwd", $data ) && $data ["apiuserpwd"])) {
-                $this->_apiuserpwd = $data ["apiuserpwd"];
-
+            $data = parse_ini_file($ini);
+            if ((array_key_exists("apiuserpwd", $data) && $data["apiuserpwd"])) {
+                $this->_apiuserpwd = $data["apiuserpwd"];
             } else {
                 echo "The correct data is not present in " . self::INI_FILE . ". Please confirm. Field is apiuserpwd" . PHP_EOL;
                 return FALSE;
             }
             
             switch ($_mode) {
-                case "live" :
+                case "live":
                     $this->_maxurl = self::LIVE_URL;
                     break;
-                default :
+                default:
                     $this->_maxurl = self::TEST_URL;
             }
-            
         } catch (Exception $e) {
             return FALSE;
         }
@@ -442,23 +469,24 @@ class MAX_API_Get
     public function maxApiGetData()
     {
         $_result = array();
-
+        
         if ($this->_apiFilter && $this->_apiObject && $this->_maxurl && $this->_apiuserpwd) {
-        try {
-            // Build url string to use to run the API request
-            $_url = ($this->_maxurl . self::API_URL . urlencode($this->_apiObject) . "&filter=" . urlencode($this->_apiFilter));
-            $ch = curl_init();
-            
-            curl_setopt($ch, CURLOPT_URL, $_url);
-            curl_setopt($ch, CURLOPT_USERPWD, $this->_apiuserpwd);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            
-            $output = curl_exec($ch);
-            
-            curl_close($ch);
-        } catch (Exception $e) {
-            return FALSE;
-        }
+            try {
+                // Build url string to use to run the API request
+                $_url = ($this->_maxurl . self::API_URL . urlencode($this->_apiObject) . "&filter=" . urlencode($this->_apiFilter));
+                $ch = curl_init();
+                
+                // curl_setopt($ch, CURLOPT_PROXY, 'cwright:gew?e5An@192.168.1.2:8080');
+                curl_setopt($ch, CURLOPT_URL, $_url);
+                curl_setopt($ch, CURLOPT_USERPWD, $this->_apiuserpwd);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                
+                $output = curl_exec($ch);
+                
+                curl_close($ch);
+            } catch (Exception $e) {
+                return FALSE;
+            }
             return $output;
         } else {
             return FALSE;
@@ -471,15 +499,10 @@ class MAX_API_Get
      */
     private function splitResultIntoDataArray($_htmlResponse)
     {
-        
         // : Prepare variables
         $_httpUrlData = explode("\n", $_htmlResponse);
         $xmlStartLine = (int) 0;
         $xmlEndLine = (int) 0;
-        $sqlQueryStart = (int) 0;
-        $sqlSelect = (int) 0;
-        $sqlWhere = (int) 0;
-        $sqlLimit = (int) 0;
         $xmlDef = (int) 0;
         $_xmlData = (array) array();
         $_htmlData = (array) array();
@@ -489,40 +512,23 @@ class MAX_API_Get
         
         // : Detect line numbers where each section of data is situated
         foreach ($_httpUrlData as $_key => $_value) {
+            
             if (strpos($_value, '<response>') !== FALSE) {
                 $xmlStartLine = $_key;
             } else 
                 if (strpos($_value, '</response>') !== FALSE) {
                     $xmlEndLine = $_key;
                 } else 
-                    if (strpos($_value, 'SELECT') !== FALSE) {
-                        $sqlSelect = $_key;
-                    } else 
-                        if (strpos($_value, 'WHERE') !== FALSE) {
-                            $sqlWhere = $_key;
-                        } else 
-                            if (strpos($_value, 'LIMIT') !== FALSE) {
-                                $sqlLimit = $_key;
-                            } else 
-                                if (strpos($_value, '<?xml version="1.0" encoding="UTF-8"?>') !== FALSE) {
-                                    $xmlDef = $_key;
-                                }
-        }
-        // : End
-        
-        // : Construct the SQL Query into an array
-        if ($sqlLimit === 0 && $sqlWhere && $sqlLimit) {
-            
-            for ($x = $sqlLimit; $x <= $sqlLimit; $x ++) {
-                $_sqlData[] = $_httpUrlData[$x];
-            }
+                    if (strpos($_value, '<?xml version="1.0" encoding="UTF-8"?>') !== FALSE) {
+                        $xmlDef = $_key;
+                    }
         }
         // : End
         
         // : Construct the HTML Data into an array
-        if ($xmlDef && $sqlWhere && $sqlLimit) {
+        if ($xmlDef) {
             
-            $_startX = $sqlLimit + 2;
+            $_startX = 0;
             $_endX = $xmlDef - 2;
             for ($x = $_startX; $x <= $_endX; $x ++) {
                 
@@ -539,7 +545,6 @@ class MAX_API_Get
         }
         // : End
         
-        $_result["sql"] = $_sqlData;
         $_result["html"] = $_htmlData;
         $_result["xml"] = $_xmlData;
         
@@ -564,7 +569,7 @@ class MAX_API_Get
             
             // Split is working properly
             $_split = preg_split("/:\s/", $_html[$_index]);
-            
+
             if (count($_split) > 1) {
                 
                 // Clean up spaces in the value
@@ -600,4 +605,3 @@ class MAX_API_Get
     }
     // : End - Private Functions
 }
-

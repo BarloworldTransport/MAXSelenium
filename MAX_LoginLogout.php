@@ -180,22 +180,21 @@ class maxLoginLogout
                         $session = $this->_autoLibObj->_sessionObj;
                         $this->_autoLibObj->_sessionObj->open($this->_maxurl);
                         
-                        
-                        print("step0" . PHP_EOL);
-                        
                         $e = $this->_autoLibObj->_wObj->until(function ($session)
                         {
                             return $session->element("xpath", "//h1[contains(text(),'Sign In')]");
-                        });                        
+                        });     
 
-                        print("step1" . PHP_EOL);
+                        $e = $this->_autoLibObj->_wObj->until(function ($session)
+                        {
+                            return $session->element("xpath", "//input[@id='identification' and @ng-controller='TextBoxCtrl']");
+                        });
 
                         // : Assert element present
                         $this->_autoLibObj->assertElementPresent("xpath", "//input[@id='identification' and @ng-controller='TextBoxCtrl']");
                         $this->_autoLibObj->assertElementPresent("xpath", "//input[@id='password' and @ng-controller='TextBoxCtrl']");
                         $this->_autoLibObj->assertElementPresent("xpath", "//button[@id='btn_Sign_In' and @type='submit']");
                         // : End
-                        print("step2" . PHP_EOL);
                         
                         // Send keys to input text box
                         $e = $this->_autoLibObj->_sessionObj->element("xpath", "//input[@id='identification' and @ng-controller='TextBoxCtrl']")->sendKeys($_uname);

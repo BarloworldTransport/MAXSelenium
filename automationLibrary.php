@@ -5,6 +5,7 @@ include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
 include_once dirname(__FILE__) . '/ReadExcelFile.php';
 include_once 'PHPUnit/Extensions/PHPExcel/Classes/PHPExcel.php';
+require_once 'FileParser.php';
 
 /**
  * automationLibrary.php
@@ -81,6 +82,8 @@ class automationLibrary
     const OBJREG_CUSTOMER = "udo_Customer";
     
     // Constants - Error Messages
+    const ERR_FILE_NOT_FOUND = "ERROR: File not found. Please check the path and that the file exists and try again: %s";
+
     const ERR_COULD_NOT_FIND_ELEMENT = "ERROR: Could not find the expected element on page: %s";
 
     const ERR_NO_CUSTOMER_DATA = "FATAL: Could not find customer data when attempting to access the imported data from array.";
@@ -113,13 +116,13 @@ class automationLibrary
     const URL_LIVE = "https://login.max.bwtsgroup.com";
 
     const URL_TEST = "http://max.mobilize.biz";
-    
+
     const URL_LIVE_V3 = "https://max.bwtrans.co.za";
-    
+
     const URL_TEST_V3 = "http://max3.mobilize.biz";
 
     const URL_API_GET = "/api_request/Data/get?objectRegistry=";
-    
+
     const URL_LOCATION_ROUTE = "/Country_Tab/routes?&tab_id=113";
     
     // Constants - Miscellaneous
@@ -128,10 +131,18 @@ class automationLibrary
     
     // : Properties
     public $_sessionObj;
+
     public $_phpunitObj;
+
     public $_wObj;
+
+    protected $_returnedData = array();
+
     protected $_mode;
+
     protected $_version;
+
+    protected $_errors = array();
     // : End
     
     // : Magic Methods
@@ -140,33 +151,79 @@ class automationLibrary
      * automationLibrary::__construct(&$_session, &$_phpunit_fw_obj, $_w, $_mode, $_version)
      * Class constructor
      */
-    public function __construct(&$_session, &$_phpunit_fw_obj, &$_w, $_mode, $_version) {
-
+    public function __construct(&$_session, &$_phpunit_fw_obj, &$_w, $_mode, $_version)
+    {
         if (is_object($_session) && is_object($_phpunit_fw_obj) && $_w && $_mode && $_version) {
             // : Save referenced session and phpunit objects to affect the referenced active session been passed
             $this->_sessionObj = $_session;
             $this->_phpunitObj = $_phpunit_fw_obj;
             $this->_wObj = $_w;
             // : End
-    
+            
             // : Save some local object instance variables
             $this->_mode = $_mode;
             $this->_version = $_version;
             // : End
         }
     }
-    
+
     /**
      * automationLibrary::__destruct()
      * Class destructor
      */
-    public function __destruct() {
+    public function __destruct()
+    {
         unset($this);
+    }
+    // : End
+    
+    // : Getters
+    /**
+     * automationLibrary::getMode()
+     * Get mode
+     */
+    public function getMode()
+    {
+        if ($this->_mode) {
+            return $this->_mode;
+        } else {
+            return FALSE;
+        }
     }
     // : End
     
     // : Public Methods
     
+    /**
+     * automationLibrary::getLastError()
+     * Get last error in object _errors array property
+     */
+    public function getLastError()
+    {
+        if ($this->_errors) {
+            $_result = "";
+            end($this->_errors);
+            $_result = $this->_errors[key($this->_errors)];
+            reset($this->_errors);
+            return $_result;
+        } else {
+            return FALSE;
+        }
+    }
+
+    /**
+     * automationLibrary::getReturnedData()
+     * Get last error in object _errors array property
+     */
+    public function getReturnedData()
+    {
+        if ($this->_returnedData) {
+            return $this->_returnedData;
+        } else {
+            return FALSE;
+        }
+    }
+
     /**
      * automationLibrary::CONSOLE_OUTPUT($_heading, $_description, $_type, $_query, $_data)
      * Output debug information onto screen
@@ -194,34 +251,38 @@ class automationLibrary
                 }
         }
     }
-    
-    public static function getMAXURL($_mode, $_version) {
-        $_result = (string)"";
+
+    public static function getMAXURL($_mode, $_version)
+    {
+        $_result = (string) "";
         
         if ($_mode == "live" && $_version == 2) {
             $_result = self::URL_LIVE;
-        } else if ($_mode == "test" && $_version == 2) {
-            $_result = self::URL_TEST;
-        } else if ($_mode == "live" && $_version == 3) {
-            $_result = self::URL_LIVE_V3;
-        } else if ($_mode == "test" && $_version == 3) {
-            $_result = self::URL_TEST_V3;
-        } else {
-            $_result = FALSE;
-        }
+        } else 
+            if ($_mode == "test" && $_version == 2) {
+                $_result = self::URL_TEST;
+            } else 
+                if ($_mode == "live" && $_version == 3) {
+                    $_result = self::URL_LIVE_V3;
+                } else 
+                    if ($_mode == "test" && $_version == 3) {
+                        $_result = self::URL_TEST_V3;
+                    } else {
+                        $_result = FALSE;
+                    }
         return $_result;
     }
-    
+
     /**
      * automationLibrary::addErrorRecord(&$_errArr, $_scrDir, $_errmsg, $_record, $_process)
      * Add error record to error array
      *
-     * @param array: $_erArrr
-     * @param object: $this->_sessionObj
-     * @param string: $_scrDir
-     * @param string: $_errmsg
-     * @param string: $_record
-     * @param string: $_process
+     * @param array: $_erArrr            
+     * @param object: $this->_sessionObj            
+     * @param string: $_scrDir            
+     * @param string: $_errmsg            
+     * @param string: $_record            
+     * @param string: $_process            
      */
     public function addErrorRecord(&$_errArr, $_scrDir, $_errmsg, $_record, $_process)
     {
@@ -291,12 +352,12 @@ class automationLibrary
         }
         return TRUE;
     }
-    
+
     /**
      * automationLibrary::takeScreenshot()
      * This is a function description for a selenium test function
      *
-     * @param object: $_session
+     * @param object: $_session            
      */
     public function takeScreenshot($_scrDir)
     {
@@ -304,7 +365,7 @@ class automationLibrary
         $_img = $this->_sessionObj->screenshot();
         $_data = base64_decode($_img);
         $_pathname_extra = (string) "";
-    
+        
         if ($_params && is_array($_params)) {
             if (array_key_exists(2, $_params)) {
                 $_pathname_extra = $_params[2];
@@ -313,15 +374,15 @@ class automationLibrary
         // Suport for variable length arguments (only 1 extra argument supported
         if ($_pathname_extra) {
             $_file = $_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_${_pathname_extra}_WebDriver.png";
-    } else {
-        $_file = $_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_WebDriver.png";
-    }
-    $_success = file_put_contents($_file, $_data);
-    if ($_success) {
-        return $_file;
-    } else {
-        return FALSE;
-    }
+        } else {
+            $_file = $_scrDir . DIRECTORY_SEPARATOR . date("Y-m-d_His") . "_WebDriver.png";
+        }
+        $_success = file_put_contents($_file, $_data);
+        if ($_success) {
+            return $_file;
+        } else {
+            return FALSE;
+        }
     }
 
     /**
@@ -439,6 +500,47 @@ class automationLibrary
             }
         } catch (Exception $e) {
             echo "Caught exception: ", $e->getMessage(), "\n";
+        }
+    }
+
+    /**
+     * automationLibrary::getDataFromCSVFile($_file)
+     *
+     * @param string: $_file            
+     *
+     */
+    public function getDataFromCSVFile($_file)
+    {
+        if (file_exists($_file)) {
+            
+            try {
+                
+                $_csvFile = new FileParser($_file);
+                $_csvData = $_csvFile->parseFile();
+                $_data = (array) array();
+                
+                if ($_csvData) {
+                    
+                    foreach ($_csvData as $key => $value) {
+                        
+                        if ($key !== 0) {
+                            
+                            foreach ($value as $childKey => $childValue) {
+                                
+                                $_data[$key][$_csvData[0][$childKey]] = str_ireplace("'", "", $childValue);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                $this->_errors[] = $e->getMessage();
+                return FALSE;
+            }
+            
+            $this->_returnedData = $_data;
+        } else {
+            $this->_errors[] = preg_replace("/%s/", $_file, self::ERR_FILE_NOT_FOUND);
+            RETURN FALSE;
         }
     }
     // : End
