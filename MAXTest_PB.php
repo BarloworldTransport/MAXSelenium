@@ -114,7 +114,7 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase
             return FALSE;
         }
         $data = parse_ini_file($ini);
-        if ((array_key_exists("version", $data) && $data["version"]) && (array_key_exists("apiuserpwd", $data) && $data["apiuserpwd"]) && (array_key_exists("datadir", $data) && $data["datadir"]) && (array_key_exists("screenshotdir", $data) && $data["screenshotdir"]) && (array_key_exists("errordir", $data) && $data["errordir"]) && (array_key_exists("username", $data) && $data["username"]) && (array_key_exists("password", $data) && $data["password"]) && (array_key_exists("welcome", $data) && $data["welcome"]) && (array_key_exists("mode", $data) && $data["mode"]) && (array_key_exists("wdport", $data) && $data["wdport"]) && (array_key_exists("proxy", $data) && $data["proxy"]) && (array_key_exists("browser", $data) && $data["browser"])) {
+        if ((array_key_exists("version", $data) && $data["version"]) && (array_key_exists("apiuserpwd", $data) && $data["apiuserpwd"]) && (array_key_exists("datadir", $data) && $data["datadir"]) && (array_key_exists("screenshotdir", $data) && $data["screenshotdir"]) && (array_key_exists("errordir", $data) && $data["errordir"]) && (array_key_exists("username", $data) && $data["username"]) && (array_key_exists("password", $data) && $data["password"]) && (array_key_exists("welcome", $data) && $data["welcome"]) && (array_key_exists("mode", $data) && $data["mode"]) && (array_key_exists("wdport", $data) && $data["wdport"]) && (array_key_exists("browser", $data) && $data["browser"])) {
             $this->_username = $data["username"];
             $this->_password = $data["password"];
             $this->_welcome = $data["welcome"];
@@ -171,8 +171,6 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase
         // Main Try - Catch
         try {
             // Initialize session
-            $_maxgroups = array();
-            $_groupids = array();
             $session = $this->_session;
             $this->_session->setPageLoadTimeout(60);
             $w = new PHPWebDriver_WebDriverWait($session, 30);
@@ -202,67 +200,44 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase
                         throw new Exception($_maxLoginLogout->getLastError());
                     }
                     // : End
-                    
-                    // : Loop each user and process entry
-                    foreach ($this->_data as $_key => $_value) {
-                        
-                        // Sub Try - Catch (2)
-                        try {
-                            
-                            // : MAX api_request/get? - Check if user exists
-                            $_maxgroups = explode(',', $_value['max_groups']);
-                            
-                            if ($_maxgroups) {
-                                
-                                $_maxapiget = new MAX_API_Get($this->_mode);
-                                $_maxapiget->setObject("Group");
-                                
-                                foreach ($_maxgroups as $_group_value) {
-                                    
-                                    if ($_group_value && is_string($_group_value)) {
-                                        
-                                        $_maxapiget->setFilter("name like '" . trim($_group_value) . "'");
-                                        $_maxapiget->runApiQuery();
-                                        $_tmpData = $_maxapiget->getData();
-                                        if ($_tmpData && array_key_exists('ID', $_tmpData)) {
-                                            $_groupids[] = $_tmpData["ID"];
-                                        }
-                                    }
-                                }
-                            } else {
-                                throw new Exception(self::ERROR_NO_GROUPS);
-                            }
-                            // : End
-                            
-                            // : Create instance of class to create user
-                            $_maxUserLib = new maxUsers($_autoLib, $this->_maxurl, $_value['first_name'], $_value['last_name'], $_value['email_address'], $_value['job_title'], $_value['company_name'], $_groupids);
 
-                            // : Run process to create the user on MAX V3
-                            if (! $_maxUserLib->maxCreateNewUser($this->_version)) {
-                                throw new Exception($_maxUserLib->getLastError());
-                            }
-                            // : End
-                            
-                            // : Run process to update contact details for the user
-                            if (! $_maxUserLib->maxUpdateContactDetails($this->_version)) {
-                                throw new Exception($_maxUserLib->getLastError());
-                            }
-                            // : End
-                            
-                        } catch (Exception $e) {
-                            // : Sub Catch (2)
-                            $_count = count($this->_errors);
-                            $this->_errors[$_count]['error'] = $e->getMessage();
-                            $this->_errors[$_count]['record'] = 'data -> value goes here that is been looped';
-                            // : End
-                        }
-                        
-                        // : Clear object to use for new record
-                        if (isset($_maxUserLib)) {
-                            unset($_maxUserLib);
-                        }
-                        // : End
-                    }
+                    $e = $w->until(function ($session)
+                    {
+                        return $session->element("xpath", "//a[@id='Planning' and @class='dropdown-toggle ng-binding ng-scope' and contains(text(),'Planning')]");
+                    });
+
+                    $_autoLib->assertElementPresent("xpath", "//a[@id='Planning' and @class='dropdown-toggle ng-binding ng-scope' and contains(text(),'Planning')]");
+                    $this->_session->element("xpath", "//a[@id='Planning' and @class='dropdown-toggle ng-binding ng-scope' and contains(text(),'Planning')]")->click();
+
+                    $e = $w->until(function ($session)
+                    {
+                        return $session->element("xpath", "//li[@class='dropdown ng-scope open']/div[@class='dropdown-menu']/div[@class='sub-menu ng-scope']/a[@id='Planning_Board']");
+                    });
+
+                    $_autoLib->assertElementPresent("xpath", "//a[@id='Planning_Board' and @class='ng-binding ng-scope']");
+                    $this->_session->element("xpath", "//a[@id='Planning_Board' and @class='ng-binding ng-scope']")->click();
+                    
+                    $e = $w->until(function ($session)
+                    {
+                        return $session->element("xpath", "//select[@ng-model='fleet' and @ng-change='getFleet()' and @class='ng-pristine ng-valid']");
+                    });
+
+                    /*$e = $w->until(function ($session)
+                    {
+                        return $session->element("xpath", "//select[@ng-model='fleet' and @ng-change='getFleet()' and @class='ng-pristine ng-valid']/option[text()='Wilmar Bulk Fleet']");
+                    });*/
+                    
+                    //$this->_session->element("xpath", "//select[@ng-model='fleet' and @ng-change='getFleet()' and @class='ng-pristine ng-valid']/option[text()='Wilmar Bulk Fleet']")->click();
+
+                    $e = $w->until(function ($session)
+                    {
+                        //return $session->element("xpath", "//*[contains(@id,'truck_id=842')]/div[@class='planningBoardDay']/a[@class='refuelling' and text()='F']");
+                        return $session->element("xpath", "//div[@class='planningBoardTruck ng-scope' and contains(@id,'id=842')]/div[@class='planningBoardDay']/a[@ng-click='showRefuel(truck)' and text()='F']");
+                    });
+                    
+                    //$_autoLib->assertElementPresent("xpath", "//*[contains(@id,'truck_id=615')]/div[@class='planningBoardDay']/a[@class='refuelling' and text()='F']");
+                    //$this->_session->element("xpath", "//*[contains(@id,'truck_id=615')]/div[@class='planningBoardDay']/a[@class='refuelling' and text()='F']")->click();
+                    $this->_session->element("xpath", "//div[@class='planningBoardTruck ng-scope' and contains(@id,'id=842')]/div[@class='planningBoardDay']/a[@ng-click='showRefuel(truck)' and text()='F']")->click();
                     
                     // : Log out of MAX
                     if (! $_maxLoginLogout->maxLogout($this->_session, $w, $this, $this->_version)) {
