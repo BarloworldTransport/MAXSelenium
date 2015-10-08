@@ -153,7 +153,7 @@ class ReadExcelFile
                                 $this->setData($_data);
                             }
                         } else {
-                            $this->setData($this->readExcelFileData($this->getFileName(), func_get_arg($i)));
+                            $this->setData($this->readExcelFileData($this->getFileName(), $sheet));
                         }
                         // Set the data to return as the data from the excel spreadsheet
                     } catch (Exception $e) {

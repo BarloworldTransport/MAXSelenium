@@ -63,7 +63,9 @@ class MAXLive_NCP_DateRangeValue_Update extends PHPUnit_Framework_TestCase {
 	protected $_modeLocations;
 	protected $_maxurl;
 	protected $_wdport;
-	protected $_xls;
+	protected $_xls1;
+	protected $_xls2;
+	protected $_debug;
 	protected $_browser;
 	protected $_ip;
 	protected $_proxyip;
@@ -88,7 +90,14 @@ class MAXLive_NCP_DateRangeValue_Update extends PHPUnit_Framework_TestCase {
 	
 	// : Public functions
 	// : Accessors
-	
+	 	
+	/**
+	 * MAXLive_NCP_DateRangeValue_Update::dd()
+	 * shortcut to die(var_dump()) for debugging
+	 */
+	public function dd($_variable) {
+		die(var_dump($_variable));
+	}
 	// : End
 	
 	// : Magic
@@ -103,7 +112,7 @@ class MAXLive_NCP_DateRangeValue_Update extends PHPUnit_Framework_TestCase {
 			return FALSE;
 		}
 		$data = parse_ini_file ( $ini );
-		if ((array_key_exists ( "xls", $data ) && $data ["xls"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "ip", $data ) && $data ["ip"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"])) {
+		if ((array_key_exists ( "debug", $data ) && $data ["debug"]) && (array_key_exists ( "xls1", $data ) && $data ["xls1"]) && (array_key_exists ( "xls2", $data ) && $data ["xls2"]) && (array_key_exists ( "errordir", $data ) && $data ["errordir"]) && (array_key_exists ( "screenshotdir", $data ) && $data ["screenshotdir"]) && (array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "ip", $data ) && $data ["ip"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"])) {
 			$this->_username = $data ["username"];
 			$this->_password = $data ["password"];
 			$this->_welcome = $data ["welcome"];
@@ -113,9 +122,11 @@ class MAXLive_NCP_DateRangeValue_Update extends PHPUnit_Framework_TestCase {
 			$this->_mode = $data ["mode"];
 			$this->_ip = $data ["ip"];
 			$this->_proxyip = $data ["proxy"];
-			$this->_xls = $data ["xls"];
+			$this->_xls1 = $data ["xls1"];
+			$this->_xls2 = $data ["xls2"];
 			$this->_wdport = $data ["wdport"];
 			$this->_browser = $data ["browser"];
+			$this->_debug = $data ["debug"];
 			switch ($this->_mode) {
 				case "live" :
 					$this->_maxurl = self::LIVE_URL;
@@ -154,17 +165,35 @@ class MAXLive_NCP_DateRangeValue_Update extends PHPUnit_Framework_TestCase {
 	}
 	
 	/**
-	 * MAXLive_NCP_DateRangeValue_Update::testCreateContracts()
-	 * Pull F and V Contract data and automate creation of F and V Contracts
+	 * MAXLive_NCP_DateRangeValue_Update::testNCPUpdateDateRangeValues()
+	 * Update daterangevalues for NCP rates. Used if zone rates are
+	 * created but wrong and need to be changed afterwards.
 	 */
-	public function testCreateContracts() {
+	public function testNCPUpdateDateRangeValues() {
 		
 		// : Pull data from correctly formatted xls spreadsheet
-		$_file = dirname ( __FILE__ ) . $this->_dataDir . self::DS . $this->_xls;
-		if (file_exists ( $_file )) {
-			$_xlsData = new ReadExcelFile ( $_file, "Sheet1" );
+		$_file1 = $this->_dataDir . self::DS . $this->_xls1;
+		$_file2 = $this->_dataDir . self::DS . $this->_xls2;
+		
+		if (file_exists ( $_file1 ) && file_exists($_file2)) {
+				
+			// : Spreadsheet containing daterangevalues to be updated
+	
+			$_xlsData = new ReadExcelFile ( $_file1, "Sheet1" );
 			$_data = $_xlsData->getData ();
+		
+			// : End
 			
+			// : Spreadsheet containing the value data to be updated for the daterangevalues
+		
+			$_ratesData = new ReadExcelFile ( $_file2, "Rates", "Script");
+
+			// Split rates and script config data into two seperate array variables
+			$_rates = $_ratesData->getData () ['Rates'];
+			$_scriptConfig = $_ratesData->getData() ['Script'];
+			
+			// : End
+
 			// Initiate Session
 			$session = $this->_session;
 			$this->_session->setPageLoadTimeout ( 60 );
@@ -238,6 +267,9 @@ class MAXLive_NCP_DateRangeValue_Update extends PHPUnit_Framework_TestCase {
 			
 			// : Update DateRangeValue for Rate
 			$_count = count ( $_data ["ID"] );
+			$_zone_key = FALSE;
+			$_rateValue = FALSE;	
+
 			for($x = 1; $x <= $_count; $x ++) {
 				
 				try {
@@ -247,34 +279,96 @@ class MAXLive_NCP_DateRangeValue_Update extends PHPUnit_Framework_TestCase {
 					// Run SQL Query to check that DateRangeValue exists
 					$myQuery = "SELECT ID FROM daterangevalue WHERE ID=" . $_data ["ID"] [$x] . ";";
 					$result = $this->queryDB ( $myQuery );
+
 					if (count ( $result ) != 0) {
-						$this->_session->open ( $this->_maxurl . self::DRV_URL . $_data ["ID"] [$x] );
+
+						// : Get the rate for the value
+						preg_match("/(.*)kms/", $_data ["locationTo"] [$x], $_zone);
+
+						if (is_array($_zone) && $_zone)
+						{
+							$_zone = $_zone[1];
+						} else
+						{
+							$_zone = FALSE;
+						}
+
+						preg_match("/.*Zone\s(.*$)/", $_data ["locationTo"] [$x], $_product);
 						
-						// Wait for element = .toolbar-cell-update
-						$e = $w->until ( function ($session) {
-							return $session->element ( "css selector", ".toolbar-cell-update" );
-						} );
-						// Click element - .toolbar-cell-update
-						$this->_session->element ( "css selector", ".toolbar-cell-update" )->click ();
+						if (is_array($_product) && $_product)
+						{
+							$_product = $_product[1];
+						} else
+						{
+							$_product = FALSE;
+						}
+						if ($this->_debug === "true") {
+							print("locationTo: " . $_data ["locationTo"] [$x] . PHP_EOL);
+							print("Zone: " . $_zone . PHP_EOL);
+							print("Product: " . $_product . PHP_EOL);
+						}
+
+						if ($_product && $_zone)
+						{
+							$_result = preg_grep("/^$_zone$/", $_rates ['Km Interval'] );
+							
+							if ($_result)
+							{
+								reset($_result);
+								$_zone_key = key($_result);
+							} else
+							{
+								$_zone_key = FALSE;
+							}
+							
+							if ($_zone_key != FALSE && $_zone_key != 0) {
+								$_rateValue = $_rates[$_product][$_zone_key];	
+							} else
+							{
+								$_rateValue = 0;
+							}
+
+						}
+
+
+						// : End
+						if ($this->_debug === "true") {
+							print($_rateValue . PHP_EOL);
+							print($_data["ID"][$x] . PHP_EOL);
+						} else
+						{
+							$this->_session->open ( $this->_maxurl . self::DRV_URL . $_data ["ID"] [$x] );
 						
-						// Wait for element for Page Heading
-						$e = $w->until ( function ($session) {
-							return $session->element ( "xpath", "//*[contains(text(),'Update Date Range Values')]" );
-						} );
+							// Wait for element = .toolbar-cell-update
+							$e = $w->until ( function ($session) {
+								return $session->element ( "css selector", ".toolbar-cell-update" );
+							} );
+							// Click element - .toolbar-cell-update
+							$this->_session->element ( "css selector", ".toolbar-cell-update" )->click ();
 						
-						$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-4_0_0_endDate-4']" );
-						$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" );
-						$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
+							// Wait for element for Page Heading
+							$e = $w->until ( function ($session) {
+								return $session->element ( "xpath", "//*[contains(text(),'Update Date Range Values')]" );
+							} );
 						
-						$this->_session->element ( "xpath", "//*[@id='DateRangeValue-4_0_0_endDate-4']" )->clear ();
-						$this->_session->element ( "xpath", "//*[@id='DateRangeValue-4_0_0_endDate-4']" )->sendKeys ( $_data ["endDate"] [$x] );
-						$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+							$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-4_0_0_endDate-4']" );
+							$this->assertElementPresent ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" );
+							$this->assertElementPresent ( "css selector", "input[type=submit][name=save]" );
 						
-						// Wait for element = .toolbar-cell-update
-						$e = $w->until ( function ($session) {
-							return $session->element ( "css selector", ".toolbar-cell-update" );
-						} );
+							$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->clear ();
+							$this->_session->element ( "xpath", "//*[@id='DateRangeValue-2_0_0_beginDate-2']" )->sendKeys ( strval($_scriptConfig ["StartDate"][1]) );
+							$this->_session->element ( "xpath", "//*[@id='DateRangeValue-4_0_0_endDate-4']" )->clear ();
+							$this->_session->element ( "xpath", "//*[@id='DateRangeValue-4_0_0_endDate-4']" )->sendKeys ( $_scriptConfig ["EndDate"][1] );
+							$this->_session->element ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" )->clear ();
+							$this->_session->element ( "xpath", "//*[@id='DateRangeValue-20_0_0_value-20']" )->sendKeys ( strval( $_rateValue ) );
+							$this->_session->element ( "css selector", "input[type=submit][name=save]" )->click ();
+						
+							// Wait for element = .toolbar-cell-update
+							$e = $w->until ( function ($session) {
+								return $session->element ( "css selector", ".toolbar-cell-update" );
+							} );
+						}
 					} else {
 						throw new Exception ("Error: Rate date range value with ID: " . $_data ["ID"] [$x] . " does not exist.");
 					}
@@ -313,7 +407,7 @@ class MAXLive_NCP_DateRangeValue_Update extends PHPUnit_Framework_TestCase {
 			}
 			// : End
 		} else {
-			print ("Error: The excel spreadsheet, '" . $this->_xls . "', failed to load." . PHP_EOL) ;
+			print ("Error: The excel spreadsheet, '" . $this->_xls1 . "', failed to load." . PHP_EOL) ;
 		}
 	}
 	
@@ -437,15 +531,15 @@ class MAXLive_NCP_DateRangeValue_Update extends PHPUnit_Framework_TestCase {
 	 * @param object: $_session        	
 	 */
 	private function takeScreenshot() {
-		$_img = $this->_session->screenshot ();
+		/*$_img = $this->_session->screenshot ();
 		$_data = base64_decode ( $_img );
-		$_file = dirname ( __FILE__ ) . $this->_scrDir . DIRECTORY_SEPARATOR . date ( "Y-m-d_His" ) . "_WebDriver.png";
+		$_file = $this->_scrDir . DIRECTORY_SEPARATOR . date ( "Y-m-d_His" ) . "_WebDriver.png";
 		$_success = file_put_contents ( $_file, $_data );
 		if ($_success) {
 			return $_file;
 		} else {
 			return FALSE;
-		}
+		}*/
 	}
 	
 	/**
@@ -517,6 +611,6 @@ class MAXLive_NCP_DateRangeValue_Update extends PHPUnit_Framework_TestCase {
 			return FALSE;
 		}
 	}
-	
+
 	// : End
 }

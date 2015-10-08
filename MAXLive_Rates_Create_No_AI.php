@@ -311,8 +311,9 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
         // : Pull spreadsheet data and store into multi dimensional array
         
         // : Import Rates from spreadsheet
-        $_xls1 = new ReadExcelFile($_file, "rates", "locations", "offloading", "bu", "customer");
-        $_temp = $_xls1->getData();
+		$_xls1 = new ReadExcelFile($_file, "rates", "locations", "offloading", "bu", "customer");
+		$_temp = $_xls1->getData();
+
         unset($_xls1);
         // : End
         
