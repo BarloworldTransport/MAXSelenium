@@ -85,15 +85,33 @@ class automationLibrary
 
     const ERR_NO_CUSTOMER_DATA = "FATAL: Could not find customer data when attempting to access the imported data from array.";
 
-    const ERR_SQL_QUERY_NO_RESULTS_REQ_DATA = "FATAL: Required data searched from the database was not found using the following SQL query: %s";
-
     const ERR_COULD_NOT_FIND_RECORD_USING_URL = "ERROR: Could not find %d after creating it using the following URL: %u";
 
     const ERR_PROCESS_FAILED_UNEXPECTEDLY = "ERROR: Caught error while busy with process %s with error message: %e";
 
     const ERR_NO_DATE_RANGE_VALUE = "ERROR: Could not find DateRangeValue for Record: %s";
     
+    const ERR_COULD_NOT_OPEN_FILE = "ERROR: Could not open the specfied file %s";
+    
+    const ERR_FILE_NOT_FOUND = "ERROR: The following path and filename could not be found: %s";
+    
+    const ERR_FILE_EMPTY = "The following file is empty: %s";
+    
+    const ERR_COLUMN_VALIDATION_FAIL = "Not all columns are present in the following file %s";
+    
+    const ERR_MAX_NOT_RESPONDING = "MAX does not seem to be responding";
+    
+    const ERR_DIR_NOT_FOUND = "The specified directory was not found: %s";
+    
+    const ERR_DB_FAILED_TO_CONNECT = "ERROR: There was a problem connecting to the database. See error message: %s";
+    
+    const ERR_SQL_QUERY_NO_RESULTS_REQ_DATA = "FATAL: Required data searched from the database was not found using the following SQL query: %s";
+    
+    const ERR_FAILED_TO_LOGIN = "ERROR: Log into %h was unsuccessful. Please see the following error message relating to the problem: %s";
+    
     // Constants - URL addresses
+    const URL_RATE_DATAVIEW = "/DataBrowser?browsePrimaryObject=udo_Rates&browsePrimaryInstance=";
+    
     const URL_CUSTOMER = "/DataBrowser?browsePrimaryObject=461&browsePrimaryInstance=";
 
     const URL_PB = "/Planningboard";
@@ -120,8 +138,23 @@ class automationLibrary
     
     const URL_LOCATION_ROUTE = "/Country_Tab/routes?&tab_id=113";
     
+    // Constants - Paths
+    const PATH_CONFIG_DIR = "config";
+    
+	const PATH_CONFIG_FILE = "selenium_config.json";
+    
     // Constants - Miscellaneous
     const DEFAULT_MAX_VERSION = 2;
+    
+    const CSV_DELIMITER = ',';
+
+    const CSV_ENCLOSURE = '"';
+
+    const CSV_LIMIT = 0;
+    
+    const DEFAULT_PATH_ENV_VAR = 'BWT_MAX_SELENIUM_PATH';
+   
+    const DS = DIRECTORY_SEPARATOR;
     // : End
     
     // : Properties
@@ -141,6 +174,7 @@ class automationLibrary
     public function __construct(&$_session, &$_phpunit_fw_obj, &$_w, $_mode, $_version) {
 
         if (is_object($_session) && is_object($_phpunit_fw_obj) && $_w && $_mode && $_version) {
+			
             // : Save referenced session and phpunit objects to affect the referenced active session been passed
             $this->_sessionObj = $_session;
             $this->_phpunitObj = $_phpunit_fw_obj;
@@ -439,8 +473,183 @@ class automationLibrary
             echo "Caught exception: ", $e->getMessage(), "\n";
         }
     }
-    // : End
     
     // : Private Methods
+    
+    /**
+     * automationLibrary::ImportCSVFileIntoArray($csvFile)
+     * From supplied csv file save data into multidimensional array
+     *
+     * @param string: $csvFile            
+     * @param array: $_result            
+     */
+    private function ImportCSVFileIntoArray($csvFile)
+    {
+        try {
+            $_data = (array) array();
+            $_header = NULL;
+            
+            $_full_config_path = preg_replace("@\/|\\\@", self::DS, getenv(self::DEFAULT_PATH_ENV_VAR)) . self::DS . $csvFile;
+            
+            if (file_exists($_full_config_path)) {
+				
+                if (($_handle = fopen($_full_config_path, 'r')) !== FALSE) {
+					
+                    while (($_row = fgetcsv($_handle, self::CSV_LIMIT, self::CSV_DELIMITER, self::CSV_ENCLOSURE)) !== FALSE) {
+						
+                        if (! $_header) {
+							
+                            foreach ($_row as $_value) {
+								
+                                $_header[] = strtolower($_value);
+                            }
+                            
+                        } else {
+							
+                            $_data[] = array_combine($_header, $_row);
+                            
+                        }
+                    }
+                    
+                    // Close file handler
+                    fclose($_handle);
+                    
+                    if (count($_data) != 0) {
+                        
+                        foreach ($_data as $_key => $_value) {
+							
+                            foreach ($_value as $_keyA => $_valueA) {
+								
+                                $_data[$_key][$_keyA] = $this->stringHypenFix($_valueA);
+                                
+                            }
+                        }
+                        
+                        return $_data;
+                    } else {
+                        $_msg = preg_replace("@%s@", $csvFile, self::ERR_FILE_EMPTY);
+                        throw new Exception($_msg);
+                    }
+                } else {
+                    $_msg = preg_replace("@%s@", $csvFile, self::ERR_COULD_NOT_OPEN_FILE);
+                    throw new Exception($_msg);
+                }
+            } else {
+                $_msg = preg_replace("@%s@", $csvFile, self::ERR_FILE_NOT_FOUND);
+                throw new Exception($_msg);
+            }
+        } catch (Exception $e) {
+             echo "Caught exception: ", $e->getMessage(), "\n";
+             return FALSE;
+        }
+    }
+ 
+	/**
+	 * automationLibrary::ExportToCSV($csvFile, $arr)
+	 * From supplied csv file save data into multidimensional array
+	 *
+	 * @param string: $csvFile
+	 * @param array: $_arr
+	 */
+	private function ExportToCSV($csvFile, $_arr) {
+		try {
+			$_data = ( array ) array ();
+			
+			$_full_config_path = preg_replace("@\/|\\\@", self::DS, getenv(self::DEFAULT_PATH_ENV_VAR)) . self::DS . $csvFile;
+			
+			if (file_exists ( dirname ( $_full_config_path ) )) {
+				
+				$_handle = fopen ( $_full_config_path, 'w' );
+				
+				foreach ( $_arr as $key => $value ) {
+					
+					fputcsv ( $_handle, $value );
+					
+				}
+				
+				fclose ( $_handle );
+				
+			} else {
+				
+				$_msg = preg_replace ( "@%s@", $_full_config_path, self::ERR_DIR_NOT_FOUND );
+				throw new Exception ( $_msg );
+				
+			}
+		} catch ( Exception $e ) {
+			return FALSE;
+		}
+	}
+	
+    /**
+     * automationLibrary::LoadJSONFile($_file)
+     * Load config file containing json data
+     *
+     * @param return: $_result   
+     */	
+	private static function LoadJSONFile($_file)
+	{
+		// Default _result to FALSE
+		$_result = FALSE;
+		
+		try
+		{
+		$_full_config_path = preg_replace("@\/|\\\@", self::DS, getenv(self::DEFAULT_PATH_ENV_VAR)) . self::DS . $_file;
+		
+		if (file_exists($_full_config_path))
+		{
+			$_json_file = file_get_contents($_full_config_path);
+			if ($_json_file)
+			{
+				$_json_data = json_decode($_json_file, true);
+				
+				if ($_json_data && is_array($_json_data))
+				{
+					$_result = $_json_data;
+				}
+			}
+		}
+		} catch (Exception $e)
+		{
+             echo "Caught exception: ", $e->getMessage(), "\n";
+             return FALSE;
+		}
+		
+		return $_result;
+	}
+	
+	/**
+     * automationLibrary::verifyAndLoadConfig($_config_array)
+     * Using a multidimensional passed as an argument
+     * Verify all keys are present and return values for each key
+     *
+     * @param return: $_result   
+     */	
+	private static function verifyAndLoadConfig($_config_array, $_file)
+	{
+		$_json_config_data = self::LoadJSONFile($_file);
+		
+		
+		if ($_config_array && $_json_config_data && isset($_json_config_data['selenium']) && isset($_config_array['selenium']))
+		{
+			if (array_diff_key($_config_array, $_json_config_data))
+			{
+				return FALSE;
+			}
+			else 
+			{
+				foreach($_config_array['selenium'] as $key1 => $value1)
+				{
+					$_config_array['selenium'][$key1] = $_json_config_data['selenium'][$key1];
+				}
+			}
+		}
+		
+		if ($_config_array)
+		{
+			return $_config_array;
+		}
+		
+		return FALSE;
+	}
     // : End
 }

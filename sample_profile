@@ -1,0 +1,13 @@
+#
+# ~/.profile
+#
+# Local environment variables
+export PATH="$PATH:~/.composer/vendor/bin"
+export WORKSPACE=$HOME/workspacea
+export BWT_DIR=$WORKSPACE/Barloworld
+export AUTOTEST=$BWT_DIR/DevTools/Kte
+export TESTSITE=http://max3.mobilize.biz
+export AUTOTEST_TENANT=$BWT_DIR/KalumaTests
+export BWT_CONFIG_PATH=$AUTOTEST_TENANT/config
+export BWT_MAX_SELENIUM_PATH=$BWT_DIR/MAXSeleniumNew
+[[ -f ~/.bashrc ]] && . ~/.bashrc
