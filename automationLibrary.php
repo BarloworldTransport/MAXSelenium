@@ -483,17 +483,15 @@ class automationLibrary
      * @param string: $csvFile            
      * @param array: $_result            
      */
-    private function ImportCSVFileIntoArray($csvFile)
+    public function ImportCSVFileIntoArray($csvFile)
     {
         try {
             $_data = (array) array();
             $_header = NULL;
             
-            $_full_config_path = preg_replace("@\/|\\\@", self::DS, getenv(self::DEFAULT_PATH_ENV_VAR)) . self::DS . $csvFile;
-            
-            if (file_exists($_full_config_path)) {
+            if (file_exists($csvFile)) {
 				
-                if (($_handle = fopen($_full_config_path, 'r')) !== FALSE) {
+                if (($_handle = fopen($csvFile, 'r')) !== FALSE) {
 					
                     while (($_row = fgetcsv($_handle, self::CSV_LIMIT, self::CSV_DELIMITER, self::CSV_ENCLOSURE)) !== FALSE) {
 						
@@ -551,15 +549,13 @@ class automationLibrary
 	 * @param string: $csvFile
 	 * @param array: $_arr
 	 */
-	private function ExportToCSV($csvFile, $_arr) {
+	public function ExportToCSV($csvFile, $_arr) {
 		try {
 			$_data = ( array ) array ();
 			
-			$_full_config_path = preg_replace("@\/|\\\@", self::DS, getenv(self::DEFAULT_PATH_ENV_VAR)) . self::DS . $csvFile;
-			
-			if (file_exists ( dirname ( $_full_config_path ) )) {
+			if (file_exists ( dirname ( $csvFile ) )) {
 				
-				$_handle = fopen ( $_full_config_path, 'w' );
+				$_handle = fopen ( $csvFile, 'w' );
 				
 				foreach ( $_arr as $key => $value ) {
 					
@@ -571,7 +567,7 @@ class automationLibrary
 				
 			} else {
 				
-				$_msg = preg_replace ( "@%s@", $_full_config_path, self::ERR_DIR_NOT_FOUND );
+				$_msg = preg_replace ( "@%s@", dirname($csvFile), self::ERR_DIR_NOT_FOUND );
 				throw new Exception ( $_msg );
 				
 			}
@@ -586,18 +582,18 @@ class automationLibrary
      *
      * @param return: $_result   
      */	
-	private static function LoadJSONFile($_file)
+	public static function LoadJSONFile($_file)
 	{
 		// Default _result to FALSE
-		$_result = FALSE;
+		$_result = false;
 		
 		try
 		{
-		$_full_config_path = preg_replace("@\/|\\\@", self::DS, getenv(self::DEFAULT_PATH_ENV_VAR)) . self::DS . $_file;
 		
-		if (file_exists($_full_config_path))
+		if (file_exists($_file))
 		{
-			$_json_file = file_get_contents($_full_config_path);
+			$_json_file = file_get_contents($_file);
+			
 			if ($_json_file)
 			{
 				$_json_data = json_decode($_json_file, true);
@@ -611,10 +607,65 @@ class automationLibrary
 		} catch (Exception $e)
 		{
              echo "Caught exception: ", $e->getMessage(), "\n";
-             return FALSE;
+             return false;
 		}
 		
 		return $_result;
+	}
+
+	/**
+     * automationLibrary::verifyKeysMatchInArrays($_array1, $_array2)
+     * Using a multidimensional passed as an argument
+     * Verify all keys are present and return values for each key
+     *
+     * @param return: $_result   
+     */	
+	public static function verifyKeysMatchInArrays($_array1, $_array2, $_count = 1)
+	{
+		
+		$_pass = true;
+		$_array = (array) array();
+		
+		if (is_array($_array1) && is_array($_array2))
+		{
+			foreach($_array1 as $key => $value)
+			{
+				if (is_array($value))
+				{
+
+					$_result = self::verifyKeysMatchInArrays($value, $_array2[$key], ++$_count);
+					
+					if (is_array($_result))
+					{
+						$_array[$key] = $_array2[$key];
+					} else
+					{
+						$_pass = false;
+					}
+					
+				} else
+				{
+
+					if (array_key_exists($key, $_array2))
+					{
+						$_array[$key] = $value;
+					}
+				}
+			}
+		}
+
+		if (is_array($_array))
+		{
+			if (count(array_diff_key($_array, $_array1)) == 0 && $_pass)
+			{
+				print("return true" . PHP_EOL);
+				return $_array;
+			} else
+			{
+				print("return false" . PHP_EOL);
+				return false;
+			}
+		}
 	}
 	
 	/**
@@ -624,32 +675,24 @@ class automationLibrary
      *
      * @param return: $_result   
      */	
-	private static function verifyAndLoadConfig($_config_array, $_file)
+	public static function verifyAndLoadConfig($_config_array, $_file)
 	{
-		$_json_config_data = self::LoadJSONFile($_file);
 		
+		$_json_config_data = automationLibrary::LoadJSONFile($_file);
 		
-		if ($_config_array && $_json_config_data && isset($_json_config_data['selenium']) && isset($_config_array['selenium']))
+		if ($_json_config_data)
 		{
-			if (array_diff_key($_config_array, $_json_config_data))
+			
+			$_result = automationLibrary::verifyKeysMatchInArrays($_config_array, $_json_config_data);
+			
+			if ($_result && is_array($_result))
 			{
-				return FALSE;
-			}
-			else 
-			{
-				foreach($_config_array['selenium'] as $key1 => $value1)
-				{
-					$_config_array['selenium'][$key1] = $_json_config_data['selenium'][$key1];
-				}
+				return $_result;
 			}
 		}
+
 		
-		if ($_config_array)
-		{
-			return $_config_array;
-		}
-		
-		return FALSE;
+		return false;
 	}
     // : End
 }

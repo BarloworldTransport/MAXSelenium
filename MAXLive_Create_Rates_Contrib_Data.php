@@ -57,6 +57,7 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 	protected $_apiuserpwd;
 	protected $_version;
 	protected $_file;
+	protected $_config;
 	
 	// : Public Functions
 	// : Accessors
@@ -86,12 +87,14 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 				'apiuserpwd' => '',
 				'rates' => array(
 					'file' => '',
-					'filetype' => ''
+					'filetype' => '',
+					'something' => ''
 				)
 			)
 		);
-				// Determine full path to the json config file
-		$_config_file =  automationLibrary::DEFAULT_PATH_ENV_VAR . automationLibrary::DS . automationLibrary::PATH_CONFIG_DIR . automationLibrary::DS . automationLibrary::PATH_CONFIG_FILE;
+		
+		// Determine full path to the json config file
+		$_config_file =  getenv(automationLibrary::DEFAULT_PATH_ENV_VAR) . automationLibrary::DS . automationLibrary::PATH_CONFIG_DIR . automationLibrary::DS . automationLibrary::PATH_CONFIG_FILE;
 
 		if (is_file ( $_config_file ) === FALSE) {
 			echo "No " . $_config_file . " file found. Please create it and populate it with the following data: username=x@y.com, password=`your password`, your name shown on MAX the welcome page welcome=`Joe Soap` and mode=`test` or `live`" . PHP_EOL;
@@ -102,19 +105,19 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 		
 		if ($_config)
 		{
-				$this->_username = $_config['selenium']["username"];
-				$this->_password = $_config['selenium']["password"];
-				$this->_welcome = $_config['selenium']["welcome"];
-				$this->_mode = $_config['selenium']["mode"];
-				$this->_wdport = $_config['selenium']["wdport"];
-				$this->_proxyip = $_config['selenium']["proxy"];
-				$this->_browser = $_config['selenium']["browser"];
-				$this->_datadir = $_config['selenium']["path_data"];
-				$this->_scrdir = $_config['selenium']["path_screenshots"];
-				$this->_errdir = $_config['selenium']["path_errors"];
-				$this->_version = $_config['selenium']["version"];
-				$this->_apiuserpwd = $_config['selenium']["apiuserpwd"];
-				$this->_file = $_config['selenium']['rates']["file"];
+				$this->_username = $_config['selenium']['username'];
+				$this->_password = $_config['selenium']['password'];
+				$this->_welcome = $_config['selenium']['welcome'];
+				$this->_mode = $_config['selenium']['mode'];
+				$this->_wdport = $_config['selenium']['wdport'];
+				$this->_proxyip = $_config['selenium']['proxy'];
+				$this->_browser = $_config['selenium']['browser'];
+				$this->_datadir = $_config['selenium']['path_data'];
+				$this->_scrdir = $_config['selenium']['path_screenshots'];
+				$this->_errdir = $_config['selenium']['path_errors'];
+				$this->_version = $_config['selenium']['version'];
+				$this->_apiuserpwd = $_config['selenium']['apiuserpwd'];
+				$this->_file = $_config['selenium']['rates']['file'];
 			
 				// Determine MAX URL to be used for this test run
 				$this->_maxurl = automationLibrary::getMAXURL($this->_mode, $this->_version);
@@ -167,12 +170,10 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 	public function testCreateRateContribRecords() {
 		try {
 			
-			$_data_file = automationLibrary::DEFAULT_PATH_ENV_VAR . automationLibrary::DS . $this->_datadir . automationLibrary::DS . $this->_file;
+			$_data_file = getenv(automationLibrary::DEFAULT_PATH_ENV_VAR) . automationLibrary::DS . $this->_datadir . automationLibrary::DS . $this->_file;
 			
 			if (file_exists($_data_file))
 			{
-				print_r($_data_file);
-				die("test");
 				
 				// Initialize session
 				$session = $this->_session;
@@ -181,7 +182,8 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 			
 				$_autoLib = new automationLibrary($this->_session, $this, $w, $this->_mode, $this->_version);
 			
-				$_autoLib->ImportCSVFileIntoArray($this->_file);
+				var_dump($_autoLib->ImportCSVFileIntoArray($_data_file));
+
 				$_maxLoginLogout = new maxLoginLogout($_autoLib, $this->_maxurl);
 			
 				// Log into MAX
