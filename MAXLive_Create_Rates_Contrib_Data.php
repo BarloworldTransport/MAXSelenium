@@ -58,6 +58,7 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 	protected $_version;
 	protected $_file;
 	protected $_config;
+	protected $_max_db_tenant;
 	
 	// : Public Functions
 	// : Accessors
@@ -70,41 +71,37 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 	 */
 	public function __construct() {
 		
+		// Define required config options for this script
 		$_config = (array) array(
 			'selenium' => array(
-				'username' => '',
-				'password' => '',
-				'welcome' => '',
-				'mode' => '',
-				'path_data' => '',
-				'path_errors' => '',
-				'path_screenshots' => '',
-				'sql_server_ip' => '',
-				'proxy' => '',
-				'wdport' => '',
-				'browser' => '',
-				'jenkins' => '',
-				'apiuserpwd' => '',
 				'rates' => array(
 					'file' => '',
-					'filetype' => '',
-					'something' => ''
+					'filetype' => ''
 				)
 			)
 		);
 		
+		// Initialize config
+		automationLibrary::initializeConfig();
+		
+		// Merge config with default config options
+		$_config = automationLibrary::mergeConfigOptions($_config);
+		
 		// Determine full path to the json config file
-		$_config_file =  getenv(automationLibrary::DEFAULT_PATH_ENV_VAR) . automationLibrary::DS . automationLibrary::PATH_CONFIG_DIR . automationLibrary::DS . automationLibrary::PATH_CONFIG_FILE;
+		$_config_file =  automationLibrary::getConfigFilePath();
 
 		if (is_file ( $_config_file ) === FALSE) {
 			echo "No " . $_config_file . " file found. Please create it and populate it with the following data: username=x@y.com, password=`your password`, your name shown on MAX the welcome page welcome=`Joe Soap` and mode=`test` or `live`" . PHP_EOL;
 			return FALSE;
 		}
 		
+		// Load config
 		$_config = automationLibrary::verifyAndLoadConfig($_config, $_config_file);
 		
+		// : Save variables from fetched config data for use in script
 		if ($_config)
 		{
+				$this->_config = $_config;
 				$this->_username = $_config['selenium']['username'];
 				$this->_password = $_config['selenium']['password'];
 				$this->_welcome = $_config['selenium']['welcome'];
@@ -118,6 +115,7 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 				$this->_version = $_config['selenium']['version'];
 				$this->_apiuserpwd = $_config['selenium']['apiuserpwd'];
 				$this->_file = $_config['selenium']['rates']['file'];
+				$this->_max_db_tenant = $_config['selenium']['maxdbtenant'];
 			
 				// Determine MAX URL to be used for this test run
 				$this->_maxurl = automationLibrary::getMAXURL($this->_mode, $this->_version);
@@ -126,6 +124,7 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 			print("Required key value pairs where not found in the json config file: $_config_file" . PHP_EOL);
 			exit;
 		}
+		// : End
 
 	}
 	
@@ -180,9 +179,41 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 				$this->_session->setPageLoadTimeout ( 60 );
 				$w = new PHPWebDriver_WebDriverWait ( $session, 30 );
 			
+				// Initialize automation library instance
 				$_autoLib = new automationLibrary($this->_session, $this, $w, $this->_mode, $this->_version);
 			
-				var_dump($_autoLib->ImportCSVFileIntoArray($_data_file));
+				// Load data from csv file
+				$this->_data = $_autoLib->ImportCSVFileIntoArray($_data_file);
+				
+				// Initialize connection to the MAX database -> PDO db object available in $_autoLib->pdoobj
+				$_autoLib->initDB($this->_max_db_tenant, $this->_config);
+				
+				$_db_errors = $_autoLib->pdoobj->getErrors();
+				
+				if (count($_db_errors) > 0)
+				{
+					print("Failed to connect to the database");
+					
+					foreach ($_db_errors as $_key => $_value)
+					{
+						printf("Error %d: %s %s", $_key, $_value, PHP_EOL);
+					}
+					
+					throw new Exception("Failed to connect to database");
+				}
+				/** EXAMPLE CODE TO QUERY MAX DB
+				$_testquery = "SELECT * FROM udo_cargo ORDER BY ID DESC LIMIT 1";
+				$_db_result = $_autoLib->pdoobj->getDataFromQuery($_testquery);
+				*/
+				
+				/** THIS LOOPS THE EACH RECORD AND RUNS REQUIRED CODE TO EXECUTE ACTION REQUIRED
+				if ($this->_data && is_array($this->_data))
+				{
+					foreach ($this->_data $key => $value)
+					{
+						
+					}
+				}*/
 
 				$_maxLoginLogout = new maxLoginLogout($_autoLib, $this->_maxurl);
 			
@@ -193,7 +224,7 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 			
 
 				// Log out of MAX
-				maxLoginLogout::maxLogout($this->_session, $w, $this, $this->_version);
+				$_maxLoginLogout->maxLogout($this->_session, $w, $this, $this->_version);
 				$this->_session->close();
 			} else
 			{

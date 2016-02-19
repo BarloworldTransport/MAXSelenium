@@ -232,6 +232,22 @@ class maxRoutesRates
         return TRUE;
     }
     
+    
+    /**
+     * MAX_Routes_Rates::maxCreateRateContribData
+     * Log into MAX
+     */
+    public function maxCreateRateContribData(&$_pdo_obj, $_customer, $_bu, $_locationFrom, $_locationTo, $_trucktype, $_contrib_data, $_version = automationLibrary::DEFAULT_MAX_VERSION)
+    {
+		try
+		{
+			
+		} catch (Exception $e)
+		{
+			
+		}
+	}
+	
     // : End - Public Functions
     
     // : Private Functions

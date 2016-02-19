@@ -29,7 +29,14 @@ class PullDataFromMySQLQuery {
 			PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 			PDO::ATTR_PERSISTENT => true 
 	);
-	protected $_inifile = "/ini/report_data.ini";
+	protected static $_config_db = array(
+		'maxdb' => array(
+			'dbdsn' => '',
+			'dbhost' => '',
+			'dbuser' => '',
+			'dbpwd' => ''
+		)
+	);
 	protected $_errors = array ();
 	
 	// : Public functions
@@ -43,6 +50,11 @@ class PullDataFromMySQLQuery {
 	 */
 	public function getErrors() {
 		return $this->_errors;
+	}
+	
+	public static function getDefaultConfigOptions()
+	{
+		return PullDataFromMySQLQuery::$_config_db;
 	}
 	
 	/**
@@ -146,30 +158,22 @@ class PullDataFromMySQLQuery {
 	 * PullDataFromMySQLQuery::__construct()
 	 * Class constructor
 	 */
-	public function __construct($_tenant, $_host) {
+	public function __construct($_tenant, $_config_data) {
 		try {
-			if ($_tenant && $_host) {
-				$_inifile = dirname ( __FILE__ ) . self::DS . $this->_inifile;
-				if (file_exists ( $_inifile )) {
-					
-					$data = parse_ini_file ( $_inifile );
-
-					if ((array_key_exists ( "dbdsn", $data )) && (array_key_exists ( "dbuser", $data )) && (array_key_exists ( "dbpwd", $data ))) {
-						$_dsn = preg_replace ( "/%s/", $_tenant, $data ["dbdsn"] );
-						$_dsn = preg_replace ( "/%h/", $_host, $_dsn );
-						$this->_dbdsn = $_dsn;
-						$this->_dbuser = $data ["dbuser"];
-						$this->_dbpwd = $data ["dbpwd"];
-						$this->dbOpen ();
-					} else {
-						throw new Exception ( "Correct fields where not found in file: " . $_inifile . ". Please make sure the following fields are available: dbdsn, dbuser, dbpwd" );
-					}
-				} else {
-					$this->_errors [] = "Cannot find file: " . $_inifile . ". Please create the file or that it exists.";
-				}
-			} else {
-				throw new Exception("ERROR: No database name provided in parameter when creating new object instance of PullDataFromMySQLQuery class");
+			
+			if (isset($_config_data['maxdb']['dbdsn']) && isset($_config_data['maxdb']['dbhost']) && isset($_config_data['maxdb']['dbuser']) && isset($_config_data['maxdb']['dbpwd']))
+			{
+				$_dsn = preg_replace ( "/%s/", $_tenant, $_config_data['maxdb']['dbdsn'] );
+				$_dsn = preg_replace ( "/%h/", $_config_data['maxdb']['dbhost'], $_dsn );
+				$this->_dbdsn = $_dsn;
+				$this->_dbuser = $_config_data['maxdb']['dbuser'];
+				$this->_dbpwd = $_config_data['maxdb']['dbpwd'];
+				$this->dbOpen ();
+			} else
+			{
+				throw new Exception ( "Correct fields where not found in the supplied config array." );
 			}
+			
 		} catch ( Exception $e ) {
 			$this->_errors [] = $e->getMessage ();
 		}
@@ -217,10 +221,14 @@ class PullDataFromMySQLQuery {
 	 */
 	private function queryDB($sqlquery) {
 		try {
+			
 			$result = $this->_db->query ( $sqlquery );
 			return $result->fetchAll ( PDO::FETCH_ASSOC );
+			
 		} catch ( PDOException $ex ) {
+			
 			return FALSE;
+			
 		}
 	}
 	// : End

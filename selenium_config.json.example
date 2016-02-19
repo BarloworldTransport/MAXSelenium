@@ -1,0 +1,33 @@
+{
+	"selenium" :
+	{
+		"username" : "maxemail",
+		"password" : "maxpassword",
+		"welcome" : "maxuserfullnames",
+		"path_data" : "data",
+		"path_errors" : "errors",
+		"path_screenshots" : "screenshots",
+		"sql_server_ip" : "192.168.1.19",
+		"proxy" : "email:password@proxyip:proxyport",
+		"wdport" : "seleniumport",
+		"browser" : "firefox",
+		"mode" : "live",
+		"jenkins" : "false",
+		"apiuserpwd" : "test",
+		"version" : "2",
+		"maxdbtenant" : "max2",
+		"fandv" : {
+			"file" : "test.xls"
+		},
+		"rates" : {
+			"file": "2016-02-NCP-Rate-Contrib-Distance-Values.csv",
+			"filetype" : "csv"
+		}
+	},
+	"maxdb" : {
+		"dbdsn" : "mysql:host=%h;dbname=%s;charset=utf8;",
+		"dbhost" : "dbhostip",
+		"dbuser" : "dbuser",
+		"dbpwd" : "dbpwd"
+	}
+}

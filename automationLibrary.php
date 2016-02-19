@@ -5,6 +5,7 @@ include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
 include_once dirname(__FILE__) . '/ReadExcelFile.php';
 include_once 'PHPUnit/Extensions/PHPExcel/Classes/PHPExcel.php';
+include_once 'PullDataFromMySQLQuery.php';
 
 /**
  * automationLibrary.php
@@ -141,7 +142,8 @@ class automationLibrary
     // Constants - Paths
     const PATH_CONFIG_DIR = "config";
     
-	const PATH_CONFIG_FILE = "selenium_config.json";
+	// Constants - Filenames
+	const FILE_CONFIG = "selenium_config.json";
     
     // Constants - Miscellaneous
     const DEFAULT_MAX_VERSION = 2;
@@ -161,8 +163,29 @@ class automationLibrary
     public $_sessionObj;
     public $_phpunitObj;
     public $_wObj;
+    public $pdoobj;
+    
     protected $_mode;
     protected $_version;
+    protected static $_config_array = array();
+	protected static $_config_array_defaults = array(
+		'selenium' => array(
+			'username' => '',
+			'password' => '',
+			'welcome' => '',
+			'mode' => '',
+			'path_data' => '',
+			'path_errors' => '',
+			'path_screenshots' => '',
+			'proxy' => '',
+			'wdport' => '',
+			'browser' => '',
+			'jenkins' => '',
+			'apiuserpwd' => '',
+			'maxdbtenant' => ''
+		)
+	);
+    
     // : End
     
     // : Magic Methods
@@ -185,6 +208,28 @@ class automationLibrary
             $this->_mode = $_mode;
             $this->_version = $_version;
             // : End
+            
+            // : Set config array defaults
+            if (count(automationLibrary::$_config_array) == 0)
+            {
+				self::setDefaultConfigOptions(automationLibrary::$_config_array_defaults);
+            
+				// Check if mysql class has method to fetch its config options
+				if (function_exists(PullDataFromMySQLQuery::getDefaultConfigOptions))
+				{
+					$_db_config = PullDataFromMySQLQuery::getDefaultConfigOptions();
+				
+					if (is_array($_db_config) && count($_db_config) > 0)
+					{
+						$_new_config = automationLibrary::mergeConfigOptions($_config);
+					
+						if (is_array($_new_config) && count($_new_config) > 0)
+						{
+							self::setDefaultConfigOptions(automationLibrary::$_new_config);
+						}
+					}
+				}
+			}
         }
     }
     
@@ -227,6 +272,15 @@ class automationLibrary
         }
     }
     
+    /**
+     * automationLibrary::getMAXURL($_mode, $_version)
+     * 
+     * Fetch the base URL for required version of MAX
+     *
+     * @param string: $_mode            
+     * @param string: $_version
+     * @param return: $_result
+     */
     public static function getMAXURL($_mode, $_version) {
         $_result = (string)"";
         
@@ -243,6 +297,67 @@ class automationLibrary
         }
         return $_result;
     }
+    
+    /**
+     * automationLibrary::getDefaultConfigOptionsArray()
+     * 
+     * Fetch the default config options in an array form
+     *
+     * @param return: $this->_config_array_defaults
+     */
+    public static function getDefaultConfigOptionsArray()
+    {
+		return automationLibrary::$_config_array;
+	}
+	
+    /**
+     * automationLibrary::getConfigFilePath()
+     * 
+     * Fetch the default config options in an array form
+     *
+     * @param return: $this->_config_array_defaults
+     */
+    public static function getConfigFilePath()
+    {
+		$_filepath = getenv(self::DEFAULT_PATH_ENV_VAR) . self::DS . self::PATH_CONFIG_DIR . self::DS . self::FILE_CONFIG;
+		
+		if ($_filepath && is_string($_filepath))
+		{
+			return $_filepath;
+		} else
+		{
+			return false;
+		}
+	}
+	
+    /**
+     * automationLibrary::mergeConfigOptions()
+     * 
+     * Fetch the default config options and merge with the required
+     * array argument and return the merged result
+     *
+     * @param return: $this->_config_array_defaults
+     */
+    public static function mergeConfigOptions($_config_array)
+    {
+		if (is_array($_config_array))
+		{
+			// Merge default config array and supplied config array
+			$_result = array_merge_recursive($_config_array, automationLibrary::$_config_array);
+			
+			if (is_array($_result) && count($_result) >= 1)
+			{
+				return $_result;
+			} else
+			{
+				return automationLibrary::$_config_array_defaults;
+			}
+			
+		} else
+		{
+			return automationLibrary::$_config_array_defaults;
+		}
+	}
     
     /**
      * automationLibrary::addErrorRecord(&$_errArr, $_scrDir, $_errmsg, $_record, $_process)
@@ -263,6 +378,24 @@ class automationLibrary
         $_errArr[$_erCount + 1]["type"] = $_process;
         $this->takeScreenshot($_scrDir);
     }
+    
+    /**
+     * automationLibrary::stringHypenFix($_value)
+     * Replace long hyphens in string to short hyphens as part of a problem
+     * created when importing data from spreadsheets
+     *
+     * @param string: $_value            
+     * @param string: $_result            
+     */
+    public function initDB($_tenant, $_config_data)
+    {
+		$_config_file = self::getConfigFilePath();
+		
+		if ($_config_file && $_tenant && is_string($_tenant))
+		{
+			$this->pdoobj = new PullDataFromMySQLQuery($_tenant, $_config_data);
+		}
+	} 
 
     /**
      * automationLibrary::stringHypenFix($_value)
@@ -323,6 +456,24 @@ class automationLibrary
         }
         return TRUE;
     }
+    
+    public static function initializeConfig()
+    {
+		self::setDefaultConfigOptions(automationLibrary::$_config_array_defaults);
+            
+		// Check if mysql class has method to fetch its config options
+		$_db_config = PullDataFromMySQLQuery::getDefaultConfigOptions();
+		
+		if (is_array($_db_config) && count($_db_config) > 0)
+		{
+			$_new_config = automationLibrary::mergeConfigOptions($_db_config, automationLibrary::$_config_array);
+			
+			if (is_array($_new_config) && count($_new_config) > 0)
+			{
+				self::setDefaultConfigOptions($_new_config);
+			}
+		}
+	}
     
     /**
      * automationLibrary::takeScreenshot()
@@ -473,9 +624,7 @@ class automationLibrary
             echo "Caught exception: ", $e->getMessage(), "\n";
         }
     }
-    
-    // : Private Methods
-    
+        
     /**
      * automationLibrary::ImportCSVFileIntoArray($csvFile)
      * From supplied csv file save data into multidimensional array
@@ -658,11 +807,9 @@ class automationLibrary
 		{
 			if (count(array_diff_key($_array, $_array1)) == 0 && $_pass)
 			{
-				print("return true" . PHP_EOL);
 				return $_array;
 			} else
 			{
-				print("return false" . PHP_EOL);
 				return false;
 			}
 		}
@@ -679,7 +826,7 @@ class automationLibrary
 	{
 		
 		$_json_config_data = automationLibrary::LoadJSONFile($_file);
-		
+
 		if ($_json_config_data)
 		{
 			
@@ -690,9 +837,28 @@ class automationLibrary
 				return $_result;
 			}
 		}
-
 		
 		return false;
 	}
+	// : Private Methods
+	
+	/**
+     * automationLibrary::setDefaultConfigOptions($_config_array)
+     * Using a multidimensional passed as an argument
+     * Verify all keys are present and return values for each key
+     *
+     * @param return: $_result
+     */	
+	public static function setDefaultConfigOptions($_config_array)
+	{
+		// Verify that default keys exist
+		$_result = self::verifyKeysMatchInArrays(automationLibrary::$_config_array_defaults, $_config_array);
+		
+		if (is_array($_result))
+		{
+			automationLibrary::$_config_array = $_config_array;
+		}
+	}
+	
     // : End
 }
