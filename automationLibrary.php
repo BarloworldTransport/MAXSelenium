@@ -40,6 +40,8 @@ class automationLibrary
     const SQL_QUERY_ROUTE = "select ID from udo_route where locationFrom_id=%f and locationTo_id=%t;";
 
     const SQL_QUERY_RATE = "select ID from udo_rates where route_id=%ro and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and model='%m' and businessUnit_id=%b and rateType_id=%r;";
+    
+    const SQL_QUERY_RATE_TRIMMED = "select ID from udo_rates where route_id=%ro and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and businessUnit_id=%b;";
 
     const SQL_QUERY_CUSTOMER = "select ID from udo_customer where tradingName='%t';";
 
@@ -47,7 +49,7 @@ class automationLibrary
 
     const SQL_QUERY_CUSTOMER_LOCATION_LINK = "select ID from udo_customerlocations where location_id=%l and customer_id=%c;";
 
-    const SQL_QUERY_LOCATION = "select ID from udo_location where name = '%n' and _type='%t';";
+    const SQL_QUERY_LOCATION = "select ID from udo_location where name like '%n' and _type like '%t';";
 
     const SQL_QUERY_TRUCK_TYPE = "select ID from udo_truckdescription where description='%d';";
 
@@ -110,6 +112,8 @@ class automationLibrary
     
     const ERR_FAILED_TO_LOGIN = "ERROR: Log into %h was unsuccessful. Please see the following error message relating to the problem: %s";
     
+    const ERR_DB_NOT_CONNECTED = "ERROR: Database connection has not been established but attempting to run a query";
+    
     // Constants - URL addresses
     const URL_RATE_DATAVIEW = "/DataBrowser?browsePrimaryObject=udo_Rates&browsePrimaryInstance=";
     
@@ -163,7 +167,7 @@ class automationLibrary
     public $_sessionObj;
     public $_phpunitObj;
     public $_wObj;
-    public $pdoobj;
+    public $pdoobj = false;
     
     protected $_mode;
     protected $_version;
@@ -243,7 +247,290 @@ class automationLibrary
     // : End
     
     // : Public Methods
-    
+
+    /**
+     * automationLibrary::get_db_status
+     * Determine if the the pdo object has made a connection to the DB
+     */
+    public function get_db_status()
+    {
+		if ($this->pdoobj !== false)
+		{
+			return true;
+		} else
+		{
+			return false;
+		}
+	}
+
+    /**
+     * automationLibrary::fetchObjectRegistryId($_object_registry_name)
+     * Query MAX DB to fetch the id for a object registry item
+     */
+    public function fetchObjectRegistryId($_object_reg)
+    {
+		if ($this->get_db_status != false)
+		{
+			if ($_object_reg && is_string($_object_reg))
+			{
+				$_query = preg_replace("@%s@", $_object_reg, automationLibrary::SQL_QUERY_OBJREG);
+			
+				if ($_query && is_string($_query))
+				{
+					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+				
+					if ($_sql_result && is_array($_sql_result))
+					{
+						if (isset($_sql_result[0]['ID']))
+						{
+							if ($_sql_result[0]['ID'])
+							{
+								return $_sql_result[0]['ID'];
+							}
+						}
+					}
+				}
+			}
+		} else
+		{
+			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+		}
+		
+		// If code reaches this point then query failed
+		return false;
+	}
+	
+    /**
+     * automationLibrary::fetchTruckDescriptionId
+     * Query MAX DB to fetch the id for a truck description
+     */
+    public function fetchTruckDescriptionId($_truckDescription)
+    {
+		if ($this->get_db_status != false)
+		{
+			if ($_truckDescription && is_string($_truckDescription))
+			{
+				$_query = preg_replace("@%d@", $_truckDescription, automationLibrary::SQL_QUERY_TRUCK_TYPE);
+			
+				if ($_query && is_string($_query))
+				{
+					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+				
+					if ($_sql_result && is_array($_sql_result))
+					{
+						if (isset($_sql_result[0]['ID']))
+						{
+							if ($_sql_result[0]['ID'])
+							{
+								return $_sql_result[0]['ID'];
+							}
+						}
+					}
+				}
+			}
+		} else
+		{
+			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+		}
+		
+		// If code reaches this point then query failed
+		return false;
+	}
+	
+    /**
+     * automationLibrary::fetchBusinessUnitId($_bu)
+     * Query MAX DB to fetch the id for a business unit
+     */
+    public function fetchBusinessUnitId($_bu)
+    {
+		if ($this->get_db_status != false)
+		{
+			if ($_bu && is_string($_bu))
+			{
+				$_query = preg_replace("@%s@", $_bu, automationLibrary::SQL_QUERY_BUNIT);
+			
+				if ($_query && is_string($_query))
+				{
+					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+				
+					if ($_sql_result && is_array($_sql_result))
+					{
+						if (isset($_sql_result[0]['ID']))
+						{
+							if ($_sql_result[0]['ID'])
+							{
+								return $_sql_result[0]['ID'];
+							}
+						}
+					}
+				}
+			}
+		} else
+		{
+			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+		}
+		
+		// If code reaches this point then query failed
+		return false;
+	}
+
+    /**
+     * automationLibrary::fetchLocationId($_location, $_type)
+     * Query MAX DB to fetch the id for a location
+     */
+    public function fetchLocationId($_location, $_type)
+    {
+		if ($this->get_db_status != false)
+		{
+			if ($_location && is_string($_location) && $_type && is_string($_type))
+			{
+				$_query = preg_replace("@%n@", $_location, automationLibrary::SQL_QUERY_LOCATION);
+				$_query = preg_replace("@%t@", $_type, $_query);
+			
+				if ($_query && is_string($_query))
+				{
+					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+				
+					if ($_sql_result && is_array($_sql_result))
+					{
+						if (isset($_sql_result[0]['ID']))
+						{
+							if ($_sql_result[0]['ID'])
+							{
+								return $_sql_result[0]['ID'];
+							}
+						}
+					}
+				}
+			}
+		} else
+		{
+			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+		}
+		
+		// If code reaches this point then query failed
+		return false;
+	}
+	
+    /**
+     * automationLibrary::fetchRouteId
+     * Query MAX DB to fetch the id for a route
+     * 	)
+     */
+    public function fetchRouteId($_locationFromId, $_locationToId)
+    {
+		if ($this->get_db_status != false)
+		{
+			if (intval($_locationFromId) && intval($_locationToId))
+			{
+				$_query = preg_replace("@%f@", $_locationFromId, automationLibrary::SQL_QUERY_ROUTE);
+				$_query = preg_replace("@%t@", $_locationToId, $_query);
+			
+				if ($_query && is_string($_query))
+				{
+					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+				
+					if ($_sql_result && is_array($_sql_result))
+					{
+						if (isset($_sql_result[0]['ID']))
+						{
+							if ($_sql_result[0]['ID'])
+							{
+								return $_sql_result[0]['ID'];
+							}
+						}
+					}
+				}
+			}
+		} else
+		{
+			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+		}
+		
+		// If code reaches this point then query failed
+		return false;
+	}
+	
+    /**
+     * automationLibrary::fetchCustomerId
+     * Query MAX DB to fetch the id for a route
+     * 	)
+     */
+    public function fetchCustomerId($_customer)
+    {
+		if ($this->get_db_status != false)
+		{
+			if ($_customer && is_string($_customer))
+			{
+				$_query = preg_replace("@%f@", $_locationFromId, automationLibrary::SQL_QUERY_ROUTE);
+				$_query = preg_replace("@%t@", $_locationToId, $_query);
+			
+				if ($_query && is_string($_query))
+				{
+					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+				
+					if ($_sql_result && is_array($_sql_result))
+					{
+						if (isset($_sql_result[0]['ID']))
+						{
+							if ($_sql_result[0]['ID'])
+							{
+								return $_sql_result[0]['ID'];
+							}
+						}
+					}
+				}
+			}
+		} else
+		{
+			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+		}
+		
+		// If code reaches this point then query failed
+		return false;
+	}
+
+    /**
+     * automationLibrary::fetchRateId($_customer_id, $_route_id, $_bu_id, $_trucktype_id, $_objreg_id)
+     * Query MAX DB to fetch the id for a rate
+     */
+    public function fetchRateId($_customer_id, $_route_id, $_bu_id, $_trucktype_id, $_objreg_id)
+    {
+		if ($this->get_db_status != false)
+		{
+			if (intval($_customer_id) && intval($_route_id) && intval($_bu_id) && intval($_trucktype_id) && intval($_objreg_id))
+			{
+				$_query = preg_replace("@%ro@", $_route_id, automationLibrary::SQL_QUERY_RATE_TRIMMED);
+				$_query = preg_replace("@%g@", $_objreg_id, $_query);
+				$_query = preg_replace("@%c@", $_customer_id, $_query);
+				$_query = preg_replace("@%d@", $_trucktype_id, $_query);
+				$_query = preg_replace("@%b@", $_bu_id, $_query);
+			
+				if ($_query && is_string($_query))
+				{
+					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+				
+					if ($_sql_result && is_array($_sql_result))
+					{
+						if (isset($_sql_result[0]['ID']))
+						{
+							if ($_sql_result[0]['ID'])
+							{
+								return $_sql_result[0]['ID'];
+							}
+						}
+					}
+				}
+			}
+		} else
+		{
+			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+		}
+		
+		// If code reaches this point then query failed
+		return false;
+	}
+
     /**
      * automationLibrary::CONSOLE_OUTPUT($_heading, $_description, $_type, $_query, $_data)
      * Output debug information onto screen

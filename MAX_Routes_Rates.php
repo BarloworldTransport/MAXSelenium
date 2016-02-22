@@ -36,20 +36,6 @@ class maxRoutesRates
 
     const TEST_URL = "http://max.mobilize.biz";
 
-    const INI_FILE = "user_data.ini";
-
-    const PB_URL = "/Planningboard";
-
-    const FILE_NOT_FOUND = "ERROR: File not found. Please check the path and that the file exists and try again: %s";
-
-    const LOGIN_FAIL = "ERROR: Log into %h was unsuccessful. Please see the following error message relating to the problem: %s";
-
-    const DB_ERROR = "ERROR: There was a problem connecting to the database. See error message: %s";
-
-    const DIR_NOT_FOUND = "The specified directory was not found: %s";
-
-    const ADMIN_URL = "/adminTop?&tab_id=120";
-
     const NOT_CORRECT_ACTION = "Could not verify the action was correct when updating the action update for: %s";
     // : End - Constants
     
@@ -103,9 +89,16 @@ class maxRoutesRates
         return $_result;
     }
     
+    /**
+     * MAX_Routes_Rates::getRouteName
+     * Concatenate location from and location to city names to build
+     * a MAX formatted version of the route name
+     */
     public function getRouteName($_locationFrom, $_locationTo) {
+		
         // Concatenate string for route name
         $_routeName = $_locationFrom . " TO " . $_locationTo;
+        
     }
 
     /**
@@ -235,16 +228,118 @@ class maxRoutesRates
     
     /**
      * MAX_Routes_Rates::maxCreateRateContribData
-     * Log into MAX
+     * Add non F&V rate contribution data
      */
-    public function maxCreateRateContribData(&$_pdo_obj, $_customer, $_bu, $_locationFrom, $_locationTo, $_trucktype, $_contrib_data, $_version = automationLibrary::DEFAULT_MAX_VERSION)
+    public function maxCreateRateContribData($_customer, $_bu, $_locationFrom, $_locationTo, $_trucktype, $_contrib_data, $_version = automationLibrary::DEFAULT_MAX_VERSION)
     {
 		try
 		{
+			if ($this->autoObj->get_db_status != false)
+			{
+				if (is_array($_contrib_data) && $_contrib_data)
+				{
+					
+					// : Fetch ids and store into variables
+					$_objRegId = $this->_autoLibObj->fetchObjectRegistryId('udo_customer');
+					$_customerId = $this->_autoLibObj->fetchCustomerId($_customer);
+					$_buId = $this->_autoLibObj->fetchBusinessUnitId($_bu);
+					$_trucktypeId = $this->_autoLibObj->fetchTruckDescriptionId($_trucktype);
+					$_locationFromId = $this->_autoLibObj->fetchLocationId($_locationFrom);
+					$_locationToId = $this->_autoLibObj->fetchLocationId($_locationTo);
+				
+					// Default value to define the variable
+					$_routeId = 0;
+					$_rateId = 0;
+				
+					if ($_locationFromId && $_locationToId)
+					{
+						$_routeId = $this->fetchRouteId($_locationFromId, $_locationToId);
+					}
+					// : End
+					
+					if ($_routeId)
+					{
+						$_rateId = $this->_autoLibObj->fetchRateId($_customerId, $_routeId, $_buId, $_truckTypeId, $_objRegId);
+					}
+					
+					if ($_rateId)
+					{
+						switch($_version)
+						{
+							case 3:
+							{
+								// Add code here for v3
+								break;
+							}
+							case 2:
+							default:
+							{
+								foreach ($_contrib_data as $key => $value)
+								{
+									// Convert each word's first letter to an uppercase char
+									$_contribType = ucwords($key);
+					
+									// Remove whitespaces
+									$_contribType = preg_replace("@\s@", '', $_contribType);
+									
+									$session = $this->_autoLibObj->_sessionObj;
+									$_rateurl = preg_replace("@%s@", $_rateId, automationLibrary::URL_RATEVAL);
+									$_route_name = $this->getRouteName($_locationFrom, $_locationTo);
+									$_page_title = printf("Customer %s %s", $_customer, $_route_name);
+									$this->_autoLibObj->_sessionObj->open($this->_maxurl . $_rateurl);
+								
+									$this->_tmp = $_page_title;
+                            
+									// Wait for element text Customer [Customer Name] [Route]
+									$e = $this->_autoLibObj->_wObj->until(function ($session)
+									{
+										return $session->element("xpath", "//*[contains(text(),'$this->_tmp')]");
+									});
+                            
+									$this->_autoLibObj->_sessionObj->assertElementPresent("xpath", "//*[@id='subtabselector']/select/options[contains(text(),'$_contribType')]");
+									$this->_autoLibObj->_sessionObj->element("xpath", "//*[@id='subtabselector']/select/options[contains(text(),'$_contribType')]")->click();
+								
+									$this->_autoLibObj->_sessionObj->assertElementPresent("css selector", "div#button-create");
+									$this->_autoLibObj->_sessionObj->element("css selector", "div#button-create")->click();
+								
+									// Wait for element text to contain Create Date Range Values on the page
+									$e = $this->_autoLibObj->_wObj->until(function ($session)
+									{
+										return $session->element("xpath", "//*[contains(text(),'Create Date Range Values')]");
+									});
+								
+									$this->_autoLibObj->_sessionObj->assertElementPresent("xpath", "//*[contains(text(),'Create Date Range Values')]");
+									$this->_autoLibObj->_sessionObj->assertElementPresent("id", "DateRangeValue-2_0_0_beginDate-2");
+									$this->_autoLibObj->_sessionObj->assertElementPresent("id", "DateRangeValue-4_0_0_endDate-4");
+									$this->_autoLibObj->_sessionObj->assertElementPresent("id", "DateRangeValue-20_0_0_value-20");
+									$this->_autoLibObj->_sessionObj->assertElementPresent("css selector", "input[name=save][type=submit]");
+								
+									$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-2_0_0_beginDate-2")->clear();
+									$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-4_0_0_endDate-4")->clear();
+									$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-20_0_0_value-20")->clear();
+								
+									$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-2_0_0_beginDate-2")->sendKeys();
+									$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-4_0_0_endDate-4")->sendKeys();
+									$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-20_0_0_value-20")->sendKeys();
+								
+									$this->_autoLibObj->_sessionObj->element("css selector", "input[name=save][type=submit]")->click();
+								
+									// Wait for element text Customer [Customer Name] [Route]
+									$e = $this->_autoLibObj->_wObj->until(function ($session)
+									{
+										return $session->element("xpath", "//*[contains(text(),'$this->_tmp')]");
+									});
+								
+								}
+							}
+						}		
+					}
+				}
+			}
 			
 		} catch (Exception $e)
 		{
-			
+			return false;
 		}
 	}
 	
