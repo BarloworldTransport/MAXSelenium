@@ -125,7 +125,7 @@ class maxRoutesRates
                                 return $session->element("xpath", "//*[contains(text(),'Route Ward')]");
                             });
                             
-                            $this->_autoLibObj->_sessionObj->assertElementPresent("css selector", "div.toolbar-cell-create");
+                            $this->_autoLibObj->assertElementPresent("css selector", "div.toolbar-cell-create");
                             $this->_autoLibObj->_sessionObj->element("css selector", "div.toolbar-cell-create")->click();
                             
                             $e = $this->_autoLibObj->_wObj->until(function ($session)
@@ -133,8 +133,8 @@ class maxRoutesRates
                                 return $session->element("xpath", "//*[contains(text(),'Capture the Business Unit')]");
                             });
                             
-                            $this->_autoLibObj->_sessionObj->assertElementPresent("xpath", "//*[@id='udo_Rates[0][businessUnit_id]']");
-                            $this->_autoLibObj->_sessionObj->assertElementPresent("css selector", "input[name=save][type=submit]");
+                            $this->_autoLibObj->assertElementPresent("xpath", "//*[@id='udo_Rates[0][businessUnit_id]']");
+                            $this->_autoLibObj->assertElementPresent("css selector", "input[name=save][type=submit]");
                             
                             try {
                                 $this->_autoLibObj->_sessionObj->element("xpath", "//*[@id='udo_Rates[0][businessUnit_id]']/option[text()='$_bu']")->click();
@@ -175,10 +175,10 @@ class maxRoutesRates
                                 default:
                                     {
                                         // : Assert all elements on page
-                                        $this->_autoLibObj->_sessionObj->assertElementPresent("xpath", "//*[@name='udo_Route[0][locationTo_id]']");
-                                        $this->_autoLibObj->_sessionObj->assertElementPresent("xpath", "//*[@name='udo_Route[0][expectedKms]']");
-                                        $this->_autoLibObj->_sessionObj->assertElementPresent("xpath", "//*[@name='udo_Route[0][duration]']");
-                                        $this->_autoLibObj->_sessionObj->assertElementPresent("css selector", "input[type=submit][name=save]");
+                                        $this->_autoLibObj->assertElementPresent("xpath", "//*[@name='udo_Route[0][locationTo_id]']");
+                                        $this->_autoLibObj->assertElementPresent("xpath", "//*[@name='udo_Route[0][expectedKms]']");
+                                        $this->_autoLibObj->assertElementPresent("xpath", "//*[@name='udo_Route[0][duration]']");
+                                        $this->_autoLibObj->assertElementPresent("css selector", "input[type=submit][name=save]");
                                         // : End
                                         
                                         try {
@@ -236,13 +236,15 @@ class maxRoutesRates
 		{
 			$_status_report = (array) array();
 			$_report_template = (array) array(
+				"contrib_type" => false,
+				"rate_id" => false,
 				"process_pass" => false,
 				"check_in_db" => false,
 				"error" => false,
-				"errormsg" => false
+				"errormsg" => false,
+				"record_exists" => false
 			);
 			if ($this->_autoLibObj->get_db_status() != false)
-			//if (is_array($_status_report))
 			{
 				if (is_array($_contrib_data) && $_contrib_data)
 				{
@@ -255,17 +257,8 @@ class maxRoutesRates
 					$_customerId = $this->_autoLibObj->fetchCustomerId($_customer);
 					$_buId = $this->_autoLibObj->fetchBusinessUnitId($_bu);
 					$_trucktypeId = $this->_autoLibObj->fetchTruckDescriptionId($_trucktype);
-					$_locationFromId = $this->_autoLibObj->fetchLocationId($_locationFrom);
-					$_locationToId = $this->_autoLibObj->fetchLocationId($_locationTo);
-					
-					/*
-					$_objRegId = 461;
-					$_rateObjRegId = 496;
-					$_customerId = 28803;
-					$_buId = 9;
-					$_trucktypeId = 21;
-					$_locationFromId = 327;
-					$_locationToId = 33218;*/
+					$_locationFromId = $this->_autoLibObj->fetchLocationId($_locationFrom, automationLibrary::UDO_LOCATION_TYPE_CITY);
+					$_locationToId = $this->_autoLibObj->fetchLocationId($_locationTo, automationLibrary::UDO_LOCATION_TYPE_CITY);
 
 					// Default value to define the variable
 					$_routeId = 0;
@@ -273,17 +266,14 @@ class maxRoutesRates
 				
 					if ($_locationFromId && $_locationToId)
 					{
-						$_routeId = $this->fetchRouteId($_locationFromId, $_locationToId);
+						$_routeId = $this->_autoLibObj->fetchRouteId($_locationFromId, $_locationToId);
 					}
 					// : End
 					
 					if ($_routeId)
 					{
-						$_rateId = $this->_autoLibObj->fetchRateId($_customerId, $_routeId, $_buId, $_truckTypeId, $_objRegId);
+						$_rateId = $this->_autoLibObj->fetchRateId($_customerId, $_routeId, $_buId, $_trucktypeId, $_objRegId);
 					}
-					
-					$_routeId = 16935;
-					$_rateId = 60702;
 					
 					if ($_rateId)
 					{
@@ -301,10 +291,14 @@ class maxRoutesRates
 								
 								foreach ($_contrib_data as $key => $value)
 								{
+									
 									try
 									{
 										if ($value['value'])
 										{
+										
+										$_status_report[$x]['rate_id'] = $value['value'];
+										
 										$_utcBeginDate = false;
 										$_utcEndDate = false;
 										
@@ -315,13 +309,10 @@ class maxRoutesRates
 					
 										// Remove whitespaces
 										$_contribType = preg_replace("@\s@", '', $_contribType);
-									
-										$session = $this->_autoLibObj->_sessionObj;
-										$_rateurl = preg_replace("@%s@", $_rateId, automationLibrary::URL_RATEVAL);
-										$_route_name = $this->getRouteName($_locationFrom, $_locationTo);
-										$_page_title = printf("Customer %s %s", $_customer, $_route_name);
-										$this->_autoLibObj->_sessionObj->open($this->_maxurl . $_rateurl);
 										
+										$_status_report[$x]['contrib_type'] = $_contribType;
+										
+										// : Set UTC versions of the times
 										if (isset($value['beginDate']))
 										{
 											if ($value['beginDate'] && is_string($value['beginDate']))
@@ -337,55 +328,11 @@ class maxRoutesRates
 												$_utcEndDate = automationLibrary::dateTimeAmend($value['endDate'], 'Y-m-d H:i:s', "-2 Hours");
 											}
 										}
-								
-										$this->_tmp = $_page_title;
-										print($_page_title);
-                            
-										// Wait for element text Customer [Customer Name] [Route]
-										$e = $this->_autoLibObj->_wObj->until(function ($session)
-										{
-											return $session->element("css selector", "div.detail-title");
-										});
-										print($_contribType . " Values" . PHP_EOL);
-                            
-										//$this->_autoLibObj->_sessionObj->assertElementPresent("xpath", "//*[@id='subtabselector']/select/options[contains(text(),'$_contribType Values')]");
-										$this->_autoLibObj->_sessionObj->element("xpath", "//*[@id='subtabselector']/select/option[contains(text(),'$_contribType Values')]")->click();
-								
-										//$this->_autoLibObj->_sessionObj->assertElementPresent("css selector", "div#button-create");
-										$this->_autoLibObj->_sessionObj->element("css selector", "div#button-create")->click();
-								
-										// Wait for element text to contain Create Date Range Values on the page
-										$e = $this->_autoLibObj->_wObj->until(function ($session)
-										{
-											return $session->element("xpath", "//*[contains(text(),'Create Date Range Values')]");
-										});
-								
-										/*$this->_autoLibObj->_sessionObj->assertElementPresent("xpath", "//*[contains(text(),'Create Date Range Values')]");
-										$this->_autoLibObj->_sessionObj->assertElementPresent("id", "DateRangeValue-2_0_0_beginDate-2");
-										$this->_autoLibObj->_sessionObj->assertElementPresent("id", "DateRangeValue-4_0_0_endDate-4");
-										$this->_autoLibObj->_sessionObj->assertElementPresent("id", "DateRangeValue-20_0_0_value-20");
-										$this->_autoLibObj->_sessionObj->assertElementPresent("css selector", "input[name=save][type=submit]");*/
-								
-										$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-2_0_0_beginDate-2")->clear();
-										$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-4_0_0_endDate-4")->clear();
-										$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-20_0_0_value-20")->clear();
-								
-										$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-2_0_0_beginDate-2")->sendKeys($value['beginDate']);
-										$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-4_0_0_endDate-4")->sendKeys($value['endDate']);
-										$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-20_0_0_value-20")->sendKeys($value['value']);
-								
-										$this->_autoLibObj->_sessionObj->element("css selector", "input[name=save][type=submit]")->click();
-								
-										// Wait for element text Customer [Customer Name] [Route]
-										$e = $this->_autoLibObj->_wObj->until(function ($session)
-										{
-											return $session->element("css selector", "div.detail-title");
-										});
+										// : End
 										
-										$_status_report[$x]['process_pass'] = true;
+										// : Setup extra options to pass to SQL query
 										$_extra_options = array();
 										
-										// Check record exists in the DB
 										if ($value['endDate'] && $_utcEndDate)
 										{
 											$_extra_options['endDate'] = $_utcEndDate;
@@ -395,13 +342,77 @@ class maxRoutesRates
 										{
 											$_extra_options['beginDate'] = $_utcBeginDate;
 										}
-																				
-										/*$_fetchDrvId = $this->_autoLibObj->fetchDateRangeValueId($_rateObjRegId, $_rateId, $_contribType, $_extra_options);
+										// : End
 										
-										if (intval($_fetchDrvId))
+										$_fetchDrvId = $this->_autoLibObj->fetchDateRangeValueId($_rateObjRegId, $_rateId, $_contribType, $_extra_options);
+										
+										if (intval($_fetchDrvId) == 0)
 										{
+											$session = $this->_autoLibObj->_sessionObj;
+											$_rateurl = preg_replace("@%s@", $_rateId, automationLibrary::URL_RATEVAL);
+											$_route_name = $this->getRouteName($_locationFrom, $_locationTo);
+											$_page_title = sprintf("Customer %s %s", $_customer, $_route_name);
+											$this->_autoLibObj->_sessionObj->open($this->_maxurl . $_rateurl);
+                            
+											$this->_tmp = $_page_title;
+                            
+											// Wait for element text Customer [Customer Name] [Route]
+											$e = $this->_autoLibObj->_wObj->until(function ($session)
+											{
+												return $session->element("xpath", "//div[@class='detail-title' and contains(text(), '$this->_tmp')]");
+											});
+                            
+											$this->_autoLibObj->assertElementPresent("xpath", "//*[@id='subtabselector']/select/option[contains(text(),'$_contribType Values')]");
+											$this->_autoLibObj->_sessionObj->element("xpath", "//*[@id='subtabselector']/select/option[contains(text(),'$_contribType Values')]")->click();
+								
+											$this->_autoLibObj->assertElementPresent("css selector", "div#button-create");
+											$this->_autoLibObj->_sessionObj->element("css selector", "div#button-create")->click();
+								
+											// Wait for element text to contain Create Date Range Values on the page
+											$e = $this->_autoLibObj->_wObj->until(function ($session)
+											{
+												return $session->element("xpath", "//*[contains(text(),'Create Date Range Values')]");
+											});
+								
+											$this->_autoLibObj->assertElementPresent("xpath", "//*[contains(text(),'Create Date Range Values')]");
+											$this->_autoLibObj->assertElementPresent("id", "DateRangeValue-2_0_0_beginDate-2");
+											$this->_autoLibObj->assertElementPresent("id", "DateRangeValue-4_0_0_endDate-4");
+											$this->_autoLibObj->assertElementPresent("id", "DateRangeValue-20_0_0_value-20");
+											$this->_autoLibObj->assertElementPresent("css selector", "input[name=save][type=submit]");
+							
+											$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-2_0_0_beginDate-2")->clear();
+											$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-4_0_0_endDate-4")->clear();
+											$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-20_0_0_value-20")->clear();
+								
+											$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-2_0_0_beginDate-2")->sendKeys($value['beginDate']);
+											$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-4_0_0_endDate-4")->sendKeys($value['endDate']);
+											$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-20_0_0_value-20")->sendKeys($value['value']);
+								
+											$this->_autoLibObj->_sessionObj->element("css selector", "input[name=save][type=submit]")->click();
+								
+											// Wait for element text Customer [Customer Name] [Route]
+											$e = $this->_autoLibObj->_wObj->until(function ($session)
+											{
+												return $session->element("css selector", "div.detail-title");
+											});
+
+											// Check record exists in the DB
+																				
+											$_fetchDrvId = $this->_autoLibObj->fetchDateRangeValueId($_rateObjRegId, $_rateId, $_contribType, $_extra_options);
+										
+											if (intval($_fetchDrvId))
+											{
+												$_status_report[$x]['check_in_db'] = true;
+											}
+										} else
+										{
+											$_status_report[$x]['record_exists'] = true;
 											$_status_report[$x]['check_in_db'] = true;
-										}*/
+										}
+										
+										// Process pass point
+										$_status_report[$x]['process_pass'] = true;
+										
 									}
 									} catch (Exception $e)
 									{

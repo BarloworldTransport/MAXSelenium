@@ -89,6 +89,9 @@ class automationLibrary
     
     const OBJREG_RATE = "udo_Rates";
     
+    // Constants - Location Types
+    const UDO_LOCATION_TYPE_CITY = 'City';
+    
     // Constants - Error Messages
     const ERR_COULD_NOT_FIND_ELEMENT = "ERROR: Could not find the expected element on page: %s";
 
@@ -178,7 +181,7 @@ class automationLibrary
     protected $_errors;
     protected $_mode;
     protected $_version;
-    protected $_reports;
+    protected $_reports = array();
     protected static $_config_array = array();
 	protected static $_config_array_defaults = array(
 		'selenium' => array(
@@ -292,7 +295,7 @@ class automationLibrary
     {
 		if ($_reports_arr && is_array($_reports_arr))
 		{
-			$this->_reports = $_reports_arr;
+			$this->_reports[] = $_reports_arr;
 			return true;
 		}
 		
@@ -334,7 +337,7 @@ class automationLibrary
      */
     public function fetchObjectRegistryId($_object_reg)
     {
-		if ($this->get_db_status != false)
+		if ($this->get_db_status() != false)
 		{
 			if ($_object_reg && is_string($_object_reg))
 			{
@@ -342,7 +345,7 @@ class automationLibrary
 			
 				if ($_query && is_string($_query))
 				{
-					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+					$_sql_result = $this->pdoobj->getDataFromQuery($_query);
 				
 					if ($_sql_result && is_array($_sql_result))
 					{
@@ -371,7 +374,7 @@ class automationLibrary
      */
     public function fetchTruckDescriptionId($_truckDescription)
     {
-		if ($this->get_db_status != false)
+		if ($this->get_db_status() != false)
 		{
 			if ($_truckDescription && is_string($_truckDescription))
 			{
@@ -379,7 +382,7 @@ class automationLibrary
 			
 				if ($_query && is_string($_query))
 				{
-					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+					$_sql_result = $this->pdoobj->getDataFromQuery($_query);
 				
 					if ($_sql_result && is_array($_sql_result))
 					{
@@ -408,7 +411,7 @@ class automationLibrary
      */
     public function fetchBusinessUnitId($_bu)
     {
-		if ($this->get_db_status != false)
+		if ($this->get_db_status() != false)
 		{
 			if ($_bu && is_string($_bu))
 			{
@@ -416,7 +419,7 @@ class automationLibrary
 			
 				if ($_query && is_string($_query))
 				{
-					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+					$_sql_result = $this->pdoobj->getDataFromQuery($_query);
 				
 					if ($_sql_result && is_array($_sql_result))
 					{
@@ -445,16 +448,16 @@ class automationLibrary
      */
     public function fetchLocationId($_location, $_type)
     {
-		if ($this->get_db_status != false)
+		if ($this->get_db_status() != false)
 		{
 			if ($_location && is_string($_location) && $_type && is_string($_type))
 			{
 				$_query = preg_replace("@%n@", $_location, automationLibrary::SQL_QUERY_LOCATION);
-				$_query = preg_replace("@%t@", $_type, $_query);
+				$_query = preg_replace("@%t@", "%" . $_type . "%", $_query);
 			
 				if ($_query && is_string($_query))
 				{
-					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+					$_sql_result = $this->pdoobj->getDataFromQuery($_query);
 				
 					if ($_sql_result && is_array($_sql_result))
 					{
@@ -484,7 +487,7 @@ class automationLibrary
      */
     public function fetchRouteId($_locationFromId, $_locationToId)
     {
-		if ($this->get_db_status != false)
+		if ($this->get_db_status() != false)
 		{
 			if (intval($_locationFromId) && intval($_locationToId))
 			{
@@ -493,7 +496,7 @@ class automationLibrary
 			
 				if ($_query && is_string($_query))
 				{
-					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+					$_sql_result = $this->pdoobj->getDataFromQuery($_query);
 				
 					if ($_sql_result && is_array($_sql_result))
 					{
@@ -523,16 +526,15 @@ class automationLibrary
      */
     public function fetchCustomerId($_customer)
     {
-		if ($this->get_db_status != false)
+		if ($this->get_db_status() != false)
 		{
 			if ($_customer && is_string($_customer))
 			{
-				$_query = preg_replace("@%f@", $_locationFromId, automationLibrary::SQL_QUERY_ROUTE);
-				$_query = preg_replace("@%t@", $_locationToId, $_query);
+				$_query = preg_replace("@%t@", $_customer, automationLibrary::SQL_QUERY_CUSTOMER);
 			
 				if ($_query && is_string($_query))
 				{
-					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+					$_sql_result = $this->pdoobj->getDataFromQuery($_query);
 				
 					if ($_sql_result && is_array($_sql_result))
 					{
@@ -580,7 +582,7 @@ class automationLibrary
      */
     public function fetchRateId($_customer_id, $_route_id, $_bu_id, $_trucktype_id, $_objreg_id)
     {
-		if ($this->get_db_status != false)
+		if ($this->get_db_status() != false)
 		{
 			if (intval($_customer_id) && intval($_route_id) && intval($_bu_id) && intval($_trucktype_id) && intval($_objreg_id))
 			{
@@ -589,10 +591,10 @@ class automationLibrary
 				$_query = preg_replace("@%c@", $_customer_id, $_query);
 				$_query = preg_replace("@%d@", $_trucktype_id, $_query);
 				$_query = preg_replace("@%b@", $_bu_id, $_query);
-			
+				
 				if ($_query && is_string($_query))
 				{
-					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+					$_sql_result = $this->pdoobj->getDataFromQuery($_query);
 				
 					if ($_sql_result && is_array($_sql_result))
 					{
@@ -642,7 +644,7 @@ class automationLibrary
      */
     public function fetchDateRangeValueId($_object_reg_id, $_object_instance_id, $_type, $_extra_array = NULL)
     {
-		if ($this->get_db_status != false)
+		if ($this->get_db_status() != false)
 		{
 			if (intval($_object_reg_id) && intval($_object_instance_id) && is_string($_type) && $_type)
 			{
@@ -660,16 +662,30 @@ class automationLibrary
 					
 					if ($_arr_options)
 					{
+						$_add_query = '';
+						
 						foreach($_arr_options as $key1 => $value1)
 						{
-							$_query .= " $value1=" . $_extra_array[$value1];
+							if ($value1 == 'beginDate' || $value1 == 'endDate')
+							{
+								$_add_query = sprintf(" and (%s = \"%s\" or %s > \"%s\")", $value1, $_extra_array[$value1],$value1, $_extra_array[$value1]);
+								
+							} else
+							{
+								$_add_query = sprintf(" and %s = %s", $value1, $_extra_array[$value1]);
+							}
+							
+							if ($_add_query && is_string($_add_query))
+							{
+								$_query .= $_add_query;
+							}
 						}
 					}
 				}
-			
+
 				if ($_query && is_string($_query))
 				{
-					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+					$_sql_result = $this->pdoobj->getDataFromQuery($_query);
 				
 					if ($_sql_result && is_array($_sql_result))
 					{

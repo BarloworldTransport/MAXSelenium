@@ -243,7 +243,7 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 							"days per trip",
 							"fuel consumption",
 							"expected empty kms",
-							"expected kms"
+							"expected distance"
 						);
 						
 						$_verify_arr = automationLibrary::getMatchingKeys($_contrib_arr, $value);
@@ -257,13 +257,8 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 							}
 						}
 						
-						try
-						{
-							$_routeRateObj->maxCreateRateContribData($_customer, $_bu, $_locationFrom, $_locationTo, $_trucktype, $_contrib_data);
-						} catch  (Exception $e)
-						{
-							// a
-						}
+						
+						$_routeRateObj->maxCreateRateContribData($_customer, $_bu, $_locationFrom, $_locationTo, $_trucktype, $_contrib_data);
 					}
 				}
 				
