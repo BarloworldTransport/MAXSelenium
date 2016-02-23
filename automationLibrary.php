@@ -61,6 +61,8 @@ class automationLibrary
 
     const SQL_QUERY_OFFLOAD_BU_LINK = "select ID from udo_offloadingcustomersbusinessunit_link where offloadingCustomers_id=%o and businessUnit_id=%b;";
     
+    const SQL_QUERY_DRV = "select ID from daterangevalue where objectregistry_id=%g and objectInstanceId=%r and type='%t'";
+    
     // Constants - Location Types
     const _TYPE_CITY = "udo_City";
 
@@ -82,6 +84,10 @@ class automationLibrary
     
     // Constants - Object Registry Objects
     const OBJREG_CUSTOMER = "udo_Customer";
+    
+    const OBJREG_DATERANGEVALUE = "DateRangeValue";
+    
+    const OBJREG_RATE = "udo_Rates";
     
     // Constants - Error Messages
     const ERR_COULD_NOT_FIND_ELEMENT = "ERROR: Could not find the expected element on page: %s";
@@ -169,8 +175,10 @@ class automationLibrary
     public $_wObj;
     public $pdoobj = false;
     
+    protected $_errors;
     protected $_mode;
     protected $_version;
+    protected $_reports;
     protected static $_config_array = array();
 	protected static $_config_array_defaults = array(
 		'selenium' => array(
@@ -247,6 +255,63 @@ class automationLibrary
     // : End
     
     // : Public Methods
+    
+    /**
+     * automationLibrary::getErrors()
+     * Return all recorded errors
+     */
+    public function getErrors()
+    {
+		if ($this->_errors && is_array($this->_errors))
+		{
+			return $this->_errors;
+		}
+		
+		return false;
+	}
+
+    /**
+     * automationLibrary::getReports()
+     * Return report data from last updated report
+     */
+    public function getReports()
+    {
+		if ($this->_reports && is_array($this->_reports))
+		{
+			return $this->_reports;
+		}
+		
+		return false;
+	}
+	
+    /**
+     * automationLibrary::setReports($_reports_arr)
+     * Overwrite reports with a new report
+     */
+    public function setReports($_reports_arr)
+    {
+		if ($_reports_arr && is_array($_reports_arr))
+		{
+			$this->_reports = $_reports_arr;
+			return true;
+		}
+		
+		return false;
+	}
+	
+    /**
+     * automationLibrary::checkForRequiredEnv()
+     * Return report data from last updated report
+     */
+    public static function checkForRequiredEnv()
+    {
+		if (getenv(self::DEFAULT_PATH_ENV_VAR))
+		{
+			return true;
+		}
+		
+		return false;
+	}
 
     /**
      * automationLibrary::get_db_status
@@ -489,6 +554,25 @@ class automationLibrary
 		// If code reaches this point then query failed
 		return false;
 	}
+	
+	/**
+     * automationLibrary::dateTimeAmend($_dateStr, $_strtotime)
+     * Manipulate date time by using the strtotime function
+     */
+    public static function dateTimeAmend($_dateStr, $_dateFmt, $_strtotime)
+    {
+		if ($_dateStr && is_string($_dateStr) && $_dateFmt && is_string($_dateFmt) && $_strtotime && is_string($_strtotime))
+		{
+			try
+			{
+				$_result = date($_dateFmt, strtotime($_dateStr . " $_strtotime"));
+				return $_result;
+			} catch (Exception $e)
+			{
+				return false;
+			}
+		}
+	}
 
     /**
      * automationLibrary::fetchRateId($_customer_id, $_route_id, $_bu_id, $_trucktype_id, $_objreg_id)
@@ -505,6 +589,83 @@ class automationLibrary
 				$_query = preg_replace("@%c@", $_customer_id, $_query);
 				$_query = preg_replace("@%d@", $_trucktype_id, $_query);
 				$_query = preg_replace("@%b@", $_bu_id, $_query);
+			
+				if ($_query && is_string($_query))
+				{
+					$_sql_result = $this->_autoLibObj->pdoobj->getDataFromQuery($_query);
+				
+					if ($_sql_result && is_array($_sql_result))
+					{
+						if (isset($_sql_result[0]['ID']))
+						{
+							if ($_sql_result[0]['ID'])
+							{
+								return $_sql_result[0]['ID'];
+							}
+						}
+					}
+				}
+			}
+		} else
+		{
+			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+		}
+		
+		// If code reaches this point then query failed
+		return false;
+	}
+	
+    /**
+     * automationLibrary::getMatchingKeys($_array1, $_array2)
+     * Find and return any of the array1 keys found in array2
+     * $_array1 needs to be numerical indexed with the values
+     * been set as the expected keys to be search in array2
+     * 
+     * $_array1 = array('key1', 'key2');
+     * $_array2 = array('key1' => 'value1', 'key2' => 'value2');
+     */
+    public static function getMatchingKeys($_array1, $_array2)
+    {
+		$searchPatt = sprintf("@%s@", implode('|', $_array1));
+
+		$_arr_options = preg_grep($searchPatt, array_keys($_array2));
+		
+		if ($_arr_options && is_array($_arr_options))
+		{
+			return $_arr_options;
+		}
+	}
+	
+    /**
+     * automationLibrary::fetchDateRangeValueId($_object_reg_id, $_object_instance_id, $_type, $_extra_array = NULL)
+     * Query MAX DB to fetch the id for a daterangevalue
+     */
+    public function fetchDateRangeValueId($_object_reg_id, $_object_instance_id, $_type, $_extra_array = NULL)
+    {
+		if ($this->get_db_status != false)
+		{
+			if (intval($_object_reg_id) && intval($_object_instance_id) && is_string($_type) && $_type)
+			{
+				$_query = preg_replace("@%g@", $_object_reg_id, automationLibrary::SQL_QUERY_DRV);
+				$_query = preg_replace("@%r@", $_object_instance_id, $_query);
+				$_query = preg_replace("@%t@", $_type, $_query);
+				
+				if ($_extra_array && is_array($_extra_array))
+				{
+					$_array_check = (array) array(
+						"beginDate", "endDate"
+					);
+					
+					$_arr_options = self::getMatchingKeys($_array_check, $_extra_array);
+					
+					if ($_arr_options)
+					{
+						foreach($_arr_options as $key1 => $value1)
+						{
+							$_query .= " $value1=" . $_extra_array[$value1];
+						}
+					}
+				}
 			
 				if ($_query && is_string($_query))
 				{

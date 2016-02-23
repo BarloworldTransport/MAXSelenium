@@ -10,6 +10,7 @@ require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
 require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
 require_once 'automationLibrary.php';
 require_once 'MAX_LoginLogout.php';
+require_once 'MAX_Routes_Rates.php';
 
 // : End
 
@@ -71,36 +72,39 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 	 */
 	public function __construct() {
 		
-		// Define required config options for this script
-		$_config = (array) array(
-			'selenium' => array(
-				'rates' => array(
-					'file' => '',
-					'filetype' => ''
-				)
-			)
-		);
 		
-		// Initialize config
-		automationLibrary::initializeConfig();
-		
-		// Merge config with default config options
-		$_config = automationLibrary::mergeConfigOptions($_config);
-		
-		// Determine full path to the json config file
-		$_config_file =  automationLibrary::getConfigFilePath();
-
-		if (is_file ( $_config_file ) === FALSE) {
-			echo "No " . $_config_file . " file found. Please create it and populate it with the following data: username=x@y.com, password=`your password`, your name shown on MAX the welcome page welcome=`Joe Soap` and mode=`test` or `live`" . PHP_EOL;
-			return FALSE;
-		}
-		
-		// Load config
-		$_config = automationLibrary::verifyAndLoadConfig($_config, $_config_file);
-		
-		// : Save variables from fetched config data for use in script
-		if ($_config)
+		if (automationLibrary::checkForRequiredEnv())
 		{
+			
+			// Define required config options for this script
+			$_config = (array) array(
+				'selenium' => array(
+					'rates' => array(
+						'file' => '',
+						'filetype' => ''
+					)
+				)
+			);
+		
+			// Initialize config
+			automationLibrary::initializeConfig();
+		
+			// Merge config with default config options
+			$_config = automationLibrary::mergeConfigOptions($_config);
+		
+			// Determine full path to the json config file
+			$_config_file =  automationLibrary::getConfigFilePath();
+
+			if (is_file ( $_config_file ) === FALSE) {
+				throw new Exception("No " . $_config_file . " file found. Please create it and populate it with the following data: username=x@y.com, password=`your password`, your name shown on MAX the welcome page welcome=`Joe Soap` and mode=`test` or `live`" . PHP_EOL);
+			}
+
+			// Load config
+			$_config = automationLibrary::verifyAndLoadConfig($_config, $_config_file);
+
+			// : Save variables from fetched config data for use in script
+			if ($_config)
+			{
 				$this->_config = $_config;
 				$this->_username = $_config['selenium']['username'];
 				$this->_password = $_config['selenium']['password'];
@@ -119,13 +123,16 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 			
 				// Determine MAX URL to be used for this test run
 				$this->_maxurl = automationLibrary::getMAXURL($this->_mode, $this->_version);
+			} else
+			{
+				print("Required key value pairs where not found in the json config file: $_config_file" . PHP_EOL);
+				exit;
+			}
+			// : End
 		} else
 		{
-			print("Required key value pairs where not found in the json config file: $_config_file" . PHP_EOL);
-			exit;
+			die("Required environment variable: " . automationLibrary::DEFAULT_PATH_ENV_VAR . " not found. Please set it with the absolute path to the root dir of the script");
 		}
-		// : End
-
 	}
 	
 	/**
@@ -201,27 +208,84 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 					
 					throw new Exception("Failed to connect to database");
 				}
-				/** EXAMPLE CODE TO QUERY MAX DB
-				$_testquery = "SELECT * FROM udo_cargo ORDER BY ID DESC LIMIT 1";
-				$_db_result = $_autoLib->pdoobj->getDataFromQuery($_testquery);
-				*/
 				
-				/** THIS LOOPS THE EACH RECORD AND RUNS REQUIRED CODE TO EXECUTE ACTION REQUIRED
-				if ($this->_data && is_array($this->_data))
-				{
-					foreach ($this->_data $key => $value)
-					{
-						
-					}
-				}*/
-
+				// Create an instance of the maxLoginLogout class
 				$_maxLoginLogout = new maxLoginLogout($_autoLib, $this->_maxurl);
-			
+				
+				// Create an instance of the maxRoutesRates class
+				$_routeRateObj = new maxRoutesRates($_autoLib, $this->_maxurl);
+				
 				// Log into MAX
 				if (!$_maxLoginLogout->maxLogin($this->_username, $this->_password, $this->_welcome)) {
 					throw new Exception($_maxLoginLogout->getLastError());
 				}
-			
+				
+				if ($this->_data && is_array($this->_data))
+				{
+					foreach ($this->_data as $key => $value)
+					{
+						$_customer = $value['customer'];
+						$_bu = $value['business unit'];
+						$_locationFrom = $value['location from town'];
+						$_locationTo = $value['location to town'];
+						$_trucktype = $value['truck type'];
+						$_contrib_data = array();
+						
+						$_contrib_template = array(
+							"beginDate" => $value['start date'],
+							"endDate" => $value['end date'],
+							"value" => NULL
+						);
+						
+						$_contrib_arr = array(
+							"fleet value",
+							"days per month",
+							"days per trip",
+							"fuel consumption",
+							"expected empty kms",
+							"expected kms"
+						);
+						
+						$_verify_arr = automationLibrary::getMatchingKeys($_contrib_arr, $value);
+						
+						if ($_verify_arr)
+						{
+							foreach($_verify_arr as $key1 => $value1)
+							{
+								$_contrib_data[$value1] = $_contrib_template;
+								$_contrib_data[$value1]['value'] = $value[$value1];
+							}
+						}
+						
+						try
+						{
+							$_routeRateObj->maxCreateRateContribData($_customer, $_bu, $_locationFrom, $_locationTo, $_trucktype, $_contrib_data);
+						} catch  (Exception $e)
+						{
+							// a
+						}
+					}
+				}
+				
+				$_reports = $_autoLib->getReports();
+							
+				if ($_reports && is_array($_reports))
+				{
+					foreach ($_reports as $key => $value)
+					{
+						print_r($value);
+					}
+				}
+							
+				$_errors = $_autoLib->getErrors();
+							
+				if ($_errors && is_array($_errors))
+				{
+					foreach ($_errors as $key => $value)
+					{
+						print_r($value);
+					}
+				}
 
 				// Log out of MAX
 				$_maxLoginLogout->maxLogout($this->_session, $w, $this, $this->_version);
