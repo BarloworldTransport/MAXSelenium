@@ -33,6 +33,7 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase {
 	// : Constants
 	const PB_URL = "/Planningboard";
 	const COULD_NOT_CONNECT_MYSQL = "Failed to connect to MySQL database";
+	const FILE_NOT_FOUND = 'File not found %s';
 	const MAX_NOT_RESPONDING = "Error: MAX does not seem to be responding";
 	const CUSTOMER_URL = "/DataBrowser?browsePrimaryObject=461&browsePrimaryInstance=";
 	const LOCATION_BU_URL = "/DataBrowser?browsePrimaryObject=495&browsePrimaryInstance=";
@@ -104,7 +105,7 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase {
 			return FALSE;
 		}
 		$data = parse_ini_file ( $ini );
-		if ((array_key_exists ( "proxy", $data ) && $data ["proxy"]) && (array_key_exists ( "browser", $data ) && $data ["browser"]) && (array_key_exists ( "ip", $data ) && $data ["ip"]) && (array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "xls", $data ) && $data ["xls"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"])) {
+		if ((array_key_exists ( "proxy", $data )) && (array_key_exists ( "browser", $data ) && $data ["browser"]) && (array_key_exists ( "ip", $data ) && $data ["ip"]) && (array_key_exists ( "datadir", $data ) && $data ["datadir"]) && (array_key_exists ( "username", $data ) && $data ["username"]) && (array_key_exists ( "xls", $data ) && $data ["xls"]) && (array_key_exists ( "password", $data ) && $data ["password"]) && (array_key_exists ( "welcome", $data ) && $data ["welcome"]) && (array_key_exists ( "mode", $data ) && $data ["mode"])) {
 			$this->_username = $data ["username"];
 			$this->_password = $data ["password"];
 			$this->_welcome = $data ["welcome"];
@@ -148,9 +149,14 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase {
 		$wd_host = "http://localhost:$this->_wdport/wd/hub";
 		self::$driver = new PHPWebDriver_WebDriver ( $wd_host );
 		$desired_capabilities = array();
-		$proxy = new PHPWebDriver_WebDriverProxy();
-		$proxy->httpProxy = $this->_proxyip;
-		$proxy->add_to_capabilities($desired_capabilities);
+		
+		/*if ($this->_proxyip)
+		{
+			$proxy = new PHPWebDriver_WebDriverProxy();
+			$proxy->httpProxy = $this->_proxyip;
+		}
+		
+		$proxy->add_to_capabilities($desired_capabilities);*/
 		$this->_session = self::$driver->session ( $this->_browser, $desired_capabilities );
 	}
 	
@@ -162,8 +168,7 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase {
 		
 		// : Pull F and V Contract data from correctly formatted xls spreadsheet
 		
-		$file = realpath($this->_dataDir) . self::DS . $this->_xls;
-		echo $file . PHP_EOL;
+		$file = $this->_dataDir . self::DS . $this->_xls;
 
 		if (file_exists ( $file )) {
 			
@@ -194,18 +199,19 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase {
 			
 			// : Login
 			$this->_session->open ( $this->_maxurl );
-			// : Wait for page to load and for elements to be present on page
-			if ($this->_mode == "live") {
-				$e = $w->until ( function ($session) {
-					return $session->element ( 'css selector', "#contentFrame" );
-				} );
-				$iframe = $this->_session->element ( 'css selector', '#contentFrame' );
-				$this->_session->switch_to_frame ( $iframe );
-			}
+
+			// : Wait for page to load and for elements toxs be present on page
+			$e = $w->until ( function ($session) {
+				return $session->element ( 'css selector', "#contentFrame" );
+			} );
+			$iframe = $this->_session->element ( 'css selector', '#contentFrame' );
+			$this->_session->switch_to_frame ( $iframe );
+
 			$e = $w->until ( function ($session) {
 				return $session->element ( 'css selector', 'input[id=identification]' );
 			} );
 			// : End
+			
 			$this->assertElementPresent ( 'css selector', 'input[id=identification]' );
 			$this->assertElementPresent ( 'css selector', 'input[id=password]' );
 			$this->assertElementPresent ( 'css selector', 'input[name=submit][type=submit]' );
@@ -214,19 +220,17 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase {
 			$e->sendKeys ( $this->_password );
 			$e = $this->_session->element ( 'css selector', 'input[name=submit][type=submit]' );
 			$e->click ();
+			
 			// Switch out of frame
-			if ($this->_mode == "live") {
-				$this->_session->switch_to_frame ();
-			}
+			$this->_session->switch_to_frame ();
 			
 			// : Wait for page to load and for elements to be present on page
-			if ($this->_mode == "live") {
-				$e = $w->until ( function ($session) {
-					return $session->element ( 'css selector', "#contentFrame" );
-				} );
-				$iframe = $this->_session->element ( 'css selector', '#contentFrame' );
-				$this->_session->switch_to_frame ( $iframe );
-			}
+			$e = $w->until ( function ($session) {
+				return $session->element ( 'css selector', "#contentFrame" );
+			} );
+			$iframe = $this->_session->element ( 'css selector', '#contentFrame' );
+			$this->_session->switch_to_frame ( $iframe );
+
 			$e = $w->until ( function ($session) {
 				return $session->element ( "xpath", "//*[text()='" . $this->_welcome . "']" );
 			} );
@@ -671,6 +675,9 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase {
 				}
 			}
 			// : End
+		} else
+		{
+			throw new Exception(sprintf(self::FILE_NOT_FOUND, $file));
 		}
 		
 		// : End
