@@ -8,7 +8,7 @@ require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriver.php';
 require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverWait.php';
 require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
 require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
-require_once 'automationLibrary.php';
+require_once 'AutomationLibrary.php';
 require_once 'MAX_LoginLogout.php';
 require_once "MAX_API_Get.php";
 
@@ -100,7 +100,7 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			$this->_apiuserpwd = $data ["apiuserpwd"];
 			
 			// Determine MAX URL to be used for this test run
-            $this->_maxurl = automationLibrary::getMAXURL($this->_mode, $this->_version);
+            $this->_maxurl = AutomationLibrary::getMAXURL($this->_mode, $this->_version);
 			
 		} else {
 			echo "The correct data is not present in user_data.ini. Please confirm. Fields are username, password, welcome and mode" . PHP_EOL;
@@ -154,7 +154,7 @@ class MAXTest_User_Create extends PHPUnit_Framework_TestCase {
 			$this->_session->setPageLoadTimeout ( 60 );
 			$w = new PHPWebDriver_WebDriverWait ( $session, 30 );
 			
-			$_autoLib = new automationLibrary($this->_session, $this, $w, $this->_mode, $this->_version);
+			$_autoLib = new AutomationLibrary($this->_session, $this, $w, $this->_mode, $this->_version);
 			$_maxLoginLogout = new maxLoginLogout($_autoLib, $this->_maxurl);
 			
 			// Log into MAX

@@ -281,7 +281,7 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 		
 		if ($this->_errors) {
 			$_errfile = dirname(__FILE__) . self::DS . $this->_errdir . self::DS . date("Y-m-d_H_i_s") . "_max_fleet_contrib_report.csv";
-			$this->ExportToCSV($_errfile, $this->_errors);
+			$this->exportToCSV($_errfile, $this->_errors);
 		}
 		
 		// : Tear Down
@@ -354,13 +354,13 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 	}
 	
 	/**
-	 * MAXTest_Fleet_Contrib_Data::ExportToCSV($csvFile, $arr)
+	 * MAXTest_Fleet_Contrib_Data::exportToCSV($csvFile, $arr)
 	 * From supplied csv file save data into multidimensional array
 	 *
 	 * @param string: $csvFile
 	 * @param array: $_arr
 	 */
-	private function ExportToCSV($csvFile, $_arr) {
+	private function exportToCSV($csvFile, $_arr) {
 		try {
 			$_data = ( array ) array ();
 			if (file_exists ( dirname ( $csvFile ) )) {

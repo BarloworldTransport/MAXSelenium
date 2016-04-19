@@ -363,7 +363,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		if ($this->_errors) {
 		    var_dump($this->_errors);
 			$_errfile = dirname ( __FILE__ ) . $this->_errdir . self::DS . "error_report_" . $this->getReportFileName () . ".csv";
-			$this->ExportToCSV ( $_errfile, $this->_errors );
+			$this->exportToCSV ( $_errfile, $this->_errors );
 			echo "Exported error report to the following path and file: " . $_errfile;
 		}
 		// : End
@@ -379,7 +379,7 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 		
 		if ($_orders) {
 			$_ordersfile = dirname ( __FILE__ ) . "/export" . self::DS . $this->getReportFileName () . ".csv";
-			$this->ExportToCSV ( $_ordersfile, $_orders );
+			$this->exportToCSV ( $_ordersfile, $_orders );
 			echo "Exported successfully created refuels report to the following path and file: " . $_ordersfile;
 		}
 		// : End
@@ -474,13 +474,13 @@ class MAXLive_CreateRefuels extends PHPUnit_Framework_TestCase {
 	}
 	
 	/**
-	 * MAXLive_CreateRefuels::ExportToCSV($csvFile, $arr)
+	 * MAXLive_CreateRefuels::exportToCSV($csvFile, $arr)
 	 * From supplied csv file save data into multidimensional array
 	 *
 	 * @param string: $csvFile        	
 	 * @param array: $_arr        	
 	 */
-	private function ExportToCSV($csvFile, $_arr) {
+	private function exportToCSV($csvFile, $_arr) {
 		try {
 			$_data = ( array ) array ();
 			if (file_exists ( dirname ( $csvFile ) )) {

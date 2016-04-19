@@ -593,7 +593,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
         // : Report errors if any occured
         if ($this->_errors) {
             $_errfile = dirname(__FILE__) . self::DS . $this->_errdir . self::DS . "error_report_" . date("Y-m-d_His") . ".csv";
-            $this->ExportToCSV($_errfile, $this->_errors);
+            $this->exportToCSV($_errfile, $this->_errors);
             echo "Exported error report to the following path and file: " . $_errfile;
         }
         // : End
@@ -677,13 +677,13 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * MAXLive_FleetTruckLinkCommander::ExportToCSV($csvFile, $arr)
+     * MAXLive_FleetTruckLinkCommander::exportToCSV($csvFile, $arr)
      * From supplied csv file save data into multidimensional array
      *
      * @param string: $csvFile            
      * @param array: $_arr            
      */
-    private function ExportToCSV($csvFile, $_arr)
+    private function exportToCSV($csvFile, $_arr)
     {
         try {
             $_data = (array) array();

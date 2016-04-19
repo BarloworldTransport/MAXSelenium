@@ -8,7 +8,7 @@ require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriver.php';
 require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverWait.php';
 require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
 require_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
-require_once 'automationLibrary.php';
+require_once 'AutomationLibrary.php';
 require_once 'MAX_LoginLogout.php';
 require_once 'MAX_Routes_Rates.php';
 
@@ -37,7 +37,7 @@ require_once 'MAX_Routes_Rates.php';
  */
 class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 	// : Constants
-	// All inherited from automationLibrary
+	// All inherited from AutomationLibrary
 	
 	// : Variables
 	protected static $driver;
@@ -73,7 +73,7 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 	public function __construct() {
 		
 		
-		if (automationLibrary::checkForRequiredEnv())
+		if (AutomationLibrary::checkForRequiredEnv())
 		{
 			
 			// Define required config options for this script
@@ -87,20 +87,20 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 			);
 		
 			// Initialize config
-			automationLibrary::initializeConfig();
+			AutomationLibrary::initializeConfig();
 		
 			// Merge config with default config options
-			$_config = automationLibrary::mergeConfigOptions($_config);
+			$_config = AutomationLibrary::mergeConfigOptions($_config);
 		
 			// Determine full path to the json config file
-			$_config_file =  automationLibrary::getConfigFilePath();
+			$_config_file =  AutomationLibrary::getConfigFilePath();
 
 			if (is_file ( $_config_file ) === FALSE) {
 				throw new Exception("No " . $_config_file . " file found. Please create it and populate it with the following data: username=x@y.com, password=`your password`, your name shown on MAX the welcome page welcome=`Joe Soap` and mode=`test` or `live`" . PHP_EOL);
 			}
 
 			// Load config
-			$_config = automationLibrary::verifyAndLoadConfig($_config, $_config_file);
+			$_config = AutomationLibrary::verifyAndLoadConfig($_config, $_config_file);
 
 			// : Save variables from fetched config data for use in script
 			if ($_config)
@@ -122,7 +122,7 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 				$this->_max_db_tenant = $_config['selenium']['maxdbtenant'];
 			
 				// Determine MAX URL to be used for this test run
-				$this->_maxurl = automationLibrary::getMAXURL($this->_mode, $this->_version);
+				$this->_maxurl = AutomationLibrary::getMAXURL($this->_mode, $this->_version);
 			} else
 			{
 				print("Required key value pairs where not found in the json config file: $_config_file" . PHP_EOL);
@@ -131,7 +131,7 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 			// : End
 		} else
 		{
-			die("Required environment variable: " . automationLibrary::DEFAULT_PATH_ENV_VAR . " not found. Please set it with the absolute path to the root dir of the script");
+			die("Required environment variable: " . AutomationLibrary::DEFAULT_PATH_ENV_VAR . " not found. Please set it with the absolute path to the root dir of the script");
 		}
 	}
 	
@@ -176,7 +176,7 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 	public function testCreateRateContribRecords() {
 		try {
 			
-			$_data_file = getenv(automationLibrary::DEFAULT_PATH_ENV_VAR) . automationLibrary::DS . $this->_datadir . automationLibrary::DS . $this->_file;
+			$_data_file = getenv(AutomationLibrary::DEFAULT_PATH_ENV_VAR) . AutomationLibrary::DS . $this->_datadir . AutomationLibrary::DS . $this->_file;
 			
 			if (file_exists($_data_file))
 			{
@@ -187,10 +187,10 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 				$w = new PHPWebDriver_WebDriverWait ( $session, 30 );
 			
 				// Initialize automation library instance
-				$_autoLib = new automationLibrary($this->_session, $this, $w, $this->_mode, $this->_version);
+				$_autoLib = new AutomationLibrary($this->_session, $this, $w, $this->_mode, $this->_version);
 			
 				// Load data from csv file
-				$this->_data = $_autoLib->ImportCSVFileIntoArray($_data_file);
+				$this->_data = $_autoLib->importCSVFileIntoArray($_data_file);
 				
 				// Initialize connection to the MAX database -> PDO db object available in $_autoLib->pdoobj
 				$_autoLib->initDB($this->_max_db_tenant, $this->_config);
@@ -246,7 +246,7 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 							"expected distance"
 						);
 						
-						$_verify_arr = automationLibrary::getMatchingKeys($_contrib_arr, $value);
+						$_verify_arr = AutomationLibrary::getMatchingKeys($_contrib_arr, $value);
 						
 						if ($_verify_arr)
 						{
@@ -293,7 +293,7 @@ class MAXTest_Fleet_Contrib_Data extends PHPUnit_Framework_TestCase {
 			
 		} catch ( Exception $e ) {
 			
-			$_errmsg = preg_replace ( "/%h/", $this->_maxurl, automationLibrary::ERR_FAILED_TO_LOGIN );
+			$_errmsg = preg_replace ( "/%h/", $this->_maxurl, AutomationLibrary::ERR_FAILED_TO_LOGIN );
 			$_errmsg = preg_replace ( "/%s/", $e->getMessage (), $_errmsg );
 			throw new Exception ( $_errmsg );
 			unset ( $_errmsg );

@@ -8,9 +8,9 @@ include_once 'PHPUnit/Extensions/PHPExcel/Classes/PHPExcel.php';
 include_once 'PullDataFromMySQLQuery.php';
 
 /**
- * automationLibrary.php
+ * AutomationLibrary.php
  *
- * @package automationLibrary
+ * @package AutomationLibrary
  * @author Clinton Wright <cwright@bwtsgroup.com>
  * @copyright 2013 onwards Barloworld Transport (Pty) Ltd
  * @license GNU GPL
@@ -28,7 +28,7 @@ include_once 'PullDataFromMySQLQuery.php';
  *       You should have received a copy of the GNU General Public License
  *       along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-class automationLibrary
+class AutomationLibrary
 {
     // : Constants
     
@@ -178,6 +178,8 @@ class automationLibrary
     public $_wObj;
     public $pdoobj = false;
     
+    protected $_dm = false;
+    protected $_dm_mode = 'curl';
     protected $_errors;
     protected $_mode;
     protected $_version;
@@ -206,7 +208,7 @@ class automationLibrary
     // : Magic Methods
     
     /**
-     * automationLibrary::__construct(&$_session, &$_phpunit_fw_obj, $_w, $_mode, $_version)
+     * AutomationLibrary::__construct(&$_session, &$_phpunit_fw_obj, $_w, $_mode, $_version)
      * Class constructor
      */
     public function __construct(&$_session, &$_phpunit_fw_obj, &$_w, $_mode, $_version) {
@@ -225,9 +227,9 @@ class automationLibrary
             // : End
             
             // : Set config array defaults
-            if (count(automationLibrary::$_config_array) == 0)
+            if (count(AutomationLibrary::$_config_array) == 0)
             {
-				self::setDefaultConfigOptions(automationLibrary::$_config_array_defaults);
+				self::setDefaultConfigOptions(AutomationLibrary::$_config_array_defaults);
             
 				// Check if mysql class has method to fetch its config options
 				if (function_exists(PullDataFromMySQLQuery::getDefaultConfigOptions))
@@ -236,11 +238,11 @@ class automationLibrary
 				
 					if (is_array($_db_config) && count($_db_config) > 0)
 					{
-						$_new_config = automationLibrary::mergeConfigOptions($_config);
+						$_new_config = AutomationLibrary::mergeConfigOptions($_config);
 					
 						if (is_array($_new_config) && count($_new_config) > 0)
 						{
-							self::setDefaultConfigOptions(automationLibrary::$_new_config);
+							self::setDefaultConfigOptions(AutomationLibrary::$_new_config);
 						}
 					}
 				}
@@ -249,7 +251,7 @@ class automationLibrary
     }
     
     /**
-     * automationLibrary::__destruct()
+     * AutomationLibrary::__destruct()
      * Class destructor
      */
     public function __destruct() {
@@ -260,7 +262,7 @@ class automationLibrary
     // : Public Methods
     
     /**
-     * automationLibrary::getErrors()
+     * AutomationLibrary::getErrors()
      * Return all recorded errors
      */
     public function getErrors()
@@ -274,7 +276,7 @@ class automationLibrary
 	}
 
     /**
-     * automationLibrary::getReports()
+     * AutomationLibrary::getReports()
      * Return report data from last updated report
      */
     public function getReports()
@@ -288,7 +290,7 @@ class automationLibrary
 	}
 	
     /**
-     * automationLibrary::setReports($_reports_arr)
+     * AutomationLibrary::setReports($_reports_arr)
      * Overwrite reports with a new report
      */
     public function setReports($_reports_arr)
@@ -303,7 +305,7 @@ class automationLibrary
 	}
 	
     /**
-     * automationLibrary::checkForRequiredEnv()
+     * AutomationLibrary::checkForRequiredEnv()
      * Return report data from last updated report
      */
     public static function checkForRequiredEnv()
@@ -317,31 +319,51 @@ class automationLibrary
 	}
 
     /**
-     * automationLibrary::get_db_status
-     * Determine if the the pdo object has made a connection to the DB
-     */
-    public function get_db_status()
-    {
-		if ($this->pdoobj !== false)
+     * AutomationLibrary::dmGetMode()
+     * Return Data Manager mode
+     */	
+	public function dmGetMode()
+	{
+		if ($this->_dm_mode && is_string($this->_dm_mode))
 		{
-			return true;
-		} else
-		{
-			return false;
+			return $this->_dm_mode;
+		}
+		return FALSE;
+	}
+	
+    /**
+     * AutomationLibrary::dmGetStatus()
+     * Return Data Manager status
+     */	
+	public function dmGetStatus()
+	{
+		return bool($this->_dm);
+	}
+	
+    /**
+     * AutomationLibrary::dmInit()
+     * Data Manager initialize
+     * 
+     * @param 
+     */	
+	public function dmInit()
+	{
+		if ($this->_dm_mode && is_string($this->_dm_mode)) {
+			
 		}
 	}
 
     /**
-     * automationLibrary::fetchObjectRegistryId($_object_registry_name)
+     * AutomationLibrary::fetchObjectRegistryId($_object_registry_name)
      * Query MAX DB to fetch the id for a object registry item
      */
     public function fetchObjectRegistryId($_object_reg)
     {
-		if ($this->get_db_status() != false)
+		if ($this->getDbStatus() != false)
 		{
 			if ($_object_reg && is_string($_object_reg))
 			{
-				$_query = preg_replace("@%s@", $_object_reg, automationLibrary::SQL_QUERY_OBJREG);
+				$_query = preg_replace("@%s@", $_object_reg, AutomationLibrary::SQL_QUERY_OBJREG);
 			
 				if ($_query && is_string($_query))
 				{
@@ -361,7 +383,7 @@ class automationLibrary
 			}
 		} else
 		{
-			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+			$this->_errors[] = AutomationLibrary::ERR_DB_NOT_CONNECTED;
 		}
 		
 		// If code reaches this point then query failed
@@ -369,16 +391,16 @@ class automationLibrary
 	}
 	
     /**
-     * automationLibrary::fetchTruckDescriptionId
+     * AutomationLibrary::fetchTruckDescriptionId
      * Query MAX DB to fetch the id for a truck description
      */
     public function fetchTruckDescriptionId($_truckDescription)
     {
-		if ($this->get_db_status() != false)
+		if ($this->getDbStatus() != false)
 		{
 			if ($_truckDescription && is_string($_truckDescription))
 			{
-				$_query = preg_replace("@%d@", $_truckDescription, automationLibrary::SQL_QUERY_TRUCK_TYPE);
+				$_query = preg_replace("@%d@", $_truckDescription, AutomationLibrary::SQL_QUERY_TRUCK_TYPE);
 			
 				if ($_query && is_string($_query))
 				{
@@ -398,7 +420,7 @@ class automationLibrary
 			}
 		} else
 		{
-			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+			$this->_errors[] = AutomationLibrary::ERR_DB_NOT_CONNECTED;
 		}
 		
 		// If code reaches this point then query failed
@@ -406,16 +428,16 @@ class automationLibrary
 	}
 	
     /**
-     * automationLibrary::fetchBusinessUnitId($_bu)
+     * AutomationLibrary::fetchBusinessUnitId($_bu)
      * Query MAX DB to fetch the id for a business unit
      */
     public function fetchBusinessUnitId($_bu)
     {
-		if ($this->get_db_status() != false)
+		if ($this->getDbStatus() != false)
 		{
 			if ($_bu && is_string($_bu))
 			{
-				$_query = preg_replace("@%s@", $_bu, automationLibrary::SQL_QUERY_BUNIT);
+				$_query = preg_replace("@%s@", $_bu, AutomationLibrary::SQL_QUERY_BUNIT);
 			
 				if ($_query && is_string($_query))
 				{
@@ -435,7 +457,7 @@ class automationLibrary
 			}
 		} else
 		{
-			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+			$this->_errors[] = AutomationLibrary::ERR_DB_NOT_CONNECTED;
 		}
 		
 		// If code reaches this point then query failed
@@ -443,16 +465,16 @@ class automationLibrary
 	}
 
     /**
-     * automationLibrary::fetchLocationId($_location, $_type)
+     * AutomationLibrary::fetchLocationId($_location, $_type)
      * Query MAX DB to fetch the id for a location
      */
     public function fetchLocationId($_location, $_type)
     {
-		if ($this->get_db_status() != false)
+		if ($this->getDbStatus() != false)
 		{
 			if ($_location && is_string($_location) && $_type && is_string($_type))
 			{
-				$_query = preg_replace("@%n@", $_location, automationLibrary::SQL_QUERY_LOCATION);
+				$_query = preg_replace("@%n@", $_location, AutomationLibrary::SQL_QUERY_LOCATION);
 				$_query = preg_replace("@%t@", "%" . $_type . "%", $_query);
 			
 				if ($_query && is_string($_query))
@@ -473,7 +495,7 @@ class automationLibrary
 			}
 		} else
 		{
-			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+			$this->_errors[] = AutomationLibrary::ERR_DB_NOT_CONNECTED;
 		}
 		
 		// If code reaches this point then query failed
@@ -481,17 +503,17 @@ class automationLibrary
 	}
 	
     /**
-     * automationLibrary::fetchRouteId
+     * AutomationLibrary::fetchRouteId
      * Query MAX DB to fetch the id for a route
      * 	)
      */
     public function fetchRouteId($_locationFromId, $_locationToId)
     {
-		if ($this->get_db_status() != false)
+		if ($this->getDbStatus() != false)
 		{
 			if (intval($_locationFromId) && intval($_locationToId))
 			{
-				$_query = preg_replace("@%f@", $_locationFromId, automationLibrary::SQL_QUERY_ROUTE);
+				$_query = preg_replace("@%f@", $_locationFromId, AutomationLibrary::SQL_QUERY_ROUTE);
 				$_query = preg_replace("@%t@", $_locationToId, $_query);
 			
 				if ($_query && is_string($_query))
@@ -512,7 +534,7 @@ class automationLibrary
 			}
 		} else
 		{
-			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+			$this->_errors[] = AutomationLibrary::ERR_DB_NOT_CONNECTED;
 		}
 		
 		// If code reaches this point then query failed
@@ -520,17 +542,17 @@ class automationLibrary
 	}
 	
     /**
-     * automationLibrary::fetchCustomerId
+     * AutomationLibrary::fetchCustomerId
      * Query MAX DB to fetch the id for a route
      * 	)
      */
     public function fetchCustomerId($_customer)
     {
-		if ($this->get_db_status() != false)
+		if ($this->getDbStatus() != false)
 		{
 			if ($_customer && is_string($_customer))
 			{
-				$_query = preg_replace("@%t@", $_customer, automationLibrary::SQL_QUERY_CUSTOMER);
+				$_query = preg_replace("@%t@", $_customer, AutomationLibrary::SQL_QUERY_CUSTOMER);
 			
 				if ($_query && is_string($_query))
 				{
@@ -550,7 +572,7 @@ class automationLibrary
 			}
 		} else
 		{
-			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+			$this->_errors[] = AutomationLibrary::ERR_DB_NOT_CONNECTED;
 		}
 		
 		// If code reaches this point then query failed
@@ -558,7 +580,7 @@ class automationLibrary
 	}
 	
 	/**
-     * automationLibrary::dateTimeAmend($_dateStr, $_strtotime)
+     * AutomationLibrary::dateTimeAmend($_dateStr, $_strtotime)
      * Manipulate date time by using the strtotime function
      */
     public static function dateTimeAmend($_dateStr, $_dateFmt, $_strtotime)
@@ -577,16 +599,16 @@ class automationLibrary
 	}
 
     /**
-     * automationLibrary::fetchRateId($_customer_id, $_route_id, $_bu_id, $_trucktype_id, $_objreg_id)
+     * AutomationLibrary::fetchRateId($_customer_id, $_route_id, $_bu_id, $_trucktype_id, $_objreg_id)
      * Query MAX DB to fetch the id for a rate
      */
     public function fetchRateId($_customer_id, $_route_id, $_bu_id, $_trucktype_id, $_objreg_id)
     {
-		if ($this->get_db_status() != false)
+		if ($this->getDbStatus() != false)
 		{
 			if (intval($_customer_id) && intval($_route_id) && intval($_bu_id) && intval($_trucktype_id) && intval($_objreg_id))
 			{
-				$_query = preg_replace("@%ro@", $_route_id, automationLibrary::SQL_QUERY_RATE_TRIMMED);
+				$_query = preg_replace("@%ro@", $_route_id, AutomationLibrary::SQL_QUERY_RATE_TRIMMED);
 				$_query = preg_replace("@%g@", $_objreg_id, $_query);
 				$_query = preg_replace("@%c@", $_customer_id, $_query);
 				$_query = preg_replace("@%d@", $_trucktype_id, $_query);
@@ -610,7 +632,7 @@ class automationLibrary
 			}
 		} else
 		{
-			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+			$this->_errors[] = AutomationLibrary::ERR_DB_NOT_CONNECTED;
 		}
 		
 		// If code reaches this point then query failed
@@ -618,7 +640,7 @@ class automationLibrary
 	}
 	
     /**
-     * automationLibrary::getMatchingKeys($_array1, $_array2)
+     * AutomationLibrary::getMatchingKeys($_array1, $_array2)
      * Find and return any of the array1 keys found in array2
      * $_array1 needs to be numerical indexed with the values
      * been set as the expected keys to be search in array2
@@ -639,16 +661,16 @@ class automationLibrary
 	}
 	
     /**
-     * automationLibrary::fetchDateRangeValueId($_object_reg_id, $_object_instance_id, $_type, $_extra_array = NULL)
+     * AutomationLibrary::fetchDateRangeValueId($_object_reg_id, $_object_instance_id, $_type, $_extra_array = NULL)
      * Query MAX DB to fetch the id for a daterangevalue
      */
     public function fetchDateRangeValueId($_object_reg_id, $_object_instance_id, $_type, $_extra_array = NULL)
     {
-		if ($this->get_db_status() != false)
+		if ($this->getDbStatus() != false)
 		{
 			if (intval($_object_reg_id) && intval($_object_instance_id) && is_string($_type) && $_type)
 			{
-				$_query = preg_replace("@%g@", $_object_reg_id, automationLibrary::SQL_QUERY_DRV);
+				$_query = preg_replace("@%g@", $_object_reg_id, AutomationLibrary::SQL_QUERY_DRV);
 				$_query = preg_replace("@%r@", $_object_instance_id, $_query);
 				$_query = preg_replace("@%t@", $_type, $_query);
 				
@@ -701,7 +723,7 @@ class automationLibrary
 			}
 		} else
 		{
-			$this->_errors[] = automationLibrary::ERR_DB_NOT_CONNECTED;
+			$this->_errors[] = AutomationLibrary::ERR_DB_NOT_CONNECTED;
 		}
 		
 		// If code reaches this point then query failed
@@ -709,7 +731,7 @@ class automationLibrary
 	}
 
     /**
-     * automationLibrary::CONSOLE_OUTPUT($_heading, $_description, $_type, $_query, $_data)
+     * AutomationLibrary::CONSOLE_OUTPUT($_heading, $_description, $_type, $_query, $_data)
      * Output debug information onto screen
      * Heading: What debug information we are displaying title
      * Description: A short description about the debug information
@@ -737,7 +759,7 @@ class automationLibrary
     }
     
     /**
-     * automationLibrary::getMAXURL($_mode, $_version)
+     * AutomationLibrary::getMAXURL($_mode, $_version)
      * 
      * Fetch the base URL for required version of MAX
      *
@@ -763,7 +785,7 @@ class automationLibrary
     }
     
     /**
-     * automationLibrary::getDefaultConfigOptionsArray()
+     * AutomationLibrary::getDefaultConfigOptionsArray()
      * 
      * Fetch the default config options in an array form
      *
@@ -771,11 +793,11 @@ class automationLibrary
      */
     public static function getDefaultConfigOptionsArray()
     {
-		return automationLibrary::$_config_array;
+		return AutomationLibrary::$_config_array;
 	}
 	
     /**
-     * automationLibrary::getConfigFilePath()
+     * AutomationLibrary::getConfigFilePath()
      * 
      * Fetch the default config options in an array form
      *
@@ -795,7 +817,7 @@ class automationLibrary
 	}
 	
     /**
-     * automationLibrary::mergeConfigOptions()
+     * AutomationLibrary::mergeConfigOptions()
      * 
      * Fetch the default config options and merge with the required
      * array argument and return the merged result
@@ -807,24 +829,24 @@ class automationLibrary
 		if (is_array($_config_array))
 		{
 			// Merge default config array and supplied config array
-			$_result = array_merge_recursive($_config_array, automationLibrary::$_config_array);
+			$_result = array_merge_recursive($_config_array, AutomationLibrary::$_config_array);
 			
 			if (is_array($_result) && count($_result) >= 1)
 			{
 				return $_result;
 			} else
 			{
-				return automationLibrary::$_config_array_defaults;
+				return AutomationLibrary::$_config_array_defaults;
 			}
 			
 		} else
 		{
-			return automationLibrary::$_config_array_defaults;
+			return AutomationLibrary::$_config_array_defaults;
 		}
 	}
     
     /**
-     * automationLibrary::addErrorRecord(&$_errArr, $_scrDir, $_errmsg, $_record, $_process)
+     * AutomationLibrary::addErrorRecord(&$_errArr, $_scrDir, $_errmsg, $_record, $_process)
      * Add error record to error array
      *
      * @param array: $_erArrr
@@ -842,27 +864,9 @@ class automationLibrary
         $_errArr[$_erCount + 1]["type"] = $_process;
         $this->takeScreenshot($_scrDir);
     }
-    
-    /**
-     * automationLibrary::stringHypenFix($_value)
-     * Replace long hyphens in string to short hyphens as part of a problem
-     * created when importing data from spreadsheets
-     *
-     * @param string: $_value            
-     * @param string: $_result            
-     */
-    public function initDB($_tenant, $_config_data)
-    {
-		$_config_file = self::getConfigFilePath();
-		
-		if ($_config_file && $_tenant && is_string($_tenant))
-		{
-			$this->pdoobj = new PullDataFromMySQLQuery($_tenant, $_config_data);
-		}
-	} 
 
     /**
-     * automationLibrary::stringHypenFix($_value)
+     * AutomationLibrary::stringHypenFix($_value)
      * Replace long hyphens in string to short hyphens as part of a problem
      * created when importing data from spreadsheets
      *
@@ -876,7 +880,7 @@ class automationLibrary
     }
 
     /**
-     * automationLibrary::getSelectedOptionValue($_using, $_value, &$this->_sessionObj)
+     * AutomationLibrary::getSelectedOptionValue($_using, $_value, &$this->_sessionObj)
      * This is a function description for a selenium test function
      *
      * @param string: $_using            
@@ -902,7 +906,7 @@ class automationLibrary
     }
 
     /**
-     * automationLibrary::assertElementPresent($_using, $_value, &$this->_sessionObj, &$this->_phpunitObj)
+     * AutomationLibrary::assertElementPresent($_using, $_value, &$this->_sessionObj, &$this->_phpunitObj)
      * This is a function description for a selenium test function
      *
      * @param string: $_using            
@@ -923,14 +927,14 @@ class automationLibrary
     
     public static function initializeConfig()
     {
-		self::setDefaultConfigOptions(automationLibrary::$_config_array_defaults);
+		self::setDefaultConfigOptions(AutomationLibrary::$_config_array_defaults);
             
 		// Check if mysql class has method to fetch its config options
 		$_db_config = PullDataFromMySQLQuery::getDefaultConfigOptions();
 		
 		if (is_array($_db_config) && count($_db_config) > 0)
 		{
-			$_new_config = automationLibrary::mergeConfigOptions($_db_config, automationLibrary::$_config_array);
+			$_new_config = AutomationLibrary::mergeConfigOptions($_db_config, AutomationLibrary::$_config_array);
 			
 			if (is_array($_new_config) && count($_new_config) > 0)
 			{
@@ -940,7 +944,7 @@ class automationLibrary
 	}
     
     /**
-     * automationLibrary::takeScreenshot()
+     * AutomationLibrary::takeScreenshot()
      * This is a function description for a selenium test function
      *
      * @param object: $_session
@@ -972,7 +976,7 @@ class automationLibrary
     }
 
     /**
-     * automationLibrary::writeExcelFile($excelFile, $excelData)
+     * AutomationLibrary::writeExcelFile($excelFile, $excelData)
      * Create, Write and Save Excel Spreadsheet from collected data obtained from the variance report
      *
      * @param $excelFile, $excelData            
@@ -1090,13 +1094,13 @@ class automationLibrary
     }
         
     /**
-     * automationLibrary::ImportCSVFileIntoArray($csvFile)
+     * AutomationLibrary::importCSVFileIntoArray($csvFile)
      * From supplied csv file save data into multidimensional array
      *
      * @param string: $csvFile            
      * @param array: $_result            
      */
-    public function ImportCSVFileIntoArray($csvFile)
+    public function importCSVFileIntoArray($csvFile)
     {
         try {
             $_data = (array) array();
@@ -1156,13 +1160,13 @@ class automationLibrary
     }
  
 	/**
-	 * automationLibrary::ExportToCSV($csvFile, $arr)
+	 * AutomationLibrary::exportToCSV($csvFile, $arr)
 	 * From supplied csv file save data into multidimensional array
 	 *
 	 * @param string: $csvFile
 	 * @param array: $_arr
 	 */
-	public function ExportToCSV($csvFile, $_arr) {
+	public function exportToCSV($csvFile, $_arr) {
 		try {
 			$_data = ( array ) array ();
 			
@@ -1190,7 +1194,7 @@ class automationLibrary
 	}
 	
     /**
-     * automationLibrary::LoadJSONFile($_file)
+     * AutomationLibrary::LoadJSONFile($_file)
      * Load config file containing json data
      *
      * @param return: $_result   
@@ -1227,7 +1231,7 @@ class automationLibrary
 	}
 
 	/**
-     * automationLibrary::verifyKeysMatchInArrays($_array1, $_array2)
+     * AutomationLibrary::verifyKeysMatchInArrays($_array1, $_array2)
      * Using a multidimensional passed as an argument
      * Verify all keys are present and return values for each key
      *
@@ -1280,7 +1284,7 @@ class automationLibrary
 	}
 	
 	/**
-     * automationLibrary::verifyAndLoadConfig($_config_array)
+     * AutomationLibrary::verifyAndLoadConfig($_config_array)
      * Using a multidimensional passed as an argument
      * Verify all keys are present and return values for each key
      *
@@ -1289,12 +1293,12 @@ class automationLibrary
 	public static function verifyAndLoadConfig($_config_array, $_file)
 	{
 		
-		$_json_config_data = automationLibrary::LoadJSONFile($_file);
+		$_json_config_data = AutomationLibrary::LoadJSONFile($_file);
 
 		if ($_json_config_data)
 		{
 			
-			$_result = automationLibrary::verifyKeysMatchInArrays($_config_array, $_json_config_data);
+			$_result = AutomationLibrary::verifyKeysMatchInArrays($_config_array, $_json_config_data);
 			
 			if ($_result && is_array($_result))
 			{
@@ -1304,10 +1308,9 @@ class automationLibrary
 		
 		return false;
 	}
-	// : Private Methods
 	
 	/**
-     * automationLibrary::setDefaultConfigOptions($_config_array)
+     * AutomationLibrary::setDefaultConfigOptions($_config_array)
      * Using a multidimensional passed as an argument
      * Verify all keys are present and return values for each key
      *
@@ -1316,13 +1319,55 @@ class automationLibrary
 	public static function setDefaultConfigOptions($_config_array)
 	{
 		// Verify that default keys exist
-		$_result = self::verifyKeysMatchInArrays(automationLibrary::$_config_array_defaults, $_config_array);
+		$_result = self::verifyKeysMatchInArrays(AutomationLibrary::$_config_array_defaults, $_config_array);
 		
 		if (is_array($_result))
 		{
-			automationLibrary::$_config_array = $_config_array;
+			AutomationLibrary::$_config_array = $_config_array;
 		}
 	}
+	
+	// : Private Methods
+	
+	/**
+     * AutomationLibrary::getDbStatus
+     * Determine if the the pdo object has made a connection to the DB
+     */
+     
+    private function getDbStatus()
+    {
+		if ($this->pdoobj !== false)
+		{
+			return true;
+		} else
+		{
+			return false;
+		}
+	}
+	
+    /**
+     * AutomationLibrary::initDB($_tenant, $_config_data)
+     * Open persistent connection to the database
+     *
+     * @param string $_tenant
+     * @param array $_config_data          
+     * @return bool
+     */
+    private function initDB($_tenant, $_config_data)
+    {
+		$_config_file = self::getConfigFilePath();
+		
+		if ($_config_file && $_tenant && is_string($_tenant))
+		{
+			$this->pdoobj = new PullDataFromMySQLQuery($_tenant, $_config_data);
+			
+			if (is_object($this->pdoobj) && $this->pdoobj) {
+				return TRUE
+			}
+		}
+		
+		return FALSE;
+	} 
 	
     // : End
 }

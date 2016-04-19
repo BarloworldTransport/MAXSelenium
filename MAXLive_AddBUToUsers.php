@@ -264,7 +264,7 @@ class web_driver_template_for_max_tests extends PHPUnit_Framework_TestCase {
 				// : Report errors if any occured
 				if ($this->_errors) {
 					$_errfile = date("Y-m-d H:i:s") . "_error_report_addbutousers_script.csv";
-					$this->ExportToCSV($_errfile, $this->_errors);
+					$this->exportToCSV($_errfile, $this->_errors);
 					echo "Exported error report to the following path and file: " . dirname(__FILE__) . $_errfile;
 				}
 				// : End
@@ -322,13 +322,13 @@ class web_driver_template_for_max_tests extends PHPUnit_Framework_TestCase {
 	}
 	
 	/**
-	 * web_driver_template_for_max_tests::ExportToCSV($csvFile, $arr)
+	 * web_driver_template_for_max_tests::exportToCSV($csvFile, $arr)
 	 * From supplied csv file save data into multidimensional array
 	 *
 	 * @param string: $csvFile
 	 * @param array: $_arr
 	 */
-	private function ExportToCSV($csvFile, $_arr) {
+	private function exportToCSV($csvFile, $_arr) {
 		try {
 			$_data = ( array ) array ();
 			if (file_exists ( dirname ( $csvFile ) )) {

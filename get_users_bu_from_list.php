@@ -101,7 +101,7 @@ class get_users_bu_from_list {
 				}
 			}
 			if ($_data) {
-				if ($this->ExportToCSV($_file, $_data) != FALSE) {
+				if ($this->exportToCSV($_file, $_data) != FALSE) {
 					return TRUE;
 				} else {
 					return FALSE;
@@ -120,7 +120,7 @@ class get_users_bu_from_list {
 	 */
 	public function exportNoMatch($_file) {
 		try {
-			if ($this->ExportToCSV($_file, $this->_nomatch) != FALSE) {
+			if ($this->exportToCSV($_file, $this->_nomatch) != FALSE) {
 				return TRUE;
 			} else {
 				return FALSE;
@@ -460,13 +460,13 @@ class get_users_bu_from_list {
 	}
 	
 	/**
-	 * get_users_bu_from_list::ExportToCSV($csvFile, $arr)
+	 * get_users_bu_from_list::exportToCSV($csvFile, $arr)
 	 * From supplied csv file save data into multidimensional array
 	 *
 	 * @param string: $csvFile
 	 * @param array: $_arr
 	 */
-	private function ExportToCSV($csvFile, $_arr) {
+	private function exportToCSV($csvFile, $_arr) {
 		try {
 			$_data = ( array ) array ();
 			if (file_exists ( dirname ( $csvFile ) )) {

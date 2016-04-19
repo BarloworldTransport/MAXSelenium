@@ -104,7 +104,7 @@ class maxLoginLogout
      * MAX_LoginLogout::maxLogin
      * Log into MAX
      */
-    public function maxLogin($_uname, $_pwd, $_welcome, $_version = automationLibrary::DEFAULT_MAX_VERSION)
+    public function maxLogin($_uname, $_pwd, $_welcome, $_version = AutomationLibrary::DEFAULT_MAX_VERSION)
     {
         try {
             // : Log into MAX
@@ -220,7 +220,7 @@ class maxLoginLogout
      * MAX_LoginLogout::maxLogout
      * Log out of MAX
      */
-    public function maxLogout($_version = automationLibrary::DEFAULT_MAX_VERSION)
+    public function maxLogout($_version = AutomationLibrary::DEFAULT_MAX_VERSION)
     {
         try {
             // : Tear Down

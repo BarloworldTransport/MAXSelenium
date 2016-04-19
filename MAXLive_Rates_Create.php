@@ -4,7 +4,7 @@ include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverWait.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
 include_once 'PHPUnit/Extensions/PHPExcel/Classes/PHPExcel.php';
-include_once 'automationLibrary.php';
+include_once 'AutomationLibrary.php';
 include_once 'MAX_Routes_Rates.php';
 
 /**
@@ -226,7 +226,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             $this->_ratesonly = $data["ratesonly"];
             
             // Determine MAX URL to be used for this test run
-            $this->_maxurl = automationLibrary::getMAXURL($this->_mode, $this->_version);
+            $this->_maxurl = AutomationLibrary::getMAXURL($this->_mode, $this->_version);
         } else {
             echo "The correct data is not present in " . self::INI_FILE . ". Please confirm. Fields are username, password, welcome and mode" . PHP_EOL;
             return FALSE;
@@ -329,7 +329,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
          */
         
         // Import data from file and if successful continue script else terminate script and return error
-        if (($_data = $this->ImportCSVFileIntoArray($_file)) !== FALSE) {
+        if (($_data = $this->importCSVFileIntoArray($_file)) !== FALSE) {
             
             // : Get column headers from imported data and validate that headers are all present
             $_columns = array_keys($_data[1], $_headers);
@@ -362,7 +362,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                 // Create a reference to the session object for use with waiting for elements to be present
                 $w = new PHPWebDriver_WebDriverWait($this->_session);
                 
-                $_autoLib = new automationLibrary($this->_session, $this, $w, $this->_mode, $this->_version);
+                $_autoLib = new AutomationLibrary($this->_session, $this, $w, $this->_mode, $this->_version);
                 
                 // Create object for MAX LoginLogout class
                 $_maxLoginLogout = new maxLoginLogout($_autoLib, $this->_maxurl);
@@ -562,7 +562,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         }
                         
                         if (($_locationFrom_id != FALSE) && ($_locationTo_id != FALSE)) {
-                            $myQuery = preg_replace("@%f@", $_locationFrom_id, automationLibrary::SQL_QUERY_ROUTE);
+                            $myQuery = preg_replace("@%f@", $_locationFrom_id, AutomationLibrary::SQL_QUERY_ROUTE);
                             $myQuery = preg_replace("@%t@", $_locationTo_id, $myQuery);
                             $sqlResult = $this->queryDB($myQuery);
                             if (count($sqlResult) != 0) {
@@ -1046,7 +1046,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                     
                                     $_process = "check if route exists";
                                     
-                                    $myQuery = preg_replace("@%f@", $_locationFrom_id, automationLibrary::SQL_QUERY_ROUTE);
+                                    $myQuery = preg_replace("@%f@", $_locationFrom_id, AutomationLibrary::SQL_QUERY_ROUTE);
                                     $myQuery = preg_replace("@%t@", $_locationTo_id, $myQuery);
                                     $sqlResult = $this->queryDB($myQuery);
                                     
@@ -1095,7 +1095,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                         // : If route does not exist from previous check, check again and store route ID if it exists
                                         if (($_locationFrom_id != FALSE) && ($_locationTo_id != FALSE) && (! $_dataset["rate"]["other"])) {
                                             
-                                            $myQuery = preg_replace("@%f@", $_locationFrom_id, automationLibrary::SQL_QUERY_ROUTE);
+                                            $myQuery = preg_replace("@%f@", $_locationFrom_id, AutomationLibrary::SQL_QUERY_ROUTE);
                                             $myQuery = preg_replace("@%t@", $_locationTo_id, $myQuery);
                                             $sqlResult = $this->queryDB($myQuery);
                                             
@@ -1197,7 +1197,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             
                             // Check and store route ID if exists
                             if (($_locationFrom_id != FALSE) && ($_locationTo_id != FALSE)) {
-                                $myQuery = preg_replace("@%f@", $_locationFrom_id, automationLibrary::SQL_QUERY_ROUTE);
+                                $myQuery = preg_replace("@%f@", $_locationFrom_id, AutomationLibrary::SQL_QUERY_ROUTE);
                                 $myQuery = preg_replace("@%t@", $_locationTo_id, $myQuery);
                                 $sqlResult = $this->queryDB($myQuery);
                                 if (count($sqlResult) != 0) {
@@ -1306,7 +1306,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                             }
                                         }
                                         $_errorData = "Date Range Values: " . PHP_EOL . implode(",", $_dateRangeValues) . PHP_EOL . "SQL Query Dump: " . PHP_EOL . $myQuery . PHP_EOL . "SQL Result Dump:" . PHP_EOL . $_result;
-                                        $_errmsg = preg_replace("/%s/", $_drvKey, automationLibrary::ERR_NO_DATE_RANGE_VALUE);
+                                        $_errmsg = preg_replace("/%s/", $_drvKey, AutomationLibrary::ERR_NO_DATE_RANGE_VALUE);
                                         $_autoLib->addErrorRecord($this->_error, $this->_scrDir, $_errmsg, $this->lastRecord . PHP_EOL . $_errorData, $_process);
                                     }
                                 } catch (Exception $e) {}
@@ -1610,13 +1610,13 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * MAXLive_Rates_Create::ImportCSVFileIntoArray($csvFile)
+     * MAXLive_Rates_Create::importCSVFileIntoArray($csvFile)
      * From supplied csv file save data into multidimensional array
      *
      * @param string: $csvFile            
      * @param array: $_result            
      */
-    private function ImportCSVFileIntoArray($csvFile)
+    private function importCSVFileIntoArray($csvFile)
     {
         try {
             $_data = (array) array();

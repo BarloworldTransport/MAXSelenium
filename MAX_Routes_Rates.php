@@ -105,7 +105,7 @@ class maxRoutesRates
      * MAX_Routes_Rates::maxRouteCreate
      * Log into MAX
      */
-    public function maxRouteCreate($_bu, $_locationFrom, $_locationTo, $_expectedKms, $_version = automationLibrary::DEFAULT_MAX_VERSION)
+    public function maxRouteCreate($_bu, $_locationFrom, $_locationTo, $_expectedKms, $_version = AutomationLibrary::DEFAULT_MAX_VERSION)
     {
         try {
             // : Log into MAX
@@ -117,7 +117,7 @@ class maxRoutesRates
                             $_routeName = getRouteName($_locationFrom, $_locationTo);
                             
                             $session = $this->_autoLibObj->_sessionObj;
-                            $this->_autoLibObj->_sessionObj->open($this->_maxurl . automationLibrary::URL_LOCATION_ROUTE);
+                            $this->_autoLibObj->_sessionObj->open($this->_maxurl . AutomationLibrary::URL_LOCATION_ROUTE);
                             
                             // Wait for element text Route Ward
                             $e = $this->_autoLibObj->_wObj->until(function ($session)
@@ -230,7 +230,7 @@ class maxRoutesRates
      * MAX_Routes_Rates::maxCreateRateContribData
      * Add non F&V rate contribution data
      */
-    public function maxCreateRateContribData($_customer, $_bu, $_locationFrom, $_locationTo, $_trucktype, $_contrib_data, $_version = automationLibrary::DEFAULT_MAX_VERSION)
+    public function maxCreateRateContribData($_customer, $_bu, $_locationFrom, $_locationTo, $_trucktype, $_contrib_data, $_version = AutomationLibrary::DEFAULT_MAX_VERSION)
     {
 		try
 		{
@@ -251,14 +251,14 @@ class maxRoutesRates
 					
 					// : Fetch ids and store into variables
 					
-					$_objRegId = $this->_autoLibObj->fetchObjectRegistryId(automationLibrary::OBJREG_CUSTOMER);
-					$_rateObjRegId = $this->_autoLibObj->fetchObjectRegistryId(automationLibrary::OBJREG_RATE);
+					$_objRegId = $this->_autoLibObj->fetchObjectRegistryId(AutomationLibrary::OBJREG_CUSTOMER);
+					$_rateObjRegId = $this->_autoLibObj->fetchObjectRegistryId(AutomationLibrary::OBJREG_RATE);
 					
 					$_customerId = $this->_autoLibObj->fetchCustomerId($_customer);
 					$_buId = $this->_autoLibObj->fetchBusinessUnitId($_bu);
 					$_trucktypeId = $this->_autoLibObj->fetchTruckDescriptionId($_trucktype);
-					$_locationFromId = $this->_autoLibObj->fetchLocationId($_locationFrom, automationLibrary::UDO_LOCATION_TYPE_CITY);
-					$_locationToId = $this->_autoLibObj->fetchLocationId($_locationTo, automationLibrary::UDO_LOCATION_TYPE_CITY);
+					$_locationFromId = $this->_autoLibObj->fetchLocationId($_locationFrom, AutomationLibrary::UDO_LOCATION_TYPE_CITY);
+					$_locationToId = $this->_autoLibObj->fetchLocationId($_locationTo, AutomationLibrary::UDO_LOCATION_TYPE_CITY);
 
 					// Default value to define the variable
 					$_routeId = 0;
@@ -317,7 +317,7 @@ class maxRoutesRates
 										{
 											if ($value['beginDate'] && is_string($value['beginDate']))
 											{
-												$_utcBeginDate = automationLibrary::dateTimeAmend($value['beginDate'], 'Y-m-d H:i:s', "-2 Hours");
+												$_utcBeginDate = AutomationLibrary::dateTimeAmend($value['beginDate'], 'Y-m-d H:i:s', "-2 Hours");
 											}
 										}
 										
@@ -325,7 +325,7 @@ class maxRoutesRates
 										{
 											if ($value['endDate'] && is_string($value['endDate']))
 											{
-												$_utcEndDate = automationLibrary::dateTimeAmend($value['endDate'], 'Y-m-d H:i:s', "-2 Hours");
+												$_utcEndDate = AutomationLibrary::dateTimeAmend($value['endDate'], 'Y-m-d H:i:s', "-2 Hours");
 											}
 										}
 										// : End
@@ -349,7 +349,7 @@ class maxRoutesRates
 										if (intval($_fetchDrvId) == 0)
 										{
 											$session = $this->_autoLibObj->_sessionObj;
-											$_rateurl = preg_replace("@%s@", $_rateId, automationLibrary::URL_RATEVAL);
+											$_rateurl = preg_replace("@%s@", $_rateId, AutomationLibrary::URL_RATEVAL);
 											$_route_name = $this->getRouteName($_locationFrom, $_locationTo);
 											$_page_title = sprintf("Customer %s %s", $_customer, $_route_name);
 											$this->_autoLibObj->_sessionObj->open($this->_maxurl . $_rateurl);

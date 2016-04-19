@@ -5,7 +5,7 @@ include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
 include_once dirname(__FILE__) . '/ReadExcelFile.php';
 include_once 'PHPUnit/Extensions/PHPExcel/Classes/PHPExcel.php';
-include_once dirname(__FILE__) . '/automationLibrary.php';
+include_once dirname(__FILE__) . '/AutomationLibrary.php';
 
 /**
  * MAXLive_Rates_Create.php
@@ -213,10 +213,10 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             $this->_xls = $data["xls"];
             switch ($this->_mode) {
                 case "live":
-                    $this->_maxurl = automationLibrary::URL_LIVE;
+                    $this->_maxurl = AutomationLibrary::URL_LIVE;
                     break;
                 default:
-                    $this->_maxurl = automationLibrary::URL_TEST;
+                    $this->_maxurl = AutomationLibrary::URL_TEST;
             }
         } else {
             echo "The correct data is not present in " . self::INI_FILE . ". Please confirm. Fields are username, password, welcome and mode" . PHP_EOL;
@@ -418,7 +418,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             // : End
             
             // : Get objectregistry_id for udo_Customer
-            $_sqlquery = preg_replace("/%s/", automationLibrary::OBJREG_CUSTOMER, automationLibrary::SQL_QUERY_OBJREG);
+            $_sqlquery = preg_replace("/%s/", AutomationLibrary::OBJREG_CUSTOMER, AutomationLibrary::SQL_QUERY_OBJREG);
             $result = $this->queryDB($_sqlquery);
             if (count($result) != 0) {
                 $objectregistry_id = intval($result[0]["ID"]);
@@ -428,7 +428,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             // : End
             
             // : Load Planningboard to rid of iframe loading on every page from here on
-            $this->_session->open($this->_maxurl . automationLibrary::URL_PB);
+            $this->_session->open($this->_maxurl . AutomationLibrary::URL_PB);
             $e = $w->until(function ($session)
             {
                 return $session->element("xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]");
@@ -442,17 +442,17 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             if ($_data['customer'] && $_data['bu']) {
 		$_buName = $_data['bu'][1]['bunit'];
                 echo $_data['customer'][1]['customerName'] . PHP_EOL;
-                $_sqlquery = preg_replace("/%t/", $_data['customer'][1]['customerName'], automationLibrary::SQL_QUERY_CUSTOMER);
+                $_sqlquery = preg_replace("/%t/", $_data['customer'][1]['customerName'], AutomationLibrary::SQL_QUERY_CUSTOMER);
                 $result = $this->queryDB($_sqlquery);
                 echo 'INFO: SQL Query - Get customer ID: ' . $_sqlquery . PHP_EOL;
                 if ($result) {
                     $_customerID = intval($result[0]["ID"]);
                 } else {
-                    $_errmsg = preg_replace("/%s/", $_sqlquery, automationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
+                    $_errmsg = preg_replace("/%s/", $_sqlquery, AutomationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
                     throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
                 }
             } else {
-                throw new Exception(automationLibrary::ERR_NO_CUSTOMER_DATA);
+                throw new Exception(AutomationLibrary::ERR_NO_CUSTOMER_DATA);
             }
 
             /**
@@ -496,21 +496,21 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         $this->progressLogFile($_progressLogFile, "locations", $_currentRecord, $_recordsFailed, $_recordsProcessed, $_process, $_progressStr);
                         
                         // Get IDs for point and customer link location (if link exists)
-                        $_sqlquery = preg_replace("/%n/", $_locValue['pointName'], automationLibrary::SQL_QUERY_LOCATION);
-                        $_sqlquery = preg_replace("/%t/", automationLibrary::_TYPE_POINT, $_sqlquery);
+                        $_sqlquery = preg_replace("/%n/", $_locValue['pointName'], AutomationLibrary::SQL_QUERY_LOCATION);
+                        $_sqlquery = preg_replace("/%t/", AutomationLibrary::_TYPE_POINT, $_sqlquery);
                         $result = $this->queryDB($_sqlquery);
                         if (count($result) != 0) {
                             $_locationID = intval($result[0]["ID"]);
                         } else {
-                            $_errmsg = preg_replace("/%s/", $_sqlquery, automationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
+                            $_errmsg = preg_replace("/%s/", $_sqlquery, AutomationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
                             throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
                         }
                         
-                        $_sqlquery = preg_replace("/%l/", $_locationID, automationLibrary::SQL_QUERY_CUSTOMER_LOCATION_LINK);
+                        $_sqlquery = preg_replace("/%l/", $_locationID, AutomationLibrary::SQL_QUERY_CUSTOMER_LOCATION_LINK);
                         $_sqlquery = preg_replace("/%c/", $_customerID, $_sqlquery);
                         $result = $this->queryDB($_sqlquery);
                         
-                        automationLibrary::CONSOLE_OUTPUT("Customer location link query to get ID", "Result of query run: ", "sql", $_sqlquery, $result);
+                        AutomationLibrary::CONSOLE_OUTPUT("Customer location link query to get ID", "Result of query run: ", "sql", $_sqlquery, $result);
                         
                         if (count($result) != 0) {
                             $_customerLocationLinkID = intval($result[0]["ID"]);
@@ -519,7 +519,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         // If customer location link does not exist then create it
                         if (! $_customerLocationLinkID) {
                             // Load URL for MAX customers page
-                            $this->_session->open($this->_maxurl . automationLibrary::URL_CUSTOMER . $_customerID);
+                            $this->_session->open($this->_maxurl . AutomationLibrary::URL_CUSTOMER . $_customerID);
                             // Wait for element = #subtabselector
                             $e = $w->until(function ($session)
                             {
@@ -554,7 +554,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         }
                         
                         // : Create Business Unit Link for Point Link
-                        $_sqlquery = preg_replace("/%l/", $_locationID, automationLibrary::SQL_QUERY_CUSTOMER_LOCATION_LINK);
+                        $_sqlquery = preg_replace("/%l/", $_locationID, AutomationLibrary::SQL_QUERY_CUSTOMER_LOCATION_LINK);
                         $_sqlquery = preg_replace("/%c/", $_customerID, $_sqlquery);
                         $_result = $this->queryDB($_sqlquery);
                         
@@ -570,20 +570,20 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                     try {
                                         
                                         // Get business unit ID
-                                        $_sqlquery = preg_replace("/%s/", $_buValue['bunit'], automationLibrary::SQL_QUERY_BUNIT);
+                                        $_sqlquery = preg_replace("/%s/", $_buValue['bunit'], AutomationLibrary::SQL_QUERY_BUNIT);
                                         $result = $this->queryDB($_sqlquery);
                                         if (count($result) != 0) {
                                             $_bunitID = intval($result[0]["ID"]);
                                         }
                                         
-                                        $_sqlquery = preg_replace("/%l/", $_customerLocationLinkID, automationLibrary::SQL_QUERY_CUSTOMER_LOCATION_BU_LINK);
+                                        $_sqlquery = preg_replace("/%l/", $_customerLocationLinkID, AutomationLibrary::SQL_QUERY_CUSTOMER_LOCATION_BU_LINK);
                                         $_sqlquery = preg_replace("/%b/", $_bunitID, $_sqlquery);
                                         $_result_bu = $this->queryDB($_sqlquery);
                                         
                                         if (! $_result_bu) {
                                             
                                             // Load URL for the customer location business unit databrowser page
-                                            $_url = $this->_maxurl . automationLibrary::URL_CUST_LOCATION_BU . $_customerLocationLinkID;
+                                            $_url = $this->_maxurl . AutomationLibrary::URL_CUST_LOCATION_BU . $_customerLocationLinkID;
                                             $this->_session->open($_url);
                                             // Wait for element
                                             $e = $w->until(function ($session)
@@ -613,14 +613,14 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                             });
                                         }
                                     } catch (Exception $e) {
-                                        $_errmsg = preg_replace("/%s/", $_process, automationLibrary::ERR_PROCESS_FAILED_UNEXPECTEDLY);
+                                        $_errmsg = preg_replace("/%s/", $_process, AutomationLibrary::ERR_PROCESS_FAILED_UNEXPECTEDLY);
                                         $_errmsg = preg_replace("/%e/", $e->getMessage(), $_errmsg);
                                         $this->addErrorRecord($_errmsg, $_currentRecord, $_process);
                                     }
                                 }
                             }
                         } else {
-                            $_errmsg = preg_replace("/%d/", $_process, automationLibrary::ERR_COULD_NOT_FIND_RECORD_USING_URL);
+                            $_errmsg = preg_replace("/%d/", $_process, AutomationLibrary::ERR_COULD_NOT_FIND_RECORD_USING_URL);
                             $_errmsg = preg_replace("/%u/", $_url, $_errmsg);
                             throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
                         }
@@ -668,7 +668,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                     $this->progressLogFile($_progressLogFile, "offloading customers", $_currentRecord, $_recordsFailed, $_recordsProcessed, $_process, $_progressStr);
                     
                     // : If offloading customer does exist then check if offloading customer is linked to the customer and store the link ID
-                    $_sqlquery = preg_replace("/%o/", $_offloadValues['tradingName'], automationLibrary::SQL_QUERY_OFFLOADING_CUSTOMER);
+                    $_sqlquery = preg_replace("/%o/", $_offloadValues['tradingName'], AutomationLibrary::SQL_QUERY_OFFLOADING_CUSTOMER);
                     $_sqlquery = preg_replace("/%c/", $_customerID, $_sqlquery);
                     $_sqlquery1 = $this->queryDB($_sqlquery);
                     
@@ -687,7 +687,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             
                             $_process = "createOffloadingCustomerCustomerLink";
                             // : Load customer data browser page for Customer
-                            $_url = $this->_maxurl . automationLibrary::URL_CUSTOMER . $_customerID;
+                            $_url = $this->_maxurl . AutomationLibrary::URL_CUSTOMER . $_customerID;
                             $this->_session->open($_url);
                             
                             // Wait for element = Page heading
@@ -727,7 +727,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             });
 
 			    // Fetch ID of newly created offloadingcustomer link ID	
-                            $myQuery = preg_replace("/%o/", $_offloadValues["tradingName"], automationLibrary::SQL_QUERY_OFFLOADING_CUSTOMER);
+                            $myQuery = preg_replace("/%o/", $_offloadValues["tradingName"], AutomationLibrary::SQL_QUERY_OFFLOADING_CUSTOMER);
                             $myQuery = preg_replace("/%t/", $_customerID, $myQuery);
                             $sqlResult = $this->queryDB($myQuery);
 
@@ -745,7 +745,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             if ($_offloadingCustomerLinkID) {
 				try {	
 			    echo "INFO: Code position - Create Business Unit Link - Inside" . PHP_EOL;
-                            	$myQuery = preg_replace("/%s/", $_buName, automationLibrary::SQL_QUERY_BUNIT);
+                            	$myQuery = preg_replace("/%s/", $_buName, AutomationLibrary::SQL_QUERY_BUNIT);
         	                $sqlResultBU = $this->queryDB($myQuery);
 
 				echo "INFO: SQL Query - Fetch Business Unit ID " . $myQuery . PHP_EOL;
@@ -755,7 +755,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
 				if ($sqlResultBU) {
 					$_bID = $sqlResultBU[0]['ID'];
 
-                            		$myQuery = preg_replace("/%o/", $_offloadingCustomerLinkID, automationLibrary::SQL_QUERY_OFFLOAD_BU_LINK);
+                            		$myQuery = preg_replace("/%o/", $_offloadingCustomerLinkID, AutomationLibrary::SQL_QUERY_OFFLOAD_BU_LINK);
 		                        $myQuery = preg_replace("/%b/", $_bID, $myQuery);
         		                $sqlResult = $this->queryDB($myQuery);
 				echo "INFO: SQL Query - Fetch offloading customer link->BU link " . $myQuery . PHP_EOL;
@@ -766,7 +766,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
 				if (!$sqlResult) {
 
                                 $_process = "create business unit link for offloading customer link";
-                                $this->_session->open($this->_maxurl . automationLibrary::URL_OFFLOAD_CUST_BU . $_offloadingCustomerLinkID);
+                                $this->_session->open($this->_maxurl . AutomationLibrary::URL_OFFLOAD_CUST_BU . $_offloadingCustomerLinkID);
                                 
                                 // Wait for element = #subtabselector
                                 $e = $w->until(function ($session)
@@ -860,54 +860,54 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         $this->progressLogFile($_progressLogFile, "rates", $_currentRecord, $_recordsFailed, $_recordsProcessed, "create rate", $_progressStr);
                         
                         // Get truck description ID
-                        $_sqlquery = preg_replace("/%d/", $_ratesValues['truckType'], automationLibrary::SQL_QUERY_TRUCK_TYPE);
+                        $_sqlquery = preg_replace("/%d/", $_ratesValues['truckType'], AutomationLibrary::SQL_QUERY_TRUCK_TYPE);
                         $result = $this->queryDB($_sqlquery);
                         if (count($result) != 0) {
                             $_truckTypeID = intval($result[0]["ID"]);
                         } else {
-                            $_errmsg = preg_replace("/%s/", $_sqlquery, automationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
+                            $_errmsg = preg_replace("/%s/", $_sqlquery, AutomationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
                             throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
                         }
                         
                         // Get rate type ID
-                        $_sqlquery = preg_replace("/%s/", $_ratesValues['rateType'], automationLibrary::SQL_QUERY_RATE_TYPE);
+                        $_sqlquery = preg_replace("/%s/", $_ratesValues['rateType'], AutomationLibrary::SQL_QUERY_RATE_TYPE);
                         $result = $this->queryDB($_sqlquery);
                         if (count($result) != 0) {
                             $_rateTypeID = intval($result[0]["ID"]);
                         } else {
-                            $_errmsg = preg_replace("/%s/", $_sqlquery, automationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
+                            $_errmsg = preg_replace("/%s/", $_sqlquery, AutomationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
                             throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
                         }
                         
                         // Get business unit ID
-                        $_sqlquery = preg_replace("/%s/", $_ratesValues['bunit'], automationLibrary::SQL_QUERY_BUNIT);
+                        $_sqlquery = preg_replace("/%s/", $_ratesValues['bunit'], AutomationLibrary::SQL_QUERY_BUNIT);
                         $result = $this->queryDB($_sqlquery);
                         if (count($result) != 0) {
                             $_bunitID = intval($result[0]["ID"]);
                         } else {
-                            $_errmsg = preg_replace("/%s/", $_sqlquery, automationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
+                            $_errmsg = preg_replace("/%s/", $_sqlquery, AutomationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
                             throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
                         }
                         
                         // : Get IDs for cities
-                        $_sqlquery = preg_replace("/%n/", $_ratesValues['locationFromTown'], automationLibrary::SQL_QUERY_LOCATION);
-                        $_sqlquery = preg_replace("/%t/", automationLibrary::_TYPE_CITY, $_sqlquery);
+                        $_sqlquery = preg_replace("/%n/", $_ratesValues['locationFromTown'], AutomationLibrary::SQL_QUERY_LOCATION);
+                        $_sqlquery = preg_replace("/%t/", AutomationLibrary::_TYPE_CITY, $_sqlquery);
                         $result = $this->queryDB($_sqlquery);
-                        automationLibrary::CONSOLE_OUTPUT("Run query to city ID SQL query: ", "Query results: ", "sql", $_sqlquery, $result);
+                        AutomationLibrary::CONSOLE_OUTPUT("Run query to city ID SQL query: ", "Query results: ", "sql", $_sqlquery, $result);
                         if (count($result) != 0) {
                             $_locationFromID = intval($result[0]["ID"]);
                         } else {
-                            $_errmsg = preg_replace("/%s/", $_sqlquery, automationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
+                            $_errmsg = preg_replace("/%s/", $_sqlquery, AutomationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
                             throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
                         }
                         
-                        $_sqlquery = preg_replace("/%n/", $_ratesValues['locationToTown'], automationLibrary::SQL_QUERY_LOCATION);
-                        $_sqlquery = preg_replace("/%t/", automationLibrary::_TYPE_CITY, $_sqlquery);
+                        $_sqlquery = preg_replace("/%n/", $_ratesValues['locationToTown'], AutomationLibrary::SQL_QUERY_LOCATION);
+                        $_sqlquery = preg_replace("/%t/", AutomationLibrary::_TYPE_CITY, $_sqlquery);
                         $result = $this->queryDB($_sqlquery);
                         if (count($result) != 0) {
                             $_locationToID = intval($result[0]["ID"]);
                         } else {
-                            $_errmsg = preg_replace("/%s/", $_sqlquery, automationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
+                            $_errmsg = preg_replace("/%s/", $_sqlquery, AutomationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
                             throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
                         }
                         // : End
@@ -916,14 +916,14 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         
                         // Check and store route ID if exists
                         if ($_locationFromID && $_locationToID) {
-                            $_sqlquery = preg_replace("@%f@", $_locationFromID, automationLibrary::SQL_QUERY_ROUTE);
+                            $_sqlquery = preg_replace("@%f@", $_locationFromID, AutomationLibrary::SQL_QUERY_ROUTE);
                             $_sqlquery = preg_replace("@%t@", $_locationToID, $_sqlquery);
                             $_result = $this->queryDB($_sqlquery);
-                            automationLibrary::CONSOLE_OUTPUT("Run query to check for rate using SQL query: ", "Query results: ", "sql", $_sqlquery, $_result);
+                            AutomationLibrary::CONSOLE_OUTPUT("Run query to check for rate using SQL query: ", "Query results: ", "sql", $_sqlquery, $_result);
                             if (count($_result) != 0) {
                                 $_routeID = $_result[0]["ID"];
                             } else {
-                                $_errmsg = preg_replace("/%s/", $_sqlquery, automationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
+                                $_errmsg = preg_replace("/%s/", $_sqlquery, AutomationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
                                 throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
                             }
                         }
@@ -931,7 +931,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         // : Check and store rate ID if exists
                         if ($_routeID && $_truckTypeID && $_rateTypeID && $_bunitID && $_ratesValues['contribModel']) {
                             // "select ID from udo_rates where route_id = %ro and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and model='%m' and businessUnit_id=%b and rateType_id=%ra;",
-                            $_sqlquery = preg_replace("@%ro@", $_routeID, automationLibrary::SQL_QUERY_RATE);
+                            $_sqlquery = preg_replace("@%ro@", $_routeID, AutomationLibrary::SQL_QUERY_RATE);
                             $_sqlquery = preg_replace("@%r@", $_rateTypeID, $_sqlquery);
                             $_sqlquery = preg_replace("@%g@", $objectregistry_id, $_sqlquery);
                             $_sqlquery = preg_replace("@%c@", $_customerID, $_sqlquery);
@@ -939,13 +939,13 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             $_sqlquery = preg_replace("@%m@", $_ratesValues['contribModel'], $_sqlquery);
                             $_sqlquery = preg_replace("@%b@", $_bunitID, $_sqlquery);
                             $_result = $this->queryDB($_sqlquery);
-                            automationLibrary::CONSOLE_OUTPUT("Run query to check for rate using SQL query: ", "Query results: ", "sql", $_sqlquery, $_result);
+                            AutomationLibrary::CONSOLE_OUTPUT("Run query to check for rate using SQL query: ", "Query results: ", "sql", $_sqlquery, $_result);
                             if (count($_result) != 0) {
                                 $_rateID = $_result[0]["ID"];
                             }
                         }
                     } catch (Exception $e) {
-                        $_errmsg = preg_replace("/%s/", $e->getMessage(), automationLibrary::ERR_PROCESS_FAILED_UNEXPECTEDLY);
+                        $_errmsg = preg_replace("/%s/", $e->getMessage(), AutomationLibrary::ERR_PROCESS_FAILED_UNEXPECTEDLY);
                         $this->addErrorRecord($e->getMessage(), $_currentRecord, $_process);
                     }
                     // : End
@@ -966,7 +966,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             $_process = "createRate";
                             
                             // Load the MAX customer page
-                            $_url = $this->_maxurl . automationLibrary::URL_CUSTOMER . $_customerID;
+                            $_url = $this->_maxurl . AutomationLibrary::URL_CUSTOMER . $_customerID;
                             $this->_session->open($_url);
                             
                             // Wait for element = #subtabselector
@@ -1017,7 +1017,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                     return $session->element("css selector", "#button-create");
                                 });
                             } catch (PHPWebDriver_NoSuchElementWebDriverError $e) {
-                                $_errmsg = preg_replace("/%s/", "#button-create", automationLibrary::ERR_COULD_NOT_FIND_ELEMENT);
+                                $_errmsg = preg_replace("/%s/", "#button-create", AutomationLibrary::ERR_COULD_NOT_FIND_ELEMENT);
                                 $_errmsg = preg_replace("/%e/", $e->getMessage(), $_errmsg);
                                 throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
                             }
@@ -1027,7 +1027,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         // : Check and store rate ID if exists
                         if ($_routeID && $_truckTypeID && $_rateTypeID && $_bunitID && $_ratesValues['contribModel']) {
                             // "select ID from udo_rates where route_id = %ro and objectregistry_id=%g and objectInstanceId=%c and truckDescription_id=%d and enabled=1 and model='%m' and businessUnit_id=%b and rateType_id=%ra;",
-                            $_sqlquery = preg_replace("@%ro@", $_routeID, automationLibrary::SQL_QUERY_RATE);
+                            $_sqlquery = preg_replace("@%ro@", $_routeID, AutomationLibrary::SQL_QUERY_RATE);
                             $_sqlquery = preg_replace("@%r@", $_rateTypeID, $_sqlquery);
                             $_sqlquery = preg_replace("@%g@", $objectregistry_id, $_sqlquery);
                             $_sqlquery = preg_replace("@%c@", $_customerID, $_sqlquery);
@@ -1035,11 +1035,11 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             $_sqlquery = preg_replace("@%m@", $_ratesValues['contribModel'], $_sqlquery);
                             $_sqlquery = preg_replace("@%b@", $_bunitID, $_sqlquery);
                             $_result = $this->queryDB($_sqlquery);
-                            automationLibrary::CONSOLE_OUTPUT("Second run query to check for rate using SQL query: ", "Query results: ", "sql", $_sqlquery, $_result);
+                            AutomationLibrary::CONSOLE_OUTPUT("Second run query to check for rate using SQL query: ", "Query results: ", "sql", $_sqlquery, $_result);
                             if (count($_result) != 0) {
                                 $_rateID = $_result[0]["ID"];
                             } else {
-                                $_errmsg = preg_replace("/%s/", $_sqlquery, automationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
+                                $_errmsg = preg_replace("/%s/", $_sqlquery, AutomationLibrary::ERR_SQL_QUERY_NO_RESULTS_REQ_DATA);
                                 throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
                             }
                         }
@@ -1061,7 +1061,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             if ($_drvValue) {
                                 try {
                                     // Prepare url string to load next
-                                    $rateurl = preg_replace("/%s/", $_rateID, automationLibrary::URL_RATEVAL);
+                                    $rateurl = preg_replace("/%s/", $_rateID, AutomationLibrary::URL_RATEVAL);
                                     // Load URL for route and rate databrowser page
                                     $this->_session->open($this->_maxurl . $rateurl);
                                     
@@ -1120,7 +1120,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                     sleep(1);
                                     $this->takeScreenshot("createDateRangeValue" . $_drvKey);
                                 } catch (Exception $e) {
-                                    $_errmsg = preg_replace("/%s/", $e->getMessage(), automationLibrary::ERR_PROCESS_FAILED_UNEXPECTEDLY);
+                                    $_errmsg = preg_replace("/%s/", $e->getMessage(), AutomationLibrary::ERR_PROCESS_FAILED_UNEXPECTEDLY);
                                     throw new Exception($_errmsg . PHP_EOL . "Error occured on line: " . __LINE__);
                                 }
                             }
@@ -1129,7 +1129,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                         $_recordsProcessed ++;
                     } catch (Exception $e) {
                         $_recordsFailed ++;
-                        $_errmsg = preg_replace("/%s/", $e->getMessage(), automationLibrary::ERR_PROCESS_FAILED_UNEXPECTEDLY);
+                        $_errmsg = preg_replace("/%s/", $e->getMessage(), AutomationLibrary::ERR_PROCESS_FAILED_UNEXPECTEDLY);
                         $this->addErrorRecord($e->getMessage(), $_currentRecord, $_process);
                     }
                     $_currentRecordNum ++;

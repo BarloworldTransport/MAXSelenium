@@ -4,7 +4,7 @@ include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverWait.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverBy.php';
 include_once 'PHPUnit/Extensions/php-webdriver/PHPWebDriver/WebDriverProxy.php';
 include_once 'MAX_LoginLogout.php';
-include_once 'automationLibrary.php';
+include_once 'AutomationLibrary.php';
 
 /**
  * MAXLive_Customer_Links_BU_Link.php
@@ -218,7 +218,7 @@ class MAXLive_Customer_Links_BU_Link extends PHPUnit_Framework_TestCase
             $this->_locations = strtolower($data["locations"]);
             
             // Determine MAX URL to be used for this test run
-            $this->_maxurl = automationLibrary::getMAXURL($this->_mode, $this->_version);
+            $this->_maxurl = AutomationLibrary::getMAXURL($this->_mode, $this->_version);
         } else {
             echo "The correct data is not present in " . self::INI_FILE . ". Please confirm. Fields are username, password, welcome and mode" . PHP_EOL;
             return FALSE;
@@ -282,7 +282,7 @@ class MAXLive_Customer_Links_BU_Link extends PHPUnit_Framework_TestCase
             $_file = realpath($this->_dataDir) . self::DS . $this->_csv;
             
             // Import data from file and if successful continue script else terminate script and return error
-            if (($_data = $this->ImportCSVFileIntoArray($_file)) !== FALSE) {
+            if (($_data = $this->importCSVFileIntoArray($_file)) !== FALSE) {
                 
                 // : Create a persistant connection to the database
                 $_mysqlDsn = preg_replace("/%s/", $this->_ip, $this->_dbdsn);
@@ -297,7 +297,7 @@ class MAXLive_Customer_Links_BU_Link extends PHPUnit_Framework_TestCase
                 $this->_session->setPageLoadTimeout(60);
                 $w = new PHPWebDriver_WebDriverWait($session, 30);
                 
-                $_autoLib = new automationLibrary($this->_session, $this, $w, $this->_mode, $this->_version);
+                $_autoLib = new AutomationLibrary($this->_session, $this, $w, $this->_mode, $this->_version);
                 $_maxLoginLogout = new maxLoginLogout($_autoLib, $this->_maxurl);
                 
                 // Log into MAX
@@ -321,7 +321,7 @@ class MAXLive_Customer_Links_BU_Link extends PHPUnit_Framework_TestCase
                 // : End
                 if (($this->_locations == "true") && ($this->_offloadcustomer == "false")) {
                     // : Link Customer Location Business Unit Links
-                    $_url = automationLibrary::URL_CUST_LOCATION_BU;
+                    $_url = AutomationLibrary::URL_CUST_LOCATION_BU;
                     
                     $_locations = (bool) true;
                     $_offloadcustomer = (bool) false;
@@ -341,7 +341,7 @@ class MAXLive_Customer_Links_BU_Link extends PHPUnit_Framework_TestCase
                 } else 
                     if (($this->_offloadcustomer == "true") && ($this->_locations == "false")) {
                         // : Link Customer Offloading Customer Business Unit Links
-                        $_url = automationLibrary::URL_OFFLOAD_CUST_BU;
+                        $_url = AutomationLibrary::URL_OFFLOAD_CUST_BU;
                         
                         $_locations = (bool) false;
                         $_offloadcustomer = (bool) true;
@@ -556,13 +556,13 @@ class MAXLive_Customer_Links_BU_Link extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * MAXLive_Customer_Links_BU_Link::ImportCSVFileIntoArray($csvFile)
+     * MAXLive_Customer_Links_BU_Link::importCSVFileIntoArray($csvFile)
      * From supplied csv file save data into multidimensional array
      *
      * @param string: $csvFile            
      * @param array: $_result            
      */
-    private function ImportCSVFileIntoArray($csvFile)
+    private function importCSVFileIntoArray($csvFile)
     {
         try {
             $_data = (array) array();

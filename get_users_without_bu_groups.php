@@ -259,13 +259,13 @@ class get_users_without_bu_groups {
 	
 	// : Private Functions
 	/**
-	 * getusersBUFromList::ExportToCSV($csvFile, $arr)
+	 * getusersBUFromList::exportToCSV($csvFile, $arr)
 	 * From supplied csv file save data into multidimensional array
 	 *
 	 * @param string: $csvFile        	
 	 * @param array: $_arr        	
 	 */
-	private function ExportToCSV($csvFile, $_arr) {
+	private function exportToCSV($csvFile, $_arr) {
 		try {
 			$_data = ( array ) array ();
 			if (file_exists ( dirname ( $csvFile ) )) {
