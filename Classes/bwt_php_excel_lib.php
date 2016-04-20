@@ -14,36 +14,39 @@ class bwt_php_excel_lib
      * Read a spreadsheet into memory containing F and V Contract data
      * and arrange into a multidimensional array
      *
-     * @param $excelFile, $sheetName
+     * @param $excelFile, $sheetName            
      */
-    public function readExcelFileData($excelFile, $sheetname) {
+    public function readExcelFileData($excelFile, $sheetname)
+    {
         try {
             // Type cast necessary variables
-            $contractData = ( array ) array ();
+            $contractData = (array) array();
             // Create PHPExcel Reader Object
             $inputFileType = PHPExcel_IOFactory::identify($excelFile);
             $objReader = PHPExcel_IOFactory::createReader($inputFileType);
             $objReader->setReadDataOnly(true);
             $objPHPExcel = $objReader->load($excelFile); // Load worksheet into memory
             $worksheet = $objPHPExcel->getSheetByName($sheetname);
-            	
+            
             // Read spreadsheet data and store into array
             foreach ($worksheet->getRowIterator() as $row) {
                 $cellIterator = $row->getCellIterator();
                 $cellIterator->setIterateOnlyExistingCells(true);
                 foreach ($cellIterator as $cell) {
                     if ($cell->getRow() != 1) {
-                        $data[$objPHPExcel->getActiveSheet()->getCell($cell->getColumn() . "1")->getValue()] [$cell->getRow() - 1] = $cell->getValue();
+                        $data[$objPHPExcel->getActiveSheet()
+                            ->getCell($cell->getColumn() . "1")
+                            ->getValue()][$cell->getRow() - 1] = $cell->getValue();
                     }
                 }
             }
             return $data;
-        } catch ( Exception $e ) {
-            echo "Caught exception: ", $e->getMessage (), "\n";
+        } catch (Exception $e) {
+            echo "Caught exception: ", $e->getMessage(), "\n";
             return false;
         }
     }
-    
+
     /**
      * bwt_php_excel_lib::writeExcelFile($excelFile, $excelData)
      * Create, Write and Save Excel Spreadsheet from collected data obtained from the variance report

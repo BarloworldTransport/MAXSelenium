@@ -248,8 +248,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
         $_logArray[] = "Current Category of Data been processed: " . $_category;
         $_logArray[] = "Current Process: " . $_process;
         $_logArray[] = "Current Record: " . $_currentRecord;
-	$_logArray[] = "Records Passed: " . $_passed;
-	$_logArray[] = "Records Failed: " . $_failed;
+        $_logArray[] = "Records Passed: " . $_passed;
+        $_logArray[] = "Records Failed: " . $_failed;
         $_logArray[] = "Progress: " . $_progress;
         
         $_logstr = (string) "## BWT Automation Progress Log File" . PHP_EOL;
@@ -311,9 +311,9 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
         // : Pull spreadsheet data and store into multi dimensional array
         
         // : Import Rates from spreadsheet
-		$_xls1 = new ReadExcelFile($_file, "rates", "locations", "offloading", "bu", "customer");
-		$_temp = $_xls1->getData();
-
+        $_xls1 = new ReadExcelFile($_file, "rates", "locations", "offloading", "bu", "customer");
+        $_temp = $_xls1->getData();
+        
         unset($_xls1);
         // : End
         
@@ -368,15 +368,13 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                 $this->_session->open($this->_maxurl);
                 // : Wait for page to load and for elements to be present on page
                 if ($this->_mode == "live" || $this->_mode == "test") {
-                    $e = $w->until(function ($session)
-                    {
+                    $e = $w->until(function ($session) {
                         return $session->element('css selector', "#contentFrame");
                     });
                     $iframe = $this->_session->element('css selector', '#contentFrame');
                     $this->_session->switch_to_frame($iframe);
                 }
-                $e = $w->until(function ($session)
-                {
+                $e = $w->until(function ($session) {
                     return $session->element('css selector', 'input[id=identification]');
                 });
                 // : End
@@ -395,15 +393,13 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                 
                 // : Wait for page to load and for elements to be present on page
                 if ($this->_mode == "live" || $this->_mode == "test") {
-                    $e = $w->until(function ($session)
-                    {
+                    $e = $w->until(function ($session) {
                         return $session->element('css selector', "#contentFrame");
                     });
                     $iframe = $this->_session->element('css selector', '#contentFrame');
                     $this->_session->switch_to_frame($iframe);
                 }
-                $e = $w->until(function ($session)
-                {
+                $e = $w->until(function ($session) {
                     return $session->element("xpath", "//*[text()='" . $this->_welcome . "']");
                 });
                 $this->assertElementPresent("xpath", "//*[text()='" . $this->_welcome . "']");
@@ -429,8 +425,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             
             // : Load Planningboard to rid of iframe loading on every page from here on
             $this->_session->open($this->_maxurl . AutomationLibrary::URL_PB);
-            $e = $w->until(function ($session)
-            {
+            $e = $w->until(function ($session) {
                 return $session->element("xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]");
             });
             // : End
@@ -440,7 +435,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
              */
             
             if ($_data['customer'] && $_data['bu']) {
-		$_buName = $_data['bu'][1]['bunit'];
+                $_buName = $_data['bu'][1]['bunit'];
                 echo $_data['customer'][1]['customerName'] . PHP_EOL;
                 $_sqlquery = preg_replace("/%t/", $_data['customer'][1]['customerName'], AutomationLibrary::SQL_QUERY_CUSTOMER);
                 $result = $this->queryDB($_sqlquery);
@@ -454,7 +449,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             } else {
                 throw new Exception(AutomationLibrary::ERR_NO_CUSTOMER_DATA);
             }
-
+            
             /**
              * END
              */
@@ -521,22 +516,19 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             // Load URL for MAX customers page
                             $this->_session->open($this->_maxurl . AutomationLibrary::URL_CUSTOMER . $_customerID);
                             // Wait for element = #subtabselector
-                            $e = $w->until(function ($session)
-                            {
+                            $e = $w->until(function ($session) {
                                 return $session->element("css selector", "#subtabselector");
                             });
                             // Select option from select box
                             $this->_session->element("xpath", "//*[@id='subtabselector']/select/option[text()='Locations']")->click();
                             // Wait for element = #button-create
-                            $e = $w->until(function ($session)
-                            {
+                            $e = $w->until(function ($session) {
                                 return $session->element("css selector", "#button-create");
                             });
                             // Click element - button
                             $this->_session->element("css selector", "#button-create")->click();
                             // Wait for element
-                            $e = $w->until(function ($session)
-                            {
+                            $e = $w->until(function ($session) {
                                 return $session->element("xpath", "//*[@id='udo_CustomerLocations-5__0_location_id-5']");
                             });
                             $this->assertElementPresent("link text", "Create Location");
@@ -586,16 +578,14 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                             $_url = $this->_maxurl . AutomationLibrary::URL_CUST_LOCATION_BU . $_customerLocationLinkID;
                                             $this->_session->open($_url);
                                             // Wait for element
-                                            $e = $w->until(function ($session)
-                                            {
+                                            $e = $w->until(function ($session) {
                                                 return $session->element("css selector", "#button-create");
                                             });
                                             // Click element = button-create
                                             $this->_session->element("css selector", "#button-create")->click();
                                             
                                             // Wait for element = Page heading
-                                            $e = $w->until(function ($session)
-                                            {
+                                            $e = $w->until(function ($session) {
                                                 return $session->element("xpath", "//*[contains(text(),'Create Customer Locations - Business Unit')]");
                                             });
                                             
@@ -607,8 +597,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                             $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                                             // Wait for element
                                             $this->takeScreenshot("createCustomerLocationBULink");
-                                            $e = $w->until(function ($session)
-                                            {
+                                            $e = $w->until(function ($session) {
                                                 return $session->element("css selector", "#button-create");
                                             });
                                         }
@@ -643,46 +632,46 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             
             // If offloading customer data exists then continue
             if (array_key_exists("offloading", $_data)) {
-               
+                
                 $_complete = 0;
                 $_currentRecordNum = 0;
                 $_recordsProcessed = 0;
                 $_recordsFailed = 0;
- 
+                
                 foreach ($_data['offloading'] as $_offloadKey => $_offloadValues) {
                     
-		    try {
-
-                    $_offloadingCustomerLinkID = 0;
-                    $_bunitID = 0;
-                    $_currentRecord = "";
-                    $_recordsAll = $_recordsFailed + $_recordsProcessed;
-                    $_complete = (($_recordsAll / $this->_totals['offloading']) * 100);
-                    $_progressStr = "Offloading Customer Progress: " . strval($_recordsAll) . "/" . strval($this->_totals['offloading']) . ", Section Progress: {$_complete}%";
+                    try {
                         
-                    $_currentRecord = "";
-                    foreach ($_offloadValues as $_key1 => $_value1) {
-                        $_currentRecord .= "[$_key1]=>$_value1;";
-                    }
-
-                    $this->progressLogFile($_progressLogFile, "offloading customers", $_currentRecord, $_recordsFailed, $_recordsProcessed, $_process, $_progressStr);
-                    
-                    // : If offloading customer does exist then check if offloading customer is linked to the customer and store the link ID
-                    $_sqlquery = preg_replace("/%o/", $_offloadValues['tradingName'], AutomationLibrary::SQL_QUERY_OFFLOADING_CUSTOMER);
-                    $_sqlquery = preg_replace("/%c/", $_customerID, $_sqlquery);
-                    $_sqlquery1 = $this->queryDB($_sqlquery);
-                    
-		    if (count($_sqlquery1) != 0) {
-                        $_offloadingCustomerLinkID = intval($_sqlquery1[0]["ID"]);
-                    } else {
                         $_offloadingCustomerLinkID = 0;
-                    }
-		    echo "INFO: SQL Query - Check if offloading customer exists - Fetch ID: " . $_sqlquery . PHP_EOL;
-		    echo "DEBUG: Result:" . PHP_EOL;
-		    var_dump($_sqlquery1);
-                    // : End
+                        $_bunitID = 0;
+                        $_currentRecord = "";
+                        $_recordsAll = $_recordsFailed + $_recordsProcessed;
+                        $_complete = (($_recordsAll / $this->_totals['offloading']) * 100);
+                        $_progressStr = "Offloading Customer Progress: " . strval($_recordsAll) . "/" . strval($this->_totals['offloading']) . ", Section Progress: {$_complete}%";
                         
-			// : Create and link Offloading Customer
+                        $_currentRecord = "";
+                        foreach ($_offloadValues as $_key1 => $_value1) {
+                            $_currentRecord .= "[$_key1]=>$_value1;";
+                        }
+                        
+                        $this->progressLogFile($_progressLogFile, "offloading customers", $_currentRecord, $_recordsFailed, $_recordsProcessed, $_process, $_progressStr);
+                        
+                        // : If offloading customer does exist then check if offloading customer is linked to the customer and store the link ID
+                        $_sqlquery = preg_replace("/%o/", $_offloadValues['tradingName'], AutomationLibrary::SQL_QUERY_OFFLOADING_CUSTOMER);
+                        $_sqlquery = preg_replace("/%c/", $_customerID, $_sqlquery);
+                        $_sqlquery1 = $this->queryDB($_sqlquery);
+                        
+                        if (count($_sqlquery1) != 0) {
+                            $_offloadingCustomerLinkID = intval($_sqlquery1[0]["ID"]);
+                        } else {
+                            $_offloadingCustomerLinkID = 0;
+                        }
+                        echo "INFO: SQL Query - Check if offloading customer exists - Fetch ID: " . $_sqlquery . PHP_EOL;
+                        echo "DEBUG: Result:" . PHP_EOL;
+                        var_dump($_sqlquery1);
+                        // : End
+                        
+                        // : Create and link Offloading Customer
                         if (! $_offloadingCustomerLinkID) {
                             
                             $_process = "createOffloadingCustomerCustomerLink";
@@ -691,22 +680,19 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             $this->_session->open($_url);
                             
                             // Wait for element = Page heading
-                            $e = $w->until(function ($session)
-                            {
+                            $e = $w->until(function ($session) {
                                 return $session->element("css selector", "#subtabselector");
                             });
                             $this->_session->element("xpath", "//*[@id='subtabselector']/select/option[text()='Offloading Customers where Offloading Customer is " . $_data['customer'][1]['customerName'] . "']")->click();
                             
                             // Wait for element = Page heading
-                            $e = $w->until(function ($session)
-                            {
+                            $e = $w->until(function ($session) {
                                 return $session->element("css selector", "#button-create");
                             });
                             $this->_session->element("css selector", "#button-create")->click();
                             
                             // Wait for element = Page heading
-                            $e = $w->until(function ($session)
-                            {
+                            $e = $w->until(function ($session) {
                                 return $session->element("xpath", "//*[contains(text(),'Capture the details of Offloading Customers')]");
                             });
                             
@@ -717,102 +703,97 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             $this->assertElementPresent("css selector", "input[type=submit][name=save]");
                             
                             $this->_session->element("xpath", "//*[@id='udo_OffloadingCustomers-3__0_customer_id-3']/option[text()='" . $_data['customer'][1]['customerName'] . "']")->click();
-                            $this->_session->element("xpath", "//*[@id='udo_OffloadingCustomers-6__0_offloadingCustomer_id-6']/option[text()='" . $_offloadValues['tradingName']  . "']")->click();
+                            $this->_session->element("xpath", "//*[@id='udo_OffloadingCustomers-6__0_offloadingCustomer_id-6']/option[text()='" . $_offloadValues['tradingName'] . "']")->click();
                             $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                             
                             // : Wait for Create Button to present on page before continuining
-                            $e = $w->until(function ($session)
-                            {
+                            $e = $w->until(function ($session) {
                                 return $session->element("css selector", "#button-create");
                             });
-
-			    // Fetch ID of newly created offloadingcustomer link ID	
+                            
+                            // Fetch ID of newly created offloadingcustomer link ID
                             $myQuery = preg_replace("/%o/", $_offloadValues["tradingName"], AutomationLibrary::SQL_QUERY_OFFLOADING_CUSTOMER);
                             $myQuery = preg_replace("/%t/", $_customerID, $myQuery);
                             $sqlResult = $this->queryDB($myQuery);
-
-			    if (count($sqlResult) != 0) {
-        	                $_offloadingCustomerLinkID = intval($sqlResult[0]["ID"]);
-                	    } else {
-	                        $_offloadingCustomerLinkID = 0;
-	                    }
-
-                            // : End
-			}
                             
-                            // : Create Business Unit Link for Offloading Customer Link 
-			    echo "INFO: Code position - Create Business Unit Link - Outside" . PHP_EOL;
-                            if ($_offloadingCustomerLinkID) {
-				try {	
-			    echo "INFO: Code position - Create Business Unit Link - Inside" . PHP_EOL;
-                            	$myQuery = preg_replace("/%s/", $_buName, AutomationLibrary::SQL_QUERY_BUNIT);
-        	                $sqlResultBU = $this->queryDB($myQuery);
-
-				echo "INFO: SQL Query - Fetch Business Unit ID " . $myQuery . PHP_EOL;
-				echo "DEBUG: SQL Result:" . PHP_EOL;
-				var_dump($sqlResultBU);
-
-				if ($sqlResultBU) {
-					$_bID = $sqlResultBU[0]['ID'];
-
-                            		$myQuery = preg_replace("/%o/", $_offloadingCustomerLinkID, AutomationLibrary::SQL_QUERY_OFFLOAD_BU_LINK);
-		                        $myQuery = preg_replace("/%b/", $_bID, $myQuery);
-        		                $sqlResult = $this->queryDB($myQuery);
-				echo "INFO: SQL Query - Fetch offloading customer link->BU link " . $myQuery . PHP_EOL;
-				echo "DEBUG: SQL Result:" . PHP_EOL;
-				var_dump($sqlResult);
-				
-				// Check if offloadingcustomer_bulink exists. If it doesnt exist then create the link
-				if (!$sqlResult) {
-
-                                $_process = "create business unit link for offloading customer link";
-                                $this->_session->open($this->_maxurl . AutomationLibrary::URL_OFFLOAD_CUST_BU . $_offloadingCustomerLinkID);
-                                
-                                // Wait for element = #subtabselector
-                                $e = $w->until(function ($session)
-                                {
-                                    return $session->element("css selector", "#subtabselector");
-                                });
-                                $this->_session->element("xpath", "//*[@id='subtabselector']/select/option[text()='Offloading Customers - Business Unit']")->click();
-                                
-                                // Wait for element = #button-create
-                                $e = $w->until(function ($session)
-                                {
-                                    return $session->element("xpath", "//div[@id='button-create']");
-                                });
-                                $this->_session->element("xpath", "//div[@id='button-create']")->click();
-                                
-                                // Wait for element = Page Heading
-                                $e = $w->until(function ($session)
-                                {
-                                    return $session->element("xpath", "//*[contains(text(),'Create Offloading Customers - Business Unit')]");
-                                });
-                                
-                                $this->assertElementPresent("xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']");
-                                $this->assertElementPresent("css selector", "input[type=submit][name=save]");
-                                
-                                $this->_session->element("xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']/option[text()='" . $_buName . "']")->click();
-                                $this->_session->element("css selector", "input[type=submit][name=save]")->click();
-                                
-                                // Wait for element = #button-create
-                                $e = $w->until(function ($session)
-                                {
-                                    return $session->element("xpath", "//div[@id='button-create']");
-                                });
-				}
-				}
-				} catch (Exception $e) {
-					throw new Exception("Something during offloading customer link bu link create process: " . $e->getMessage()); 
-				}
+                            if (count($sqlResult) != 0) {
+                                $_offloadingCustomerLinkID = intval($sqlResult[0]["ID"]);
                             } else {
-                                throw new Exception("Could not find offloading customer record: " . $_offloadValues['tradingName']);
+                                $_offloadingCustomerLinkID = 0;
                             }
-		    	$_recordsProcessed++; 	
+                            
+                            // : End
+                        }
+                        
+                        // : Create Business Unit Link for Offloading Customer Link
+                        echo "INFO: Code position - Create Business Unit Link - Outside" . PHP_EOL;
+                        if ($_offloadingCustomerLinkID) {
+                            try {
+                                echo "INFO: Code position - Create Business Unit Link - Inside" . PHP_EOL;
+                                $myQuery = preg_replace("/%s/", $_buName, AutomationLibrary::SQL_QUERY_BUNIT);
+                                $sqlResultBU = $this->queryDB($myQuery);
+                                
+                                echo "INFO: SQL Query - Fetch Business Unit ID " . $myQuery . PHP_EOL;
+                                echo "DEBUG: SQL Result:" . PHP_EOL;
+                                var_dump($sqlResultBU);
+                                
+                                if ($sqlResultBU) {
+                                    $_bID = $sqlResultBU[0]['ID'];
+                                    
+                                    $myQuery = preg_replace("/%o/", $_offloadingCustomerLinkID, AutomationLibrary::SQL_QUERY_OFFLOAD_BU_LINK);
+                                    $myQuery = preg_replace("/%b/", $_bID, $myQuery);
+                                    $sqlResult = $this->queryDB($myQuery);
+                                    echo "INFO: SQL Query - Fetch offloading customer link->BU link " . $myQuery . PHP_EOL;
+                                    echo "DEBUG: SQL Result:" . PHP_EOL;
+                                    var_dump($sqlResult);
+                                    
+                                    // Check if offloadingcustomer_bulink exists. If it doesnt exist then create the link
+                                    if (! $sqlResult) {
+                                        
+                                        $_process = "create business unit link for offloading customer link";
+                                        $this->_session->open($this->_maxurl . AutomationLibrary::URL_OFFLOAD_CUST_BU . $_offloadingCustomerLinkID);
+                                        
+                                        // Wait for element = #subtabselector
+                                        $e = $w->until(function ($session) {
+                                            return $session->element("css selector", "#subtabselector");
+                                        });
+                                        $this->_session->element("xpath", "//*[@id='subtabselector']/select/option[text()='Offloading Customers - Business Unit']")->click();
+                                        
+                                        // Wait for element = #button-create
+                                        $e = $w->until(function ($session) {
+                                            return $session->element("xpath", "//div[@id='button-create']");
+                                        });
+                                        $this->_session->element("xpath", "//div[@id='button-create']")->click();
+                                        
+                                        // Wait for element = Page Heading
+                                        $e = $w->until(function ($session) {
+                                            return $session->element("xpath", "//*[contains(text(),'Create Offloading Customers - Business Unit')]");
+                                        });
+                                        
+                                        $this->assertElementPresent("xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']");
+                                        $this->assertElementPresent("css selector", "input[type=submit][name=save]");
+                                        
+                                        $this->_session->element("xpath", "//*[@id='udo_OffloadingCustomersBusinessUnit_link-2__0_businessUnit_id-2']/option[text()='" . $_buName . "']")->click();
+                                        $this->_session->element("css selector", "input[type=submit][name=save]")->click();
+                                        
+                                        // Wait for element = #button-create
+                                        $e = $w->until(function ($session) {
+                                            return $session->element("xpath", "//div[@id='button-create']");
+                                        });
+                                    }
+                                }
+                            } catch (Exception $e) {
+                                throw new Exception("Something during offloading customer link bu link create process: " . $e->getMessage());
+                            }
+                        } else {
+                            throw new Exception("Could not find offloading customer record: " . $_offloadValues['tradingName']);
+                        }
+                        $_recordsProcessed ++;
                     } catch (Exception $e) {
-			$_recordsFailed++;
+                        $_recordsFailed ++;
                         $this->addErrorRecord($e->getMessage(), $_currentRecord, $_process);
                     }
-		    $_currentRecordNum++;
+                    $_currentRecordNum ++;
                     // : End
                 }
             }
@@ -970,24 +951,21 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             $this->_session->open($_url);
                             
                             // Wait for element = #subtabselector
-                            $e = $w->until(function ($session)
-                            {
+                            $e = $w->until(function ($session) {
                                 return $session->element("css selector", "#subtabselector");
                             });
                             // Select Rates from the select box
                             $this->_session->element("xpath", "//*[@id='subtabselector']/select/option[text()='Rates']")->click();
                             
                             // Wait for element = #button-create
-                            $e = $w->until(function ($session)
-                            {
+                            $e = $w->until(function ($session) {
                                 return $session->element("css selector", "#button-create");
                             });
                             // Click element - #button-create
                             $this->_session->element("css selector", "#button-create")->click();
                             
                             // Wait for element Page Heading
-                            $e = $w->until(function ($session)
-                            {
+                            $e = $w->until(function ($session) {
                                 return $session->element("xpath", "//*[@id='udo_Rates-31__0_route_id-31']");
                             });
                             
@@ -1012,8 +990,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                             
                             // Wait for element = #button-create
                             try {
-                                $e = $w->until(function ($session)
-                                {
+                                $e = $w->until(function ($session) {
                                     return $session->element("css selector", "#button-create");
                                 });
                             } catch (PHPWebDriver_NoSuchElementWebDriverError $e) {
@@ -1066,8 +1043,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                     $this->_session->open($this->_maxurl . $rateurl);
                                     
                                     // Wait for element = #subtabselector
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("css selector", "#subtabselector");
                                     });
                                     // Click element - #subtabselector
@@ -1077,16 +1053,14 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                     sleep(1);
                                     
                                     // Wait for element = #button-create
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("css selector", "#button-create");
                                     });
                                     // Click element - #button-create
                                     $this->_session->element("css selector", "#button-create")->click();
                                     
                                     // Wait for element = #button-create
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("xpath", "//*[contains(text(),'Create Date Range Values')]");
                                     });
                                     
@@ -1144,8 +1118,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
             // : Tear Down
             $this->_session->element('xpath', "//*[contains(@href,'/logout')]")->click();
             // Wait for page to load and for elements to be present on page
-            $e = $w->until(function ($session)
-            {
+            $e = $w->until(function ($session) {
                 return $session->element('css selector', 'input[id=identification]');
             });
             $this->assertElementPresent('css selector', 'input[id=identification]');

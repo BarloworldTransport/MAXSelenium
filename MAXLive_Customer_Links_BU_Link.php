@@ -360,7 +360,7 @@ class MAXLive_Customer_Links_BU_Link extends PHPUnit_Framework_TestCase
                         // : End
                     }
                 
-                if (($_locations && !$_offloadcustomer) || (!$_locations && $_offloadcustomer)) {
+                if (($_locations && ! $_offloadcustomer) || (! $_locations && $_offloadcustomer)) {
                     foreach ($_data as $_key => $_value) {
                         try {
                             if ($_locations) {
@@ -376,8 +376,7 @@ class MAXLive_Customer_Links_BU_Link extends PHPUnit_Framework_TestCase
                                 $this->_tmp['element_selector'] = $_record_page_create_button["element_selector"];
                                 $this->_tmp['element_value'] = $_record_page_create_button["element_value"];
                                 
-                                $e = $w->until(function ($session)
-                                {
+                                $e = $w->until(function ($session) {
                                     return $session->element($this->_tmp['element_selector'], $this->_tmp['element_value']);
                                 });
                                 
@@ -387,8 +386,7 @@ class MAXLive_Customer_Links_BU_Link extends PHPUnit_Framework_TestCase
                                 $this->_tmp['element_selector'] = $_create_bu_link_page_heading_label["element_selector"];
                                 $this->_tmp['element_value'] = $_create_bu_link_page_heading_label["element_value"];
                                 
-                                $e = $w->until(function ($session)
-                                {
+                                $e = $w->until(function ($session) {
                                     return $session->element($this->_tmp['element_selector'], $this->_tmp['element_value']);
                                 });
                                 
@@ -402,8 +400,7 @@ class MAXLive_Customer_Links_BU_Link extends PHPUnit_Framework_TestCase
                                 $this->_tmp['element_selector'] = $_record_page_create_button["element_selector"];
                                 $this->_tmp['element_value'] = $_record_page_create_button["element_value"];
                                 
-                                $e = $w->until(function ($session)
-                                {
+                                $e = $w->until(function ($session) {
                                     return $session->element($this->_tmp['element_selector'], $this->_tmp['element_value']);
                                 });
                             } else {

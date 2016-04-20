@@ -205,9 +205,10 @@ class bwt_php_excel
                         }
                     }
                     // : End
-                } else if ($_mode !== 'w' or $_mode !== 'r') {
+                } else 
+                    if ($_mode !== 'w' or $_mode !== 'r') {
                         throw new Exception("Invalid mode given. Please provide one of the following mode settings: mode = 'r, w'");
-                }
+                    }
                 // : End
             } else {
                 return FALSE;

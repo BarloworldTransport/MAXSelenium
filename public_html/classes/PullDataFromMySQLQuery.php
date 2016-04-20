@@ -1,6 +1,6 @@
 <?php
 // Error reporting
-error_reporting ( E_ALL );
+error_reporting(E_ALL);
 
 // : Includes
 // : End
@@ -14,249 +14,266 @@ error_reporting ( E_ALL );
  * @license GNU GPL
  * @see http://www.gnu.org/copyleft/gpl.html
  */
-class PullDataFromMySQLQuery {
-	// : Constants
-	const DS = DIRECTORY_SEPARATOR;
-	
-	// : Variables
-	protected $_db;
-	protected $_dbdsn;
-	protected $_dbuser;
-	protected $_dbpwd;
-	protected $_dboptions = array (
-			PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
-			PDO::ATTR_EMULATE_PREPARES => false,
-			PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-			PDO::ATTR_PERSISTENT => true 
-	);
-	protected $_inifile = "../config/settings.ini";
-	protected $_errors = array ();
-	
-	// : Public functions
-	// : Accessors
-	
-	/**
-	 * PullDataFromMySQLQuery::getErrors()
-	 * Return error messages if any errors occured while attempting to run MySQL query file
-	 * 
-	 * @param array: $this->_data        	
-	 */
-	public function getErrors() {
-		return $this->_errors;
-	}
-	
-	/**
-	 * PullDataFromMySQLQuery::dbOpen()
-	 * Return error messages if any errors occured while attempting to run MySQL query file
-	 * 
-	 * @param array: $this->_openDB
-	 *        	( dbdsn, dbuser, dbpwd, dboptions )
-	 */
-	public function dbOpen() {
-		if ($this->openDB ( $this->_dbdsn, $this->_dbuser, $this->_dbpwd, $this->_dboptions ) != FALSE) {
-			return TRUE;
-		} else {
-			return FALSE;
-		}
-	}
-	
-	/**
-	 * PullFandVContractData::dbClose()
-	 * Close connection to Database
-	 * 
-	 * @param object: $this->_db        	
-	 */
-	public function dbClose() {
-		$this->_db = null;
-	}
-	
-	// : End
-	
-	// : Public Functions
-	
-	/**
-	 * getDataFromQuery::getDataFromQuery()
-	 * Return the data from the MySQL Query
-	 * 
-	 * @param array: $this->_data        	
-	 */
-	public function getDataFromQuery($sqlquery) {
-		try {
-			$_errors = ( array ) array ();
-			$_data = ( array ) array ();
-			$_data = $this->queryDB ( $sqlquery );
-			if ((count ( $_data ) == 0)) {
-				$_errors [] = "No rows where returned by MySQL.";
-			}
-		} catch ( Exception $e ) {
-			$_errors [] = $e->getMessage ();
-		}
-		if (count ( $_errors ) != 0) {
-			foreach ( $_errors as $value ) {
-				$this->_errors [] = $value;
-			}
-			return FALSE;
-		} else {
-			return $_data;
-		}
-		unset ( $_errors, $_data );
-	}
-	
-	/**
-	 * PullDataFromMySQLQuery::getDataFromSQLFile()
-	 * Return the data from the MySQL Query
-	 *
-	 * @param array: $this->_data        	
-	 */
-	public function getDataFromSQLFile($sqlfile, $replace, $pattern, $replacement) {
-		try {
-			$_errors = ( array ) array ();
-			$_data = ( array ) array ();
-			$_file = dirname ( __FILE__ ) . self::DS . $sqlfile;
-			if (file_exists ( $_file )) {
-				$sqlquery = file_get_contents ( $_file );
-				if ($replace != FALSE) {
-					$sqlquery = preg_replace ( $pattern, $replacement, $sqlquery );
-				}
-				$_data = $this->queryDB ( $sqlquery );
-			} else {
-				$_errors [] = "File not found: " . $_file;
-			}
-			if ((count ( $_data ) == 0)) {
-				$_errors [] = "No rows where returned by MySQL.";
-			}
-		} catch ( Exception $e ) {
-			$_errors [] = $e->getMessage ();
-		}
-		if (count ( $_errors ) != 0) {
-			foreach ( $_errors as $value ) {
-				$this->_errors [] = $value;
-			}
-			return FALSE;
-		} else {
-			return $_data;
-		}
-		unset ( $_errors, $data );
-	}
-	// : End
-	
-	/**
-	 * PullDataFromMySQLQuery::insertSQLQuery()
-	 * Insert new data into database using SQL Query
-	 *
-	 * @param array: $this->_data
-	 */
-	public function insertSQLQuery($_keys, $_values, $_query) {
-		$_errors = array();
-		try {
-			if ($_keys && is_array($_keys) && $_values && is_array($_values)) {
-				$_stmt = $this->_db->prepare($_query);
-				foreach($_keys as $_key => $_value) {
-					$_stmt->bindParam($_value, $_values[$_key]);
-				}
-				if ($_stmt->execute()) {
-					return true;
-				} else {
-					$_errors[] = "Failed to insert query. Reason unknown.";
-				}
-			} else {
-				$_errors[] = "Function arguments keys and values need to be array values.";
-			}
-		} catch ( Exception $e ) {
-				$_errors [] = $e->getMessage ();
-		}
-		if (!$_errors) {
-			return TRUE;
-		} else {
-			foreach($_errors as $_errval) {
-				$this->_errors[] = $_errval;
-			}
-			return FALSE;
-		}
-	}
-	// : End
-	
-	// : Magic
-	/**
-	 * PullDataFromMySQLQuery::__construct()
-	 * Class constructor
-	 */
-	public function __construct($_tenant, $_host, $_db_user_key = 'dbuser', $_db_pwd_key = 'dbpwd') {
-		try {
-			if ($_tenant && $_host) {
-				$_inifile = dirname ( __FILE__ ) . self::DS . $this->_inifile;
-				if (file_exists ( $_inifile )) {
-					
-					$data = parse_ini_file ( $_inifile );
+class PullDataFromMySQLQuery
+{
+    // : Constants
+    const DS = DIRECTORY_SEPARATOR;
+    
+    // : Variables
+    protected $_db;
 
-					if ((array_key_exists ( "dbdsn", $data )) && (array_key_exists ( "dbuser", $data )) && (array_key_exists ( "dbpwd", $data ))) {
-						$_dsn = preg_replace ( "/%s/", $_tenant, $data ["dbdsn"] );
-						$_dsn = preg_replace ( "/%h/", $_host, $_dsn );
-						$this->_dbdsn = $_dsn;
-						$this->_dbuser = $data [$_db_user_key];
-						$this->_dbpwd = $data [$_db_pwd_key];
-						$this->dbOpen ();
-					} else {
-						throw new Exception ( "Correct fields where not found in file: " . $_inifile . ". Please make sure the following fields are available: dbdsn, dbuser, dbpwd" );
-					}
-				} else {
-					$this->_errors [] = "Cannot find file: " . $_inifile . ". Please create the file or that it exists.";
-				}
-			} else {
-				throw new Exception("ERROR: No database name provided in parameter when creating new object instance of PullDataFromMySQLQuery class");
-			}
-		} catch ( Exception $e ) {
-			$this->_errors [] = $e->getMessage ();
-		}
-		if (count ( $this->_errors ) != 0) {
-			return FALSE;
-		} else {
-			return TRUE;
-		}
-	}
-	
-	/**
-	 * PullDataFromMySQLQuery::__destruct()
-	 * Class destructor
-	 * Allow for garbage collection
-	 */
-	public function __destruct() {
-		unset ( $this );
-	}
-	// : End
-	
-	// : Private Functions
-	/**
-	 * PullFandVContractData::openDB($dsn, $username, $password, $options)
-	 * Open connection to Database
-	 *
-	 * @param string: $dsn        	
-	 * @param string: $username        	
-	 * @param string: $password        	
-	 * @param array: $options        	
-	 */
-	private function openDB($dsn, $username, $password, $options) {
-		try {
-			$this->_db = new PDO ( $dsn, $username, $password, $options );
-		} catch ( PDOException $ex ) {
-			return FALSE;
-		}
-	}
-	
-	/**
-	 * PullFandVContractData::queryDB($sqlquery)
-	 * Pass MySQL Query to database and return output
-	 *
-	 * @param string: $sqlquery        	
-	 * @param array: $result        	
-	 */
-	private function queryDB($sqlquery) {
-		try {
-			$result = $this->_db->query ( $sqlquery );
-			return $result->fetchAll ( PDO::FETCH_ASSOC );
-		} catch ( PDOException $ex ) {
-			return FALSE;
-		}
-	}
-	// : End
+    protected $_dbdsn;
+
+    protected $_dbuser;
+
+    protected $_dbpwd;
+
+    protected $_dboptions = array(
+        PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
+        PDO::ATTR_EMULATE_PREPARES => false,
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_PERSISTENT => true
+    );
+
+    protected $_inifile = "../config/settings.ini";
+
+    protected $_errors = array();
+    
+    // : Public functions
+    // : Accessors
+    
+    /**
+     * PullDataFromMySQLQuery::getErrors()
+     * Return error messages if any errors occured while attempting to run MySQL query file
+     *
+     * @param array: $this->_data            
+     */
+    public function getErrors()
+    {
+        return $this->_errors;
+    }
+
+    /**
+     * PullDataFromMySQLQuery::dbOpen()
+     * Return error messages if any errors occured while attempting to run MySQL query file
+     *
+     * @param array: $this->_openDB
+     *            ( dbdsn, dbuser, dbpwd, dboptions )
+     */
+    public function dbOpen()
+    {
+        if ($this->openDB($this->_dbdsn, $this->_dbuser, $this->_dbpwd, $this->_dboptions) != FALSE) {
+            return TRUE;
+        } else {
+            return FALSE;
+        }
+    }
+
+    /**
+     * PullFandVContractData::dbClose()
+     * Close connection to Database
+     *
+     * @param object: $this->_db            
+     */
+    public function dbClose()
+    {
+        $this->_db = null;
+    }
+    
+    // : End
+    
+    // : Public Functions
+    
+    /**
+     * getDataFromQuery::getDataFromQuery()
+     * Return the data from the MySQL Query
+     *
+     * @param array: $this->_data            
+     */
+    public function getDataFromQuery($sqlquery)
+    {
+        try {
+            $_errors = (array) array();
+            $_data = (array) array();
+            $_data = $this->queryDB($sqlquery);
+            if ((count($_data) == 0)) {
+                $_errors[] = "No rows where returned by MySQL.";
+            }
+        } catch (Exception $e) {
+            $_errors[] = $e->getMessage();
+        }
+        if (count($_errors) != 0) {
+            foreach ($_errors as $value) {
+                $this->_errors[] = $value;
+            }
+            return FALSE;
+        } else {
+            return $_data;
+        }
+        unset($_errors, $_data);
+    }
+
+    /**
+     * PullDataFromMySQLQuery::getDataFromSQLFile()
+     * Return the data from the MySQL Query
+     *
+     * @param array: $this->_data            
+     */
+    public function getDataFromSQLFile($sqlfile, $replace, $pattern, $replacement)
+    {
+        try {
+            $_errors = (array) array();
+            $_data = (array) array();
+            $_file = dirname(__FILE__) . self::DS . $sqlfile;
+            if (file_exists($_file)) {
+                $sqlquery = file_get_contents($_file);
+                if ($replace != FALSE) {
+                    $sqlquery = preg_replace($pattern, $replacement, $sqlquery);
+                }
+                $_data = $this->queryDB($sqlquery);
+            } else {
+                $_errors[] = "File not found: " . $_file;
+            }
+            if ((count($_data) == 0)) {
+                $_errors[] = "No rows where returned by MySQL.";
+            }
+        } catch (Exception $e) {
+            $_errors[] = $e->getMessage();
+        }
+        if (count($_errors) != 0) {
+            foreach ($_errors as $value) {
+                $this->_errors[] = $value;
+            }
+            return FALSE;
+        } else {
+            return $_data;
+        }
+        unset($_errors, $data);
+    }
+    // : End
+    
+    /**
+     * PullDataFromMySQLQuery::insertSQLQuery()
+     * Insert new data into database using SQL Query
+     *
+     * @param array: $this->_data            
+     */
+    public function insertSQLQuery($_keys, $_values, $_query)
+    {
+        $_errors = array();
+        try {
+            if ($_keys && is_array($_keys) && $_values && is_array($_values)) {
+                $_stmt = $this->_db->prepare($_query);
+                foreach ($_keys as $_key => $_value) {
+                    $_stmt->bindParam($_value, $_values[$_key]);
+                }
+                if ($_stmt->execute()) {
+                    return true;
+                } else {
+                    $_errors[] = "Failed to insert query. Reason unknown.";
+                }
+            } else {
+                $_errors[] = "Function arguments keys and values need to be array values.";
+            }
+        } catch (Exception $e) {
+            $_errors[] = $e->getMessage();
+        }
+        if (! $_errors) {
+            return TRUE;
+        } else {
+            foreach ($_errors as $_errval) {
+                $this->_errors[] = $_errval;
+            }
+            return FALSE;
+        }
+    }
+    // : End
+    
+    // : Magic
+    /**
+     * PullDataFromMySQLQuery::__construct()
+     * Class constructor
+     */
+    public function __construct($_tenant, $_host, $_db_user_key = 'dbuser', $_db_pwd_key = 'dbpwd')
+    {
+        try {
+            if ($_tenant && $_host) {
+                $_inifile = dirname(__FILE__) . self::DS . $this->_inifile;
+                if (file_exists($_inifile)) {
+                    
+                    $data = parse_ini_file($_inifile);
+                    
+                    if ((array_key_exists("dbdsn", $data)) && (array_key_exists("dbuser", $data)) && (array_key_exists("dbpwd", $data))) {
+                        $_dsn = preg_replace("/%s/", $_tenant, $data["dbdsn"]);
+                        $_dsn = preg_replace("/%h/", $_host, $_dsn);
+                        $this->_dbdsn = $_dsn;
+                        $this->_dbuser = $data[$_db_user_key];
+                        $this->_dbpwd = $data[$_db_pwd_key];
+                        $this->dbOpen();
+                    } else {
+                        throw new Exception("Correct fields where not found in file: " . $_inifile . ". Please make sure the following fields are available: dbdsn, dbuser, dbpwd");
+                    }
+                } else {
+                    $this->_errors[] = "Cannot find file: " . $_inifile . ". Please create the file or that it exists.";
+                }
+            } else {
+                throw new Exception("ERROR: No database name provided in parameter when creating new object instance of PullDataFromMySQLQuery class");
+            }
+        } catch (Exception $e) {
+            $this->_errors[] = $e->getMessage();
+        }
+        if (count($this->_errors) != 0) {
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+    }
+
+    /**
+     * PullDataFromMySQLQuery::__destruct()
+     * Class destructor
+     * Allow for garbage collection
+     */
+    public function __destruct()
+    {
+        unset($this);
+    }
+    // : End
+    
+    // : Private Functions
+    /**
+     * PullFandVContractData::openDB($dsn, $username, $password, $options)
+     * Open connection to Database
+     *
+     * @param string: $dsn            
+     * @param string: $username            
+     * @param string: $password            
+     * @param array: $options            
+     */
+    private function openDB($dsn, $username, $password, $options)
+    {
+        try {
+            $this->_db = new PDO($dsn, $username, $password, $options);
+        } catch (PDOException $ex) {
+            return FALSE;
+        }
+    }
+
+    /**
+     * PullFandVContractData::queryDB($sqlquery)
+     * Pass MySQL Query to database and return output
+     *
+     * @param string: $sqlquery            
+     * @param array: $result            
+     */
+    private function queryDB($sqlquery)
+    {
+        try {
+            $result = $this->_db->query($sqlquery);
+            return $result->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $ex) {
+            return FALSE;
+        }
+    }
+    // : End
 }

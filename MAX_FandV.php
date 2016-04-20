@@ -88,14 +88,15 @@ class maxRoutesRates
         reset($this->_errors);
         return $_result;
     }
-    
+
     /**
      * MAX_FandV::getRouteName
      * Concatenate location from and location to city names to build
      * a MAX formatted version of the route name
      */
-    public function getRouteName($_locationFrom, $_locationTo) {
-		
+    public function getRouteName($_locationFrom, $_locationTo)
+    {
+        
         // Concatenate string for route name
         $_routeName = $_locationFrom . " TO " . $_locationTo;
         return $_routeName;
@@ -120,16 +121,14 @@ class maxRoutesRates
                             $this->_autoLibObj->_sessionObj->open($this->_maxurl . AutomationLibrary::URL_LOCATION_ROUTE);
                             
                             // Wait for element text Route Ward
-                            $e = $this->_autoLibObj->_wObj->until(function ($session)
-                            {
+                            $e = $this->_autoLibObj->_wObj->until(function ($session) {
                                 return $session->element("xpath", "//*[contains(text(),'Route Ward')]");
                             });
                             
                             $this->_autoLibObj->assertElementPresent("css selector", "div.toolbar-cell-create");
                             $this->_autoLibObj->_sessionObj->element("css selector", "div.toolbar-cell-create")->click();
                             
-                            $e = $this->_autoLibObj->_wObj->until(function ($session)
-                            {
+                            $e = $this->_autoLibObj->_wObj->until(function ($session) {
                                 return $session->element("xpath", "//*[contains(text(),'Capture the Business Unit')]");
                             });
                             
@@ -145,8 +144,7 @@ class maxRoutesRates
                             $this->_autoLibObj->_sessionObj->element("css selector", "input[name=save][type=submit]")->click();
                             
                             // Wait for element Page Heading
-                            $e = $this->_autoLibObj->_wObj->until(function ($session)
-                            {
+                            $e = $this->_autoLibObj->_wObj->until(function ($session) {
                                 return $session->element("xpath", "//*[@name='udo_Route[0][locationFrom_id]']");
                             });
                             
@@ -201,8 +199,7 @@ class maxRoutesRates
                             $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                             
                             // Wait for element text Route Ward
-                            $e = $this->_autoLibObj->_wObj->until(function ($session)
-                            {
+                            $e = $this->_autoLibObj->_wObj->until(function ($session) {
                                 return $session->element("xpath", "//*[contains(text(),'Route Ward')]");
                             });
                         } catch (Exception $e) {
@@ -224,220 +221,193 @@ class maxRoutesRates
         }
         return TRUE;
     }
-    
-    
+
     /**
      * MAX_FandV::maxCreateRateContribData
      * Add non F&V rate contribution data
      */
     public function maxCreateRateContribData($_customer, $_bu, $_locationFrom, $_locationTo, $_trucktype, $_contrib_data, $_version = AutomationLibrary::DEFAULT_MAX_VERSION)
     {
-		try
-		{
-			$_status_report = (array) array();
-			$_report_template = (array) array(
-				"contrib_type" => false,
-				"rate_id" => false,
-				"process_pass" => false,
-				"check_in_db" => false,
-				"error" => false,
-				"errormsg" => false,
-				"record_exists" => false
-			);
-			if ($this->_autoLibObj->get_db_status() != false)
-			{
-				if (is_array($_contrib_data) && $_contrib_data)
-				{
-					
-					// : Fetch ids and store into variables
-					
-					$_objRegId = $this->_autoLibObj->fetchObjectRegistryId(AutomationLibrary::OBJREG_CUSTOMER);
-					$_rateObjRegId = $this->_autoLibObj->fetchObjectRegistryId(AutomationLibrary::OBJREG_RATE);
-					
-					$_customerId = $this->_autoLibObj->fetchCustomerId($_customer);
-					$_buId = $this->_autoLibObj->fetchBusinessUnitId($_bu);
-					$_trucktypeId = $this->_autoLibObj->fetchTruckDescriptionId($_trucktype);
-					$_locationFromId = $this->_autoLibObj->fetchLocationId($_locationFrom, AutomationLibrary::UDO_LOCATION_TYPE_CITY);
-					$_locationToId = $this->_autoLibObj->fetchLocationId($_locationTo, AutomationLibrary::UDO_LOCATION_TYPE_CITY);
-
-					// Default value to define the variable
-					$_routeId = 0;
-					$_rateId = 0;
-				
-					if ($_locationFromId && $_locationToId)
-					{
-						$_routeId = $this->_autoLibObj->fetchRouteId($_locationFromId, $_locationToId);
-					}
-					// : End
-					
-					if ($_routeId)
-					{
-						$_rateId = $this->_autoLibObj->fetchRateId($_customerId, $_routeId, $_buId, $_trucktypeId, $_objRegId);
-					}
-					
-					if ($_rateId)
-					{
-						switch($_version)
-						{
-							case 3:
-							{
-								// Add code here for v3
-								break;
-							}
-							case 2:
-							default:
-							{
-								$x = 0;
-								
-								foreach ($_contrib_data as $key => $value)
-								{
-									
-									try
-									{
-										if ($value['value'])
-										{
-										
-										$_status_report[$x]['rate_id'] = $value['value'];
-										
-										$_utcBeginDate = false;
-										$_utcEndDate = false;
-										
-										$_status_report[$x] = $_report_template;
-										
-										// Convert each word's first letter to an uppercase char
-										$_contribType = ucwords($key);
-					
-										// Remove whitespaces
-										$_contribType = preg_replace("@\s@", '', $_contribType);
-										
-										$_status_report[$x]['contrib_type'] = $_contribType;
-										
-										// : Set UTC versions of the times
-										if (isset($value['beginDate']))
-										{
-											if ($value['beginDate'] && is_string($value['beginDate']))
-											{
-												$_utcBeginDate = AutomationLibrary::dateTimeAmend($value['beginDate'], 'Y-m-d H:i:s', "-2 Hours");
-											}
-										}
-										
-										if (isset($value['endDate']))
-										{
-											if ($value['endDate'] && is_string($value['endDate']))
-											{
-												$_utcEndDate = AutomationLibrary::dateTimeAmend($value['endDate'], 'Y-m-d H:i:s', "-2 Hours");
-											}
-										}
-										// : End
-										
-										// : Setup extra options to pass to SQL query
-										$_extra_options = array();
-										
-										if ($value['endDate'] && $_utcEndDate)
-										{
-											$_extra_options['endDate'] = $_utcEndDate;
-										}
-										
-										if ($value['beginDate'] && $_utcBeginDate)
-										{
-											$_extra_options['beginDate'] = $_utcBeginDate;
-										}
-										// : End
-										
-										$_fetchDrvId = $this->_autoLibObj->fetchDateRangeValueId($_rateObjRegId, $_rateId, $_contribType, $_extra_options);
-										
-										if (intval($_fetchDrvId) == 0)
-										{
-											$session = $this->_autoLibObj->_sessionObj;
-											$_rateurl = preg_replace("@%s@", $_rateId, AutomationLibrary::URL_RATEVAL);
-											$_route_name = $this->getRouteName($_locationFrom, $_locationTo);
-											$_page_title = sprintf("Customer %s %s", $_customer, $_route_name);
-											$this->_autoLibObj->_sessionObj->open($this->_maxurl . $_rateurl);
-                            
-											$this->_tmp = $_page_title;
-                            
-											// Wait for element text Customer [Customer Name] [Route]
-											$e = $this->_autoLibObj->_wObj->until(function ($session)
-											{
-												return $session->element("xpath", "//div[@class='detail-title' and contains(text(), '$this->_tmp')]");
-											});
-                            
-											$this->_autoLibObj->assertElementPresent("xpath", "//*[@id='subtabselector']/select/option[contains(text(),'$_contribType Values')]");
-											$this->_autoLibObj->_sessionObj->element("xpath", "//*[@id='subtabselector']/select/option[contains(text(),'$_contribType Values')]")->click();
-								
-											$this->_autoLibObj->assertElementPresent("css selector", "div#button-create");
-											$this->_autoLibObj->_sessionObj->element("css selector", "div#button-create")->click();
-								
-											// Wait for element text to contain Create Date Range Values on the page
-											$e = $this->_autoLibObj->_wObj->until(function ($session)
-											{
-												return $session->element("xpath", "//*[contains(text(),'Create Date Range Values')]");
-											});
-								
-											$this->_autoLibObj->assertElementPresent("xpath", "//*[contains(text(),'Create Date Range Values')]");
-											$this->_autoLibObj->assertElementPresent("id", "DateRangeValue-2_0_0_beginDate-2");
-											$this->_autoLibObj->assertElementPresent("id", "DateRangeValue-4_0_0_endDate-4");
-											$this->_autoLibObj->assertElementPresent("id", "DateRangeValue-20_0_0_value-20");
-											$this->_autoLibObj->assertElementPresent("css selector", "input[name=save][type=submit]");
-							
-											$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-2_0_0_beginDate-2")->clear();
-											$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-4_0_0_endDate-4")->clear();
-											$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-20_0_0_value-20")->clear();
-								
-											$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-2_0_0_beginDate-2")->sendKeys($value['beginDate']);
-											$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-4_0_0_endDate-4")->sendKeys($value['endDate']);
-											$this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-20_0_0_value-20")->sendKeys($value['value']);
-								
-											$this->_autoLibObj->_sessionObj->element("css selector", "input[name=save][type=submit]")->click();
-								
-											// Wait for element text Customer [Customer Name] [Route]
-											$e = $this->_autoLibObj->_wObj->until(function ($session)
-											{
-												return $session->element("css selector", "div.detail-title");
-											});
-
-											// Check record exists in the DB
-																				
-											$_fetchDrvId = $this->_autoLibObj->fetchDateRangeValueId($_rateObjRegId, $_rateId, $_contribType, $_extra_options);
-										
-											if (intval($_fetchDrvId))
-											{
-												$_status_report[$x]['check_in_db'] = true;
-											}
-										} else
-										{
-											$_status_report[$x]['record_exists'] = true;
-											$_status_report[$x]['check_in_db'] = true;
-										}
-										
-										// Process pass point
-										$_status_report[$x]['process_pass'] = true;
-										
-									}
-									} catch (Exception $e)
-									{
-										$_status_report[$x]['error'] = true;
-										$_status_report[$x]['errormsg'] = $e->getMessage();
-									}
-									
-									$x++;
-								}
-							}
-						}		
-					}
-				}
-			}
-			
-		} catch (Exception $e)
-		{
-			$this->_autoLibObj->setReports($_status_report);
-			return false;
-		}
-		
-		$this->_autoLibObj->setReports($_status_report);
-		return true;
-	}
-	
+        try {
+            $_status_report = (array) array();
+            $_report_template = (array) array(
+                "contrib_type" => false,
+                "rate_id" => false,
+                "process_pass" => false,
+                "check_in_db" => false,
+                "error" => false,
+                "errormsg" => false,
+                "record_exists" => false
+            );
+            if ($this->_autoLibObj->get_db_status() != false) {
+                if (is_array($_contrib_data) && $_contrib_data) {
+                    
+                    // : Fetch ids and store into variables
+                    
+                    $_objRegId = $this->_autoLibObj->fetchObjectRegistryId(AutomationLibrary::OBJREG_CUSTOMER);
+                    $_rateObjRegId = $this->_autoLibObj->fetchObjectRegistryId(AutomationLibrary::OBJREG_RATE);
+                    
+                    $_customerId = $this->_autoLibObj->fetchCustomerId($_customer);
+                    $_buId = $this->_autoLibObj->fetchBusinessUnitId($_bu);
+                    $_trucktypeId = $this->_autoLibObj->fetchTruckDescriptionId($_trucktype);
+                    $_locationFromId = $this->_autoLibObj->fetchLocationId($_locationFrom, AutomationLibrary::UDO_LOCATION_TYPE_CITY);
+                    $_locationToId = $this->_autoLibObj->fetchLocationId($_locationTo, AutomationLibrary::UDO_LOCATION_TYPE_CITY);
+                    
+                    // Default value to define the variable
+                    $_routeId = 0;
+                    $_rateId = 0;
+                    
+                    if ($_locationFromId && $_locationToId) {
+                        $_routeId = $this->_autoLibObj->fetchRouteId($_locationFromId, $_locationToId);
+                    }
+                    // : End
+                    
+                    if ($_routeId) {
+                        $_rateId = $this->_autoLibObj->fetchRateId($_customerId, $_routeId, $_buId, $_trucktypeId, $_objRegId);
+                    }
+                    
+                    if ($_rateId) {
+                        switch ($_version) {
+                            case 3:
+                                {
+                                    // Add code here for v3
+                                    break;
+                                }
+                            case 2:
+                            default:
+                                {
+                                    $x = 0;
+                                    
+                                    foreach ($_contrib_data as $key => $value) {
+                                        
+                                        try {
+                                            if ($value['value']) {
+                                                
+                                                $_status_report[$x]['rate_id'] = $value['value'];
+                                                
+                                                $_utcBeginDate = false;
+                                                $_utcEndDate = false;
+                                                
+                                                $_status_report[$x] = $_report_template;
+                                                
+                                                // Convert each word's first letter to an uppercase char
+                                                $_contribType = ucwords($key);
+                                                
+                                                // Remove whitespaces
+                                                $_contribType = preg_replace("@\s@", '', $_contribType);
+                                                
+                                                $_status_report[$x]['contrib_type'] = $_contribType;
+                                                
+                                                // : Set UTC versions of the times
+                                                if (isset($value['beginDate'])) {
+                                                    if ($value['beginDate'] && is_string($value['beginDate'])) {
+                                                        $_utcBeginDate = AutomationLibrary::dateTimeAmend($value['beginDate'], 'Y-m-d H:i:s', "-2 Hours");
+                                                    }
+                                                }
+                                                
+                                                if (isset($value['endDate'])) {
+                                                    if ($value['endDate'] && is_string($value['endDate'])) {
+                                                        $_utcEndDate = AutomationLibrary::dateTimeAmend($value['endDate'], 'Y-m-d H:i:s', "-2 Hours");
+                                                    }
+                                                }
+                                                // : End
+                                                
+                                                // : Setup extra options to pass to SQL query
+                                                $_extra_options = array();
+                                                
+                                                if ($value['endDate'] && $_utcEndDate) {
+                                                    $_extra_options['endDate'] = $_utcEndDate;
+                                                }
+                                                
+                                                if ($value['beginDate'] && $_utcBeginDate) {
+                                                    $_extra_options['beginDate'] = $_utcBeginDate;
+                                                }
+                                                // : End
+                                                
+                                                $_fetchDrvId = $this->_autoLibObj->fetchDateRangeValueId($_rateObjRegId, $_rateId, $_contribType, $_extra_options);
+                                                
+                                                if (intval($_fetchDrvId) == 0) {
+                                                    $session = $this->_autoLibObj->_sessionObj;
+                                                    $_rateurl = preg_replace("@%s@", $_rateId, AutomationLibrary::URL_RATEVAL);
+                                                    $_route_name = $this->getRouteName($_locationFrom, $_locationTo);
+                                                    $_page_title = sprintf("Customer %s %s", $_customer, $_route_name);
+                                                    $this->_autoLibObj->_sessionObj->open($this->_maxurl . $_rateurl);
+                                                    
+                                                    $this->_tmp = $_page_title;
+                                                    
+                                                    // Wait for element text Customer [Customer Name] [Route]
+                                                    $e = $this->_autoLibObj->_wObj->until(function ($session) {
+                                                        return $session->element("xpath", "//div[@class='detail-title' and contains(text(), '$this->_tmp')]");
+                                                    });
+                                                    
+                                                    $this->_autoLibObj->assertElementPresent("xpath", "//*[@id='subtabselector']/select/option[contains(text(),'$_contribType Values')]");
+                                                    $this->_autoLibObj->_sessionObj->element("xpath", "//*[@id='subtabselector']/select/option[contains(text(),'$_contribType Values')]")->click();
+                                                    
+                                                    $this->_autoLibObj->assertElementPresent("css selector", "div#button-create");
+                                                    $this->_autoLibObj->_sessionObj->element("css selector", "div#button-create")->click();
+                                                    
+                                                    // Wait for element text to contain Create Date Range Values on the page
+                                                    $e = $this->_autoLibObj->_wObj->until(function ($session) {
+                                                        return $session->element("xpath", "//*[contains(text(),'Create Date Range Values')]");
+                                                    });
+                                                    
+                                                    $this->_autoLibObj->assertElementPresent("xpath", "//*[contains(text(),'Create Date Range Values')]");
+                                                    $this->_autoLibObj->assertElementPresent("id", "DateRangeValue-2_0_0_beginDate-2");
+                                                    $this->_autoLibObj->assertElementPresent("id", "DateRangeValue-4_0_0_endDate-4");
+                                                    $this->_autoLibObj->assertElementPresent("id", "DateRangeValue-20_0_0_value-20");
+                                                    $this->_autoLibObj->assertElementPresent("css selector", "input[name=save][type=submit]");
+                                                    
+                                                    $this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-2_0_0_beginDate-2")->clear();
+                                                    $this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-4_0_0_endDate-4")->clear();
+                                                    $this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-20_0_0_value-20")->clear();
+                                                    
+                                                    $this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-2_0_0_beginDate-2")->sendKeys($value['beginDate']);
+                                                    $this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-4_0_0_endDate-4")->sendKeys($value['endDate']);
+                                                    $this->_autoLibObj->_sessionObj->element("id", "DateRangeValue-20_0_0_value-20")->sendKeys($value['value']);
+                                                    
+                                                    $this->_autoLibObj->_sessionObj->element("css selector", "input[name=save][type=submit]")->click();
+                                                    
+                                                    // Wait for element text Customer [Customer Name] [Route]
+                                                    $e = $this->_autoLibObj->_wObj->until(function ($session) {
+                                                        return $session->element("css selector", "div.detail-title");
+                                                    });
+                                                    
+                                                    // Check record exists in the DB
+                                                    
+                                                    $_fetchDrvId = $this->_autoLibObj->fetchDateRangeValueId($_rateObjRegId, $_rateId, $_contribType, $_extra_options);
+                                                    
+                                                    if (intval($_fetchDrvId)) {
+                                                        $_status_report[$x]['check_in_db'] = true;
+                                                    }
+                                                } else {
+                                                    $_status_report[$x]['record_exists'] = true;
+                                                    $_status_report[$x]['check_in_db'] = true;
+                                                }
+                                                
+                                                // Process pass point
+                                                $_status_report[$x]['process_pass'] = true;
+                                            }
+                                        } catch (Exception $e) {
+                                            $_status_report[$x]['error'] = true;
+                                            $_status_report[$x]['errormsg'] = $e->getMessage();
+                                        }
+                                        
+                                        $x ++;
+                                    }
+                                }
+                        }
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            $this->_autoLibObj->setReports($_status_report);
+            return false;
+        }
+        
+        $this->_autoLibObj->setReports($_status_report);
+        return true;
+    }
+    
     // : End - Public Functions
     
     // : Private Functions

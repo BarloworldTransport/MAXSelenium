@@ -36,8 +36,11 @@ class MAX_CreateNewUser
     
     // : Variables
     public $_sessionObj;
+
     public $_phpunitObj;
-    public $_waitObj; 
+
+    public $_waitObj;
+
     protected $_tmp;
     // : End
     
@@ -49,17 +52,15 @@ class MAX_CreateNewUser
     {
         try {
             // Wait for page to load and for elements to be present on page
-            $e = $w->until(function ($session)
-            {
+            $e = $w->until(function ($session) {
                 return $session->element('xpath', '//a[text()="' . self::$_tmp . '"]');
             });
-
         } catch (Exception $e) {
             // Store error message into static array
             self::$_errors[] = $e->getMessage();
             return FALSE;
         }
-    
+        
         return TRUE;
         // : End
     }
@@ -70,22 +71,23 @@ class MAX_CreateNewUser
     /**
      * MAX_CreateNewUser::__construct()
      * Class constructor used to verify data given for the MAX create user process is correct and complete before running the process
-     * @param object: $_session
-     * @param object: $_w
-     * @param object: $_phpunit_fw_obj
+     * 
+     * @param object: $_session            
+     * @param object: $_w            
+     * @param object: $_phpunit_fw_obj            
      */
-    public function __construct(&$_session, &$_w, &$_phpunit_fw_obj, $_first_name, $_last_name, $_email, $_job_title, $_company, $_groups) {
+    public function __construct(&$_session, &$_w, &$_phpunit_fw_obj, $_first_name, $_last_name, $_email, $_job_title, $_company, $_groups)
+    {
         try {
-        // : Save referenced objects into object
-        if ($_session && $_w && $_phpunit_fw_obj) {
-            var_dump($_session);
-            
-            $this->_sessionObj = $_session;
-            $this->_waitObj = $_w;
-            $this->_phpunitObj = $_phpunit_fw_obj;
-        
-        }
-        // : End
+            // : Save referenced objects into object
+            if ($_session && $_w && $_phpunit_fw_obj) {
+                var_dump($_session);
+                
+                $this->_sessionObj = $_session;
+                $this->_waitObj = $_w;
+                $this->_phpunitObj = $_phpunit_fw_obj;
+            }
+            // : End
         } catch (Exception $e) {
             return FALSE;
         }

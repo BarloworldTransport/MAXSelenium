@@ -23,7 +23,7 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
                 $_queries = array(
                     "SELECT * FROM `process` WHERE state != 'completed' AND user_id=%s;",
                     "SELECT id FROM users WHERE user_email='%s';",
-                	"SELECT id, process_id FROM ftl_data WHERE id=%d;",
+                    "SELECT id, process_id FROM ftl_data WHERE id=%d;",
                     "DELETE FROM ftl_data WHERE id=:ftl_id;"
                 );
                 // : End
@@ -48,74 +48,66 @@ if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SE
                         $_query = preg_replace("/%s/", $_userid, $_queries[0]);
                         $_result = $_dbh->getDataFromQuery($_query);
                         if ($_result) {
-                        	
+                            
                             if (isset($_result[0]['id'])) {
-                            	$_process_id = $_result[0]['id'];
+                                $_process_id = $_result[0]['id'];
                             }
                             
                             if (isset($_process_id)) {
-                        	$_query = preg_replace("/%d/", $_POST['ftl_id'], $_queries[2]);
-                        	$_resultB = $_dbh->getDataFromQuery($_query);
-                        	
-                        	if ($_resultB) {
-                        		if (isset($_resultB[0]['id']) && isset($_resultB[0]['process_id'])) {
-                        			
-                        			if ($_resultB[0]['process_id'] == $_process_id) {
-                        				
-                        				$_keys = array(
-                        						"ftl_id"
-                        				);
-                        				
-                        				$_values = array(
-                        						$_POST['ftl_id']
-                        				);
-                        				
-                        				// Run query to delete the FTL_DATA record
-                        				$_dbh->insertSQLQuery($_keys, $_values, $_queries[3]);
-                        				
-                        				// Rerun query to check if the record has been deleted
-                        				$_result = $_dbh->getDataFromQuery($_query);
-                        				
-                        				// Check if the record still exists, report error
-                        				if ($_result) {
-                        					$_errors[] = "Failed to delete process data record.";
-                        				}
-                        				
-                        			}
-                        		} else {
-                        			$_errors[] = "Active process ID does not match for this user for which you are deleting the record.";
-                        		}
-                        	} else {
-                        		$_errors[] = "The record you requested to be deleted, does not exist.";
-                        	}
-                            
-                            
+                                $_query = preg_replace("/%d/", $_POST['ftl_id'], $_queries[2]);
+                                $_resultB = $_dbh->getDataFromQuery($_query);
+                                
+                                if ($_resultB) {
+                                    if (isset($_resultB[0]['id']) && isset($_resultB[0]['process_id'])) {
+                                        
+                                        if ($_resultB[0]['process_id'] == $_process_id) {
+                                            
+                                            $_keys = array(
+                                                "ftl_id"
+                                            );
+                                            
+                                            $_values = array(
+                                                $_POST['ftl_id']
+                                            );
+                                            
+                                            // Run query to delete the FTL_DATA record
+                                            $_dbh->insertSQLQuery($_keys, $_values, $_queries[3]);
+                                            
+                                            // Rerun query to check if the record has been deleted
+                                            $_result = $_dbh->getDataFromQuery($_query);
+                                            
+                                            // Check if the record still exists, report error
+                                            if ($_result) {
+                                                $_errors[] = "Failed to delete process data record.";
+                                            }
+                                        }
+                                    } else {
+                                        $_errors[] = "Active process ID does not match for this user for which you are deleting the record.";
+                                    }
+                                } else {
+                                    $_errors[] = "The record you requested to be deleted, does not exist.";
+                                }
                             } else {
-                            	$_errors[] = "No active process found for your user. Cannot continue.";
+                                $_errors[] = "No active process found for your user. Cannot continue.";
                             }
                         }
                     } else {
-                    	$_errors[] = "Could not find the user your session data identifies. Will not continue.";
+                        $_errors[] = "Could not find the user your session data identifies. Will not continue.";
                     }
                     // : End
-                    
                 }
                 
                 // Close DB connection
                 $_dbh = null;
-                
             } catch (Exception $e) {
                 $_errors[] = $e->getMessage();
             }
-            
         } else {
             $_errors[] = "Validation of POST data failed.";
         }
-        
     } else {
         $_errors[] = 'User agent and/or remote ip address not the same for the session ID that orginally logged into the system.';
     }
-    
 } else {
     $_errors[] = 'User has not logged in. Please login.';
 }

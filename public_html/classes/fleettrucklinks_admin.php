@@ -1,4 +1,5 @@
 <?php
+
 const DEFAULT_PROCESS = "fleet_truck_link_batch";
 
 /*
@@ -6,187 +7,189 @@ const DEFAULT_PROCESS = "fleet_truck_link_batch";
  */
 
 // : Error reporting for debugging purposes
-error_reporting ( E_ALL );
-ini_set ( "display_errors", "1" );
+error_reporting(E_ALL);
+ini_set("display_errors", "1");
 // : End
 
 // : Includes
 include "PullDataFromMySQLQuery.php";
 // : End
 
-$_ftl_data = ( array ) array ();
-$_userStatus = ( boolean ) false;
-$_errors = ( array ) array ();
+$_ftl_data = (array) array();
+$_userStatus = (boolean) false;
+$_errors = (array) array();
 
-session_start ();
+session_start();
 
-if (isset ( $_SESSION ['user_email'] ) && isset ( $_SESSION ['user_pwd'] ) && isset ( $_SESSION ['userAgent'] ) && isset ( $_SESSION ['IPaddress'] )) {
-	if (($_SESSION ['userAgent']) == $_SERVER ['HTTP_USER_AGENT'] || $_SESSION ['IPaddress'] == $_SERVER ['REMOTE_ADDR']) {
-		
-		$_userStatus = true;
-		
-		if (isset ( $_GET ["content"] )) {
-			switch ($_GET ["content"]) {
-				case "fleettrucklink" :
-					{
-						header ( "location: fleettrucklinks_admin.php" );
-						break;
-					}
-				case "logout" :
-					{
-						header ( "Location: ../logout.php" );
-						break;
-					}
-				case "dashboard" :
-					{
-						header ( "Location: dashboard.php" );
-						break;
-					}
-				default :
-					{
-						break;
-					}
-			}
-		}
-		
-		try {
-			// Boolean used to determined if continuing existing process or starting a new process
-			$_newProcess = false;
-			
-			// : Predefined queries that will be used
-			$_queries = array (
-					"SELECT id, name FROM udo_fleet ORDER BY name ASC;",
-					"SELECT id, fleetnum FROM udo_truck ORDER BY fleetnum ASC;",
-					"SELECT truck_id, fleet_id FROM udo_fleettrucklink WHERE truck_id=%s;",
-					"SELECT ftl.truck_id, ftl.fleet_id FROM udo_fleettrucklink AS ftl LEFT JOIN udo_truck AS t ON (t.id=ftl.truck_id) LEFT JOIN udo_fleet AS f ON (f.id=ftl.fleet_id) LEFT JOIN daterangevalue AS drv ON (drv.objectInstanceId=ftl.id) WHERE (drv.beginDate IS NOT NULL) AND (drv.endDate IS NULL OR drv.endDate >= DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s')) AND ftl.truck_id=%s;",
-					"SELECT * FROM `process` WHERE state != 'completed' AND user_id=%s;",
-					"SELECT id FROM users WHERE user_email='%s';",
-					"SELECT id, truck_id, fleets, operation, start_date, end_date FROM ftl_data WHERE process_id=%s;" 
-			);
-			// : End
-			
-			// Open database connection to BWT Auto DB
-			$_bwtdb = new PullDataFromMySQLQuery ( 'bwt_max_auto', 'localhost', 'user', 'pwd' );
-			
-			// Open database connection to MAX
-			$_dbh = new PullDataFromMySQLQuery ( 'max2', '192.168.1.19' );
-			
-			// : Check if existing process already started for fleettrucklink. If no process found the start with clean data.
-			$_result = $_bwtdb->getDataFromQuery ( $_queries [4] );
-			
-			if (count ( $_result ) == 1) {
-				// Process exists
-			} else if (! $_result) {
-				// New process
-				$_newProcess = true;
-			}
-			// : End
-			
-			// : Get fleets where truck is actively linked
-			function get_fleets_for_truck($_truck_id, $_query) {
-				$_data = ( array ) array ();
-				global $_fleets, $_dbh;
-				$_sql = preg_replace ( "/%s/", $_truck_id, $_query );
-				$_result = $_dbh->getDataFromQuery ( $_sql );
-				
-				if ($_result) {
-					foreach ( $_result as $_value ) {
-						var_dump ( $_value );
-						if (array_key_exists ( "truck_id", $_value ) && array_key_exists ( "fleet_id", $_value )) {
-							$_data [$_value ["fleet_id"]] = $_fleets [$_value ["fleet_id"]];
-							return $_data;
-						} else {
-							return FALSE;
-						}
-					}
-				} else {
-					return FALSE;
-				}
-			}
-			// : End
-			
-			// : Run query to get all fleets from MAX DB
-			$_fleets = ( array ) array ();
-			$_result = $_dbh->getDataFromQuery ( $_queries [0] );
-			if ($_result) {
-				foreach ( $_result as $_value ) {
-					if (array_key_exists ( "id", $_value ) && array_key_exists ( "name", $_value )) {
-						$_fleets [$_value ["id"]] = $_value ["name"];
-					}
-				}
-			}
-			// : End
-			
-			// : Run query to get all trucks from MAX DB
-			$_trucks = ( array ) array ();
-			$_result = $_dbh->getDataFromQuery ( $_queries [1] );
-			if ($_result) {
-				foreach ( $_result as $_value ) {
-					if (array_key_exists ( "id", $_value ) && array_key_exists ( "fleetnum", $_value )) {
-						$_trucks [$_value ["id"]] = $_value ["fleetnum"];
-					}
-				}
-			}
-			// : End
-			
-			$_itrucks = array_keys ( $_trucks );
-			
-			if ($_trucks && $_fleets) {
-				$_fleets_by_truck = get_fleets_for_truck ( $_itrucks [0], $_queries [3] );
-			}
-			// : End
-			
-			try {
-				$_dbhBWT = new PullDataFromMySQLQuery ( 'bwt_max_auto', 'localhost', 'user', 'pwd' );
-				// : Check if a process already exists for the user and session, else create a new process
-				$_query = preg_replace ( "/%s/", $_SESSION ["user_email"], $_queries [5] );
-				$_result = $_dbhBWT->getDataFromQuery ( $_query );
-				
-				if (isset ( $_result [0] ['id'] )) {
-					$_user_id = $_result [0] ['id'];
-					
-					$_query = preg_replace ( "/%s/", $_user_id, $_queries [4] );
-					$_result = $_dbhBWT->getDataFromQuery ( $_query );
-					// : Add data for the process to the ftl_data table
-					if (isset ( $_result [0] ['id'] )) {
-						$_process_id = $_result [0] ['id'];
-					} else {
-						$_errors [] = "Something failed. Could not obtain the process id.";
-					}
-				} else {
-					$_errors [] = "Something failed. Could not obtain the user id.";
-				}
-				
-				// : End
-				if (isset ( $_process_id )) {
-					if ($_process_id) {
-						$_data = ( array ) array ();
-						$_query = preg_replace ( "/%s/", $_process_id, $_queries [6] );
-						$_queryResult = $_dbhBWT->getDataFromQuery ( $_query );
-						if ($_queryResult) {
-							foreach ( $_queryResult as $_value ) {
-								$_data [] = $_value;
-							}
-						}
-					}
-				}
-			} catch ( Exception $e ) {
-				$_errors [] = $e->getMessage ();
-			}
-			
-			// Close DB connection
-			$_dbh = null;
-			$_dbhBWT = null;
-		} catch ( Exception $e ) {
-			die ( "Was not able to successfully connect to the database." );
-		}
-		
-		// : End
-	} else {
-		header ( "Location: ../logout.php" );
-	}
+if (isset($_SESSION['user_email']) && isset($_SESSION['user_pwd']) && isset($_SESSION['userAgent']) && isset($_SESSION['IPaddress'])) {
+    if (($_SESSION['userAgent']) == $_SERVER['HTTP_USER_AGENT'] || $_SESSION['IPaddress'] == $_SERVER['REMOTE_ADDR']) {
+        
+        $_userStatus = true;
+        
+        if (isset($_GET["content"])) {
+            switch ($_GET["content"]) {
+                case "fleettrucklink":
+                    {
+                        header("location: fleettrucklinks_admin.php");
+                        break;
+                    }
+                case "logout":
+                    {
+                        header("Location: ../logout.php");
+                        break;
+                    }
+                case "dashboard":
+                    {
+                        header("Location: dashboard.php");
+                        break;
+                    }
+                default:
+                    {
+                        break;
+                    }
+            }
+        }
+        
+        try {
+            // Boolean used to determined if continuing existing process or starting a new process
+            $_newProcess = false;
+            
+            // : Predefined queries that will be used
+            $_queries = array(
+                "SELECT id, name FROM udo_fleet ORDER BY name ASC;",
+                "SELECT id, fleetnum FROM udo_truck ORDER BY fleetnum ASC;",
+                "SELECT truck_id, fleet_id FROM udo_fleettrucklink WHERE truck_id=%s;",
+                "SELECT ftl.truck_id, ftl.fleet_id FROM udo_fleettrucklink AS ftl LEFT JOIN udo_truck AS t ON (t.id=ftl.truck_id) LEFT JOIN udo_fleet AS f ON (f.id=ftl.fleet_id) LEFT JOIN daterangevalue AS drv ON (drv.objectInstanceId=ftl.id) WHERE (drv.beginDate IS NOT NULL) AND (drv.endDate IS NULL OR drv.endDate >= DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s')) AND ftl.truck_id=%s;",
+                "SELECT * FROM `process` WHERE state != 'completed' AND user_id=%s;",
+                "SELECT id FROM users WHERE user_email='%s';",
+                "SELECT id, truck_id, fleets, operation, start_date, end_date FROM ftl_data WHERE process_id=%s;"
+            );
+            // : End
+            
+            // Open database connection to BWT Auto DB
+            $_bwtdb = new PullDataFromMySQLQuery('bwt_max_auto', 'localhost', 'user', 'pwd');
+            
+            // Open database connection to MAX
+            $_dbh = new PullDataFromMySQLQuery('max2', '192.168.1.19');
+            
+            // : Check if existing process already started for fleettrucklink. If no process found the start with clean data.
+            $_result = $_bwtdb->getDataFromQuery($_queries[4]);
+            
+            if (count($_result) == 1) {
+                // Process exists
+            } else 
+                if (! $_result) {
+                    // New process
+                    $_newProcess = true;
+                }
+            // : End
+            
+            // : Get fleets where truck is actively linked
+            function get_fleets_for_truck($_truck_id, $_query)
+            {
+                $_data = (array) array();
+                global $_fleets, $_dbh;
+                $_sql = preg_replace("/%s/", $_truck_id, $_query);
+                $_result = $_dbh->getDataFromQuery($_sql);
+                
+                if ($_result) {
+                    foreach ($_result as $_value) {
+                        var_dump($_value);
+                        if (array_key_exists("truck_id", $_value) && array_key_exists("fleet_id", $_value)) {
+                            $_data[$_value["fleet_id"]] = $_fleets[$_value["fleet_id"]];
+                            return $_data;
+                        } else {
+                            return FALSE;
+                        }
+                    }
+                } else {
+                    return FALSE;
+                }
+            }
+            // : End
+            
+            // : Run query to get all fleets from MAX DB
+            $_fleets = (array) array();
+            $_result = $_dbh->getDataFromQuery($_queries[0]);
+            if ($_result) {
+                foreach ($_result as $_value) {
+                    if (array_key_exists("id", $_value) && array_key_exists("name", $_value)) {
+                        $_fleets[$_value["id"]] = $_value["name"];
+                    }
+                }
+            }
+            // : End
+            
+            // : Run query to get all trucks from MAX DB
+            $_trucks = (array) array();
+            $_result = $_dbh->getDataFromQuery($_queries[1]);
+            if ($_result) {
+                foreach ($_result as $_value) {
+                    if (array_key_exists("id", $_value) && array_key_exists("fleetnum", $_value)) {
+                        $_trucks[$_value["id"]] = $_value["fleetnum"];
+                    }
+                }
+            }
+            // : End
+            
+            $_itrucks = array_keys($_trucks);
+            
+            if ($_trucks && $_fleets) {
+                $_fleets_by_truck = get_fleets_for_truck($_itrucks[0], $_queries[3]);
+            }
+            // : End
+            
+            try {
+                $_dbhBWT = new PullDataFromMySQLQuery('bwt_max_auto', 'localhost', 'user', 'pwd');
+                // : Check if a process already exists for the user and session, else create a new process
+                $_query = preg_replace("/%s/", $_SESSION["user_email"], $_queries[5]);
+                $_result = $_dbhBWT->getDataFromQuery($_query);
+                
+                if (isset($_result[0]['id'])) {
+                    $_user_id = $_result[0]['id'];
+                    
+                    $_query = preg_replace("/%s/", $_user_id, $_queries[4]);
+                    $_result = $_dbhBWT->getDataFromQuery($_query);
+                    // : Add data for the process to the ftl_data table
+                    if (isset($_result[0]['id'])) {
+                        $_process_id = $_result[0]['id'];
+                    } else {
+                        $_errors[] = "Something failed. Could not obtain the process id.";
+                    }
+                } else {
+                    $_errors[] = "Something failed. Could not obtain the user id.";
+                }
+                
+                // : End
+                if (isset($_process_id)) {
+                    if ($_process_id) {
+                        $_data = (array) array();
+                        $_query = preg_replace("/%s/", $_process_id, $_queries[6]);
+                        $_queryResult = $_dbhBWT->getDataFromQuery($_query);
+                        if ($_queryResult) {
+                            foreach ($_queryResult as $_value) {
+                                $_data[] = $_value;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                $_errors[] = $e->getMessage();
+            }
+            
+            // Close DB connection
+            $_dbh = null;
+            $_dbhBWT = null;
+        } catch (Exception $e) {
+            die("Was not able to successfully connect to the database.");
+        }
+        
+        // : End
+    } else {
+        header("Location: ../logout.php");
+    }
 } else {
-	header ( "Location: ../logout.php" );
+    header("Location: ../logout.php");
 }
 
 ?>
@@ -302,7 +305,8 @@ if (isset ( $_SESSION ['user_email'] ) && isset ( $_SESSION ['user_pwd'] ) && is
 							<label for="start_date">Start Date:</label>
 						</div>
 						<div class="col-md-10">
-							<input type="text" class="form-control" id="start_date" name="start_date">
+							<input type="text" class="form-control" id="start_date"
+								name="start_date">
 						</div>
 					</div>
 
@@ -338,16 +342,16 @@ if (isset ( $_SESSION ['user_email'] ) && isset ( $_SESSION ['user_pwd'] ) && is
 							<select id="truckId" name="truckSelect" class="form-control">
 								<!-- Dynamically generate select options with trucks from MAX -->
 						          <?php
-																if (isset ( $_trucks )) {
-																	if ($_trucks) {
-																		$a = 1;
-																		foreach ( $_trucks as $_id => $_fleetnum ) {
-																			printf ( '<option value="%d">%s</option>', $_id, $_fleetnum . ' [' . $_id . ']' );
-																			$a ++;
-																		}
-																	}
-																}
-																?>
+                if (isset($_trucks)) {
+                    if ($_trucks) {
+                        $a = 1;
+                        foreach ($_trucks as $_id => $_fleetnum) {
+                            printf('<option value="%d">%s</option>', $_id, $_fleetnum . ' [' . $_id . ']');
+                            $a ++;
+                        }
+                    }
+                }
+                ?>
 						<!-- End -->
 							</select>
 							<div class="row">
@@ -375,24 +379,24 @@ if (isset ( $_SESSION ['user_email'] ) && isset ( $_SESSION ['user_pwd'] ) && is
 						<!-- Dynamically list fleets -->
 						<div class="col-md-10">
 						<?php
-						if (isset ( $_fleets )) {
-							if ($_fleets) {
-								$a = 1;
-								$_checked = "";
-								foreach ( $_fleets as $_id => $_fleetname ) {
-									if ($_fleets_by_truck) {
-										if (array_key_exists ( $_id, $_fleets_by_truck )) {
-											$_checked = "true";
-										}
-									} else {
-										$_checked = "";
-									}
-									printf ( '<label class="checkbox-inline"> <input type="checkbox" id="cbx_fleet_%d" name="cbxFleet" value="%d" %s>%s</label>', $a, $_id, $_checked, $_fleetname );
-									$a ++;
-								}
-							}
-						}
-						?>
+    if (isset($_fleets)) {
+        if ($_fleets) {
+            $a = 1;
+            $_checked = "";
+            foreach ($_fleets as $_id => $_fleetname) {
+                if ($_fleets_by_truck) {
+                    if (array_key_exists($_id, $_fleets_by_truck)) {
+                        $_checked = "true";
+                    }
+                } else {
+                    $_checked = "";
+                }
+                printf('<label class="checkbox-inline"> <input type="checkbox" id="cbx_fleet_%d" name="cbxFleet" value="%d" %s>%s</label>', $a, $_id, $_checked, $_fleetname);
+                $a ++;
+            }
+        }
+    }
+    ?>
 						<!-- End -->
 						</div>
 					</div>

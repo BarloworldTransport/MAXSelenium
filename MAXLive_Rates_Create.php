@@ -388,8 +388,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                 
                 // : Load Planningboard to rid of iframe loading on every page from here on
                 $this->_session->open($this->_maxurl . self::PB_URL);
-                $e = $w->until(function ($session)
-                {
+                $e = $w->until(function ($session) {
                     return $session->element("xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]");
                 });
                 // : End
@@ -690,14 +689,12 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                                         $_process = "create location - city";
                                                         $this->_session->open($this->_maxurl . self::CITY_URL);
                                                         
-                                                        $e = $w->until(function ($session)
-                                                        {
+                                                        $e = $w->until(function ($session) {
                                                             return $session->element("css selector", "div.toolbar-cell-create");
                                                         });
                                                         $this->_session->element("css selector", "div.toolbar-cell-create")->click();
                                                         
-                                                        $e = $w->until(function ($session)
-                                                        {
+                                                        $e = $w->until(function ($session) {
                                                             return $session->element("xpath", "//*[contains(text(),'Capture the details of City')]");
                                                         });
                                                         
@@ -711,15 +708,13 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                                         $this->_session->element("css selector", "#checkbox_udo_City-2_0_0_active-2")->click();
                                                         $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                                                         
-                                                        $e = $w->until(function ($session)
-                                                        {
+                                                        $e = $w->until(function ($session) {
                                                             return $session->element("css selector", "div.toolbar-cell-create");
                                                         });
                                                         
                                                         $this->_session->element("css selector", "div.toolbar-cell-create")->click();
                                                         
-                                                        $e = $w->until(function ($session)
-                                                        {
+                                                        $e = $w->until(function ($session) {
                                                             return $session->element("xpath", "//*[contains(text(),'Create Zones - City')]");
                                                         });
                                                         
@@ -729,8 +724,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                                         $this->_session->element("xpath", "//*[@id='udo_ZoneCity_link-5__0_zone_id-5']/option[text()='" . $_dataset["zone " . $_load]["value"] . " " . $_dataset["zone " . $_load]["other"] . "']")->click();
                                                         $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                                                         
-                                                        $e = $w->until(function ($session)
-                                                        {
+                                                        $e = $w->until(function ($session) {
                                                             return $session->element("css selector", "div.toolbar-cell-create");
                                                         });
                                                         
@@ -744,14 +738,12 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                                         $_process = "create location - point";
                                                         $this->_session->open($this->_maxurl . self::POINT_URL);
                                                         
-                                                        $e = $w->until(function ($session)
-                                                        {
+                                                        $e = $w->until(function ($session) {
                                                             return $session->element("css selector", "div.toolbar-cell-create");
                                                         });
                                                         $this->_session->element("css selector", "div.toolbar-cell-create")->click();
                                                         
-                                                        $e = $w->until(function ($session)
-                                                        {
+                                                        $e = $w->until(function ($session) {
                                                             return $session->element("xpath", "//*[contains(text(),'Capture the details of Point')]");
                                                         });
                                                         
@@ -765,8 +757,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                                         $this->_session->element("css selector", "#checkbox_udo_Point-2_0_0_active-2")->click();
                                                         $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                                                         
-                                                        $e = $w->until(function ($session)
-                                                        {
+                                                        $e = $w->until(function ($session) {
                                                             return $session->element("css selector", "div.toolbar-cell-create");
                                                         });
                                                         break;
@@ -808,22 +799,19 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                                 // Load URL for MAX customers page
                                                 $this->_session->open($this->_maxurl . self::CUSTOMER_URL . $_dataset["customer"]["id"]);
                                                 // Wait for element = #subtabselector
-                                                $e = $w->until(function ($session)
-                                                {
+                                                $e = $w->until(function ($session) {
                                                     return $session->element("css selector", "#subtabselector");
                                                 });
                                                 // Select option from select box
                                                 $this->_session->element("xpath", "//*[@id='subtabselector']/select/option[text()='Locations']")->click();
                                                 // Wait for element = #button-create
-                                                $e = $w->until(function ($session)
-                                                {
+                                                $e = $w->until(function ($session) {
                                                     return $session->element("css selector", "#button-create");
                                                 });
                                                 // Click element - button
                                                 $this->_session->element("css selector", "#button-create")->click();
                                                 // Wait for element
-                                                $e = $w->until(function ($session)
-                                                {
+                                                $e = $w->until(function ($session) {
                                                     return $session->element("xpath", "//*[@id='udo_CustomerLocations-5__0_location_id-5']");
                                                 });
                                                 $this->assertElementPresent("link text", "Create Location");
@@ -849,16 +837,14 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                                     // Load URL for the customer location business unit databrowser page
                                                     $this->_session->open($this->_maxurl . self::LOCATION_BU_URL . $_dataset[$_dataKey]["link"]);
                                                     // Wait for element
-                                                    $e = $w->until(function ($session)
-                                                    {
+                                                    $e = $w->until(function ($session) {
                                                         return $session->element("css selector", "#button-create");
                                                     });
                                                     // Click element = button-create
                                                     $this->_session->element("css selector", "#button-create")->click();
                                                     
                                                     // Wait for element = Page heading
-                                                    $e = $w->until(function ($session)
-                                                    {
+                                                    $e = $w->until(function ($session) {
                                                         return $session->element("xpath", "//*[contains(text(),'Create Customer Locations - Business Unit')]");
                                                     });
                                                     
@@ -869,8 +855,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                                     // Click the submit button
                                                     $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                                                     // Wait for element
-                                                    $e = $w->until(function ($session)
-                                                    {
+                                                    $e = $w->until(function ($session) {
                                                         return $session->element("css selector", "#button-create");
                                                     });
                                                 } else {
@@ -908,22 +893,19 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                     $this->_session->open($this->_maxurl . self::CUSTOMER_URL . $_dataset["customer"]["id"]);
                                     
                                     // Wait for element = Page heading
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("css selector", "#subtabselector");
                                     });
                                     $this->_session->element("xpath", "//*[@id='subtabselector']/select/option[14]")->click();
                                     
                                     // Wait for element = Page heading
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("css selector", "#button-create");
                                     });
                                     $this->_session->element("css selector", "#button-create")->click();
                                     
                                     // Wait for element = Page heading
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("xpath", "//*[contains(text(),'Capture the details of Offloading Customers')]");
                                     });
                                     
@@ -944,8 +926,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                             }
                                             
                                             // Wait for element = Page heading
-                                            $e = $w->until(function ($session)
-                                            {
+                                            $e = $w->until(function ($session) {
                                                 return $session->element("xpath", "//*[@id='udo_Customer-22_0_0_tradingName-22']");
                                             });
                                             
@@ -971,8 +952,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                         }
                                         
                                         // Wait for element = Page heading
-                                        $e = $w->until(function ($session)
-                                        {
+                                        $e = $w->until(function ($session) {
                                             return $session->element("xpath", "//*[contains(text(),'Capture the details of Offloading Customers')]");
                                         });
                                     }
@@ -995,22 +975,19 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                         $this->_session->open($this->_maxurl . self::OFF_CUST_BU_URL . $_dataset["offloading customer"]["link"]);
                                         
                                         // Wait for element = #subtabselector
-                                        $e = $w->until(function ($session)
-                                        {
+                                        $e = $w->until(function ($session) {
                                             return $session->element("css selector", "#subtabselector");
                                         });
                                         $this->_session->element("xpath", "//*[@id='subtabselector']/select/option[text()='Offloading Customers - Business Unit']")->click();
                                         
                                         // Wait for element = #button-create
-                                        $e = $w->until(function ($session)
-                                        {
+                                        $e = $w->until(function ($session) {
                                             return $session->element("xpath", "//div[@id='button-create']");
                                         });
                                         $this->_session->element("xpath", "//div[@id='button-create']")->click();
                                         
                                         // Wait for element = Page Heading
-                                        $e = $w->until(function ($session)
-                                        {
+                                        $e = $w->until(function ($session) {
                                             return $session->element("xpath", "//*[contains(text(),'Create Offloading Customers - Business Unit')]");
                                         });
                                         
@@ -1021,8 +998,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                         $this->_session->element("css selector", "input[type=submit][name=save]")->click();
                                         
                                         // Wait for element = #button-create
-                                        $e = $w->until(function ($session)
-                                        {
+                                        $e = $w->until(function ($session) {
                                             return $session->element("xpath", "//div[@id='button-create']");
                                         });
                                     } else {
@@ -1056,7 +1032,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                         $_dataset["rate"]["other"] = NULL;
                                     }
                                 }
-                                                                
+                                
                                 $_process = "begin create rate process";
                                 // Get all currently open windows
                                 $_winAll = $this->_session->window_handles();
@@ -1072,8 +1048,8 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                 if (! $_dataset["rate"]["other"]) {
                                     try {
                                         $_process = "create route";
-                                        $_locationFrom_value = (string)"";
-                                        $_locationTo_value = (string)"";
+                                        $_locationFrom_value = (string) "";
+                                        $_locationTo_value = (string) "";
                                         
                                         switch ($_dataset["business unit"]["value"]) {
                                             case "Timber 24":
@@ -1088,7 +1064,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                                     $_locationTo_value = $_dataset["location to town"]["value"];
                                                     break;
                                                 }
-                                        }        
+                                        }
                                         
                                         $_maxRouteRate->maxRouteCreate($_dataset["business unit"]["value"], $_locationFrom_value, $_locationTo_value, $_dataset["expected kms"]["value"]);
                                         
@@ -1113,24 +1089,21 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                 $this->_session->open($this->_maxurl . self::CUSTOMER_URL . $_dataset["customer"]["id"]);
                                 
                                 // Wait for element = #subtabselector
-                                $e = $w->until(function ($session)
-                                {
+                                $e = $w->until(function ($session) {
                                     return $session->element("css selector", "#subtabselector");
                                 });
                                 // Select Rates from the select box
                                 $this->_session->element("xpath", "//*[@id='subtabselector']/select/option[text()='Rates']")->click();
                                 
                                 // Wait for element = #button-create
-                                $e = $w->until(function ($session)
-                                {
+                                $e = $w->until(function ($session) {
                                     return $session->element("css selector", "#button-create");
                                 });
                                 // Click element - #button-create
                                 $this->_session->element("css selector", "#button-create")->click();
                                 
                                 // Wait for element Page Heading
-                                $e = $w->until(function ($session)
-                                {
+                                $e = $w->until(function ($session) {
                                     return $session->element("xpath", "//*[@id='udo_Rates-31__0_route_id-31']");
                                 });
                                 
@@ -1183,8 +1156,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                 
                                 // Wait for element = #button-create
                                 try {
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("css selector", "#button-create");
                                     });
                                 } catch (PHPWebDriver_NoSuchElementWebDriverError $e) {
@@ -1246,8 +1218,7 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                         $this->_session->open($rateurl);
                                         
                                         // Wait for element = #subtabselector
-                                        $e = $w->until(function ($session)
-                                        {
+                                        $e = $w->until(function ($session) {
                                             return $session->element("css selector", "#subtabselector");
                                         });
                                         // Click element - #subtabselector
@@ -1257,16 +1228,14 @@ class MAXLive_Rates_Create extends PHPUnit_Framework_TestCase
                                         sleep(1);
                                         
                                         // Wait for element = #button-create
-                                        $e = $w->until(function ($session)
-                                        {
+                                        $e = $w->until(function ($session) {
                                             return $session->element("css selector", "#button-create");
                                         });
                                         // Click element - #button-create
                                         $this->_session->element("css selector", "#button-create")->click();
                                         
                                         // Wait for element = #button-create
-                                        $e = $w->until(function ($session)
-                                        {
+                                        $e = $w->until(function ($session) {
                                             return $session->element("xpath", "//*[contains(text(),'Create Date Range Values')]");
                                         });
                                         

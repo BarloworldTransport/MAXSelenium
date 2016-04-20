@@ -27,35 +27,34 @@ error_reporting(E_ALL);
  *       You should have received a copy of the GNU General Public License
  *       along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
- 
- /** Class usage example:
-  * include('MAX_API_Get.php');
-  * 
-  *	$_api = new MAX_API_Get("live");
-  *	$_api->setObject('Person');
-  *	$_api->setFilter('email like "%timber24%"');
-  *	$_api->runApiQuery();
-  *	$_data = $_api->getData();
-  *
-  *	if (count($_api->getErrors()) > 0)
-  *	{
-  *		print_r($_api->getErrors());
-  *	}
-  * 
-*/
 
+/**
+ * Class usage example:
+ * include('MAX_API_Get.php');
+ *
+ * $_api = new MAX_API_Get("live");
+ * $_api->setObject('Person');
+ * $_api->setFilter('email like "%timber24%"');
+ * $_api->runApiQuery();
+ * $_data = $_api->getData();
+ *
+ * if (count($_api->getErrors()) > 0)
+ * {
+ * print_r($_api->getErrors());
+ * }
+ */
 class MAX_API_Get
 {
     
     // : Constants
     const INI_FILE = "api_data.ini";
-    
+
     const LIVE_URL = "https://login.max.bwtsgroup.com";
 
     const TEST_URL = "http://max.mobilize.biz";
 
     const API_URL = "/api_request/Data/get?objectRegistry=";
-    
+
     const ENV_VAR = "BWT_CONFIG_PATH";
 
     const DS = DIRECTORY_SEPARATOR;
@@ -432,27 +431,25 @@ class MAX_API_Get
      */
     public function runApiQuery()
     {
-		try {
-			if ($this->_apiObject && $this->_apiFilter) {
-            
-				$_result = $this->splitResultIntoDataArray($this->maxApiGetData());
-            
-				if ($_result) {
-					$this->_xmlResponseString = $_result['xml'];
-					$this->_htmlDataString = $_result['html'];
+        try {
+            if ($this->_apiObject && $this->_apiFilter) {
                 
-					$this->_data = $this->extractDataFromHTML($this->_htmlDataString);
-
-				} else {
-					return FALSE;
-				}
-			} else {
-				return FALSE;
-			}
-		} catch (Exception $e)
-		{
-			$this->addError('Run API Query', 'Caught Exception: ', $e->getMessage(), __FUNCTION__);
-		}
+                $_result = $this->splitResultIntoDataArray($this->maxApiGetData());
+                
+                if ($_result) {
+                    $this->_xmlResponseString = $_result['xml'];
+                    $this->_htmlDataString = $_result['html'];
+                    
+                    $this->_data = $this->extractDataFromHTML($this->_htmlDataString);
+                } else {
+                    return FALSE;
+                }
+            } else {
+                return FALSE;
+            }
+        } catch (Exception $e) {
+            $this->addError('Run API Query', 'Caught Exception: ', $e->getMessage(), __FUNCTION__);
+        }
     }
     
     // : End - Public Functions
@@ -466,44 +463,41 @@ class MAX_API_Get
     public function __construct($_mode)
     {
         try {
-
-			$_ini_path = getenv(self::ENV_VAR);
+            
+            $_ini_path = getenv(self::ENV_VAR);
             
             $ini = $_ini_path . self::DS . self::INI_FILE;
             
             if (is_file($ini) === FALSE) {
-				$this->addError('Load INI File', 'INI File Not Found: ', $ini, __FUNCTION__);
+                $this->addError('Load INI File', 'INI File Not Found: ', $ini, __FUNCTION__);
                 return FALSE;
             }
             
             $data = parse_ini_file($ini);
             
             if ((array_key_exists("apiuserpwd", $data) && $data["apiuserpwd"]) && (array_key_exists("apiusertestpwd", $data) && $data["apiusertestpwd"])) {
-				
-				
-			switch ($_mode) {
-                case "live":
-                {
-                    $this->_maxurl = self::LIVE_URL;
-                    $this->_apiuserpwd = $data['apiuserpwd'];
-                    break;
+                
+                switch ($_mode) {
+                    case "live":
+                        {
+                            $this->_maxurl = self::LIVE_URL;
+                            $this->_apiuserpwd = $data['apiuserpwd'];
+                            break;
+                        }
+                    case "test":
+                    default:
+                        {
+                            $this->_maxurl = self::TEST_URL;
+                            $this->_apiuserpwd = $data['apiusertestpwd'];
+                            break;
+                        }
                 }
-                case "test":
-                default:
-                {
-                    $this->_maxurl = self::TEST_URL;
-                    $this->_apiuserpwd = $data['apiusertestpwd'];
-                    break;
-                }
-            }
-				
             } else {
-				$this->addError('Validate INI File Data', 'Required fields not found', 'Please check that apiuserpwd key=value is present in file: ' . $ini, __FUNCTION__);
+                $this->addError('Validate INI File Data', 'Required fields not found', 'Please check that apiuserpwd key=value is present in file: ' . $ini, __FUNCTION__);
                 return FALSE;
             }
-            
         } catch (Exception $e) {
-			$this->addError('object construct', '__construct failed with an Exception:', $e->getMessage(), __FUNCTION__);
+            $this->addError('object construct', '__construct failed with an Exception:', $e->getMessage(), __FUNCTION__);
             return FALSE;
         }
         // If code reaches this point then code processed successfully
@@ -535,7 +529,7 @@ class MAX_API_Get
                 
                 curl_close($ch);
             } catch (Exception $e) {
-				$this->addError('CURL fetch data', 'cURL failed to get data with Exception: ', $e->getMessage(), __FUNCTION__);
+                $this->addError('CURL fetch data', 'cURL failed to get data with Exception: ', $e->getMessage(), __FUNCTION__);
                 return FALSE;
             }
             return $output;
@@ -574,23 +568,20 @@ class MAX_API_Get
                     if (strpos(strtolower($_value), 'id:')) {
                         $rowcount = 0;
                         
-						while (strlen($_httpUrlData[$_key + $rowcount]) != 0 && strpos($_httpUrlData[$_key + $rowcount], ":"))
-						{
-							$rowcount ++;
-						}
+                        while (strlen($_httpUrlData[$_key + $rowcount]) != 0 && strpos($_httpUrlData[$_key + $rowcount], ":")) {
+                            $rowcount ++;
+                        }
                         
-						if ($rowcount > 0 && $rowcount)
-						{
-							$_fieldCount = $rowcount;
-						}
-                        
-                    } else if ($_value == 'No rows')
-                    {
-						$_htmlNoRows = TRUE;
-						break;
-					}
-					
-					break;
+                        if ($rowcount > 0 && $rowcount) {
+                            $_fieldCount = $rowcount;
+                        }
+                    } else 
+                        if ($_value == 'No rows') {
+                            $_htmlNoRows = TRUE;
+                            break;
+                        }
+                    
+                    break;
                 }
                 
                 // : Detect line numbers where each section of data is situated
@@ -614,20 +605,19 @@ class MAX_API_Get
                 // : Construct the HTML Data into an array
                 
                 if (is_array($_htmlRecPos) && count($_htmlRecPos) > 0 && $_htmlNoRows == FALSE) {
-					
+                    
                     foreach ($_htmlRecPos as $_key => $_value) {
-						
+                        
                         if ($_value != NULL) {
                             for ($a = 0; $a <= $_fieldCount; $a ++) {
                                 $_htmlData[$_key][] = $_httpUrlData[$_value + $a];
                             }
                         }
                     }
-                } else
-					if ($_htmlNoRows)
-				{
-					$_htmlData['html'][] = 'No rows';
-				}
+                } else 
+                    if ($_htmlNoRows) {
+                        $_htmlData['html'][] = 'No rows';
+                    }
                 // : End
                 
                 // : Construct the XML Data into an array
@@ -637,7 +627,7 @@ class MAX_API_Get
                     }
                 }
                 // : End
-
+                
                 $_result["html"] = $_htmlData;
                 $_result["xml"] = $_xmlData;
                 
@@ -657,30 +647,30 @@ class MAX_API_Get
      */
     private function addError($_step, $_errTitle, $_errDetail, $_errFunc)
     {
-		/*
-        if (is_string($_step) && is_string($_errTitle) && $_errDetail && $_errFunc) {
-            $_errMsg = preg_replace("/%s/", $_step, self::ERR_STR);
-            $_errMsg = preg_replace("/%t/", $_errTitle, $_errMsg);
-            $_errMsg = preg_replace("/%d/", $_errDetail, $_errMsg);
-            $_errMsg = preg_replace("/%f/", $_errFunc, $_errMsg);
-            if ($_errMsg && is_string($_errMsg))
-            {
-			}
-            else {
-                return $_errMsg;
-            }
-        } else {
-            $this->_errors[] = "ERROR: Error adding error string to errors array property for class. Please provide string types for all arguments of the function: " . __FUNCTION__;
-            return FALSE;
-        }*/
+        /*
+         * if (is_string($_step) && is_string($_errTitle) && $_errDetail && $_errFunc) {
+         * $_errMsg = preg_replace("/%s/", $_step, self::ERR_STR);
+         * $_errMsg = preg_replace("/%t/", $_errTitle, $_errMsg);
+         * $_errMsg = preg_replace("/%d/", $_errDetail, $_errMsg);
+         * $_errMsg = preg_replace("/%f/", $_errFunc, $_errMsg);
+         * if ($_errMsg && is_string($_errMsg))
+         * {
+         * }
+         * else {
+         * return $_errMsg;
+         * }
+         * } else {
+         * $this->_errors[] = "ERROR: Error adding error string to errors array property for class. Please provide string types for all arguments of the function: " . __FUNCTION__;
+         * return FALSE;
+         * }
+         */
         
         // : Quick error report
         $_count = func_num_args();
-        for ($x = 0; $x < $_count; $x++)
-        {
-			print_r(func_get_arg($x));
-			print(PHP_EOL);
-		}
+        for ($x = 0; $x < $_count; $x ++) {
+            print_r(func_get_arg($x));
+            print(PHP_EOL);
+        }
     }
 
     /**
@@ -693,69 +683,65 @@ class MAX_API_Get
             $_result = (array) array();
             $_testForNoRows = array_values($_htmlData);
             
-            if ($_testForNoRows && is_array($_testForNoRows))
-            {
-				if ($_testForNoRows[0] == "No rows")
-				{
-					$_testForNoRows = TRUE;
-				} else {
-					$_testForNoRows = FALSE;
-				}
-			}
-			if ($_testForNoRows == FALSE)
-			{
-            foreach ($_htmlData as $_key => $_html) {
-                foreach ($_html as $_index => $_value) {
-                    
-                    // Set variable string values to empty for each loop
-                    $_htmlKey = "";
-                    $_htmlValue = "";
-                    
-                    // Seperate key from value
-                    
-                    // Split is working properly
-                    $_split = preg_split("/:\s/", $_html[$_index]);
-                    
-                    if (count($_split) > 1) {
+            if ($_testForNoRows && is_array($_testForNoRows)) {
+                if ($_testForNoRows[0] == "No rows") {
+                    $_testForNoRows = TRUE;
+                } else {
+                    $_testForNoRows = FALSE;
+                }
+            }
+            if ($_testForNoRows == FALSE) {
+                foreach ($_htmlData as $_key => $_html) {
+                    foreach ($_html as $_index => $_value) {
                         
-                        // Clean up spaces in the value
-                        preg_match("/([A-Za-z0-9].*$)/", $_split[1], $_cleanStr);
+                        // Set variable string values to empty for each loop
+                        $_htmlKey = "";
+                        $_htmlValue = "";
                         
-                        if (count($_cleanStr) > 1) {
-                            // Successful find which cleans out the spaces from the value
-                            $_htmlValue = $_cleanStr[1];
-                        } else 
-                            if (count($_cleanStr)) {
-                                // No spaces found return value
-                                $_htmlValue = $_cleanStr[0];
+                        // Seperate key from value
+                        
+                        // Split is working properly
+                        $_split = preg_split("/:\s/", $_html[$_index]);
+                        
+                        if (count($_split) > 1) {
+                            
+                            // Clean up spaces in the value
+                            preg_match("/([A-Za-z0-9].*$)/", $_split[1], $_cleanStr);
+                            
+                            if (count($_cleanStr) > 1) {
+                                // Successful find which cleans out the spaces from the value
+                                $_htmlValue = $_cleanStr[1];
+                            } else 
+                                if (count($_cleanStr)) {
+                                    // No spaces found return value
+                                    $_htmlValue = $_cleanStr[0];
+                                }
+                            
+                            preg_match("/\s([a-zA-Z0-9].*$)/", $_split[0], $_cleanStr);
+                            
+                            if (count($_cleanStr) > 1) {
+                                // Spaces found and spaceless values returned
+                                $_htmlKey = $_cleanStr[1];
                             }
+                        }
                         
-                        preg_match("/\s([a-zA-Z0-9].*$)/", $_split[0], $_cleanStr);
-                        
-                        if (count($_cleanStr) > 1) {
-                            // Spaces found and spaceless values returned
-                            $_htmlKey = $_cleanStr[1];
+                        if (($_htmlKey && $_htmlValue) || ($_htmlKey && ! $_htmlValue)) {
+                            $_result[$_key][$_htmlKey] = $_htmlValue;
                         }
                     }
-                    
-                    if (($_htmlKey && $_htmlValue) || ($_htmlKey && ! $_htmlValue)) {
-                        $_result[$_key][$_htmlKey] = $_htmlValue;
-                    }
                 }
-			}
-            } else
-            {
-				$_result = "No rows";
-			}
-			
+            } else {
+                $_result = "No rows";
+            }
+            
             if ($_result) {
                 return $_result;
             } else {
                 return "No results";
             }
         } catch (Exception $e) {
-			$this->addError('Extract data from HTML', 'Caught Exception: ', $e->getMessage(), __FUNCTION__);
-		}
+            $this->addError('Extract data from HTML', 'Caught Exception: ', $e->getMessage(), __FUNCTION__);
+        }
     }
     // : End - Private Functions
 }

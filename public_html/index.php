@@ -4,8 +4,8 @@
 error_reporting(E_ALL);
 ini_set("display_errors", "1");
 // : End
-
 const ini_file = 'config/settings.ini';
+
 const dbname = 'bwt_max_auto';
 
 $_errors = (array) array();
@@ -31,7 +31,7 @@ if (isset($_SESSION['SID'])) {
             try {
                 // : Open connection to the database
                 $_dbh = new PDO($_dbdsn, $_dbuser, $_dbpwd);
-
+                
                 $_unclean = (array) array();
                 $_clean = (array) array();
                 if ($_POST['user_email'] && $_POST['user_pwd']) {
@@ -39,27 +39,32 @@ if (isset($_SESSION['SID'])) {
                     $_unclean['user_email'] = $_POST['user_email'];
                     $_unclean['user_pwd'] = $_POST['user_pwd'];
                     if ($_unclean['user_email'] && $_unclean['user_pwd']) {
-                            // : Clean inputted data from form/user
-                            $_clean['user_email'] = stripslashes($_unclean['user_email']);
-                            $_clean['user_pwd'] = stripslashes($_unclean['user_pwd']);
-                            // : End
-                            
-                            $sql = 'SELECT id FROM users WHERE user_email=:email AND user_pwd=:pwd;';
-                            $sth = $_dbh->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY));
-                            $sth->execute(array(':email' => $_clean['user_email'], ':pwd' => $_clean['user_pwd']));
-                            $_result = $sth->fetchAll();
-
-                            if (count($_result) === 1) {
-                                $_SESSION['user_email'] = $_clean['user_email'];
-                                $_SESSION['user_pwd'] = $_clean['user_pwd'];
-                                $_SESSION['IPaddress'] = $_SERVER['REMOTE_ADDR'];
-                                $_SESSION['userAgent'] = $_SERVER['HTTP_USER_AGENT'];
-                                $_SESSION['userID'] = $_result[0]['id'];
-                                $_dbh = null;
-                                header("Location: classes/dashboard.php");
-                            } else {
-                                $_errors[] = "Invalid email address and/or password. Please re-enter email and password carefully and try again.";
-                            }
+                        // : Clean inputted data from form/user
+                        $_clean['user_email'] = stripslashes($_unclean['user_email']);
+                        $_clean['user_pwd'] = stripslashes($_unclean['user_pwd']);
+                        // : End
+                        
+                        $sql = 'SELECT id FROM users WHERE user_email=:email AND user_pwd=:pwd;';
+                        $sth = $_dbh->prepare($sql, array(
+                            PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY
+                        ));
+                        $sth->execute(array(
+                            ':email' => $_clean['user_email'],
+                            ':pwd' => $_clean['user_pwd']
+                        ));
+                        $_result = $sth->fetchAll();
+                        
+                        if (count($_result) === 1) {
+                            $_SESSION['user_email'] = $_clean['user_email'];
+                            $_SESSION['user_pwd'] = $_clean['user_pwd'];
+                            $_SESSION['IPaddress'] = $_SERVER['REMOTE_ADDR'];
+                            $_SESSION['userAgent'] = $_SERVER['HTTP_USER_AGENT'];
+                            $_SESSION['userID'] = $_result[0]['id'];
+                            $_dbh = null;
+                            header("Location: classes/dashboard.php");
+                        } else {
+                            $_errors[] = "Invalid email address and/or password. Please re-enter email and password carefully and try again.";
+                        }
                     } else {
                         $_errors["Please provide both email and password login details and try again."];
                     }

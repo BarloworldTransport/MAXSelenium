@@ -21,15 +21,15 @@ require_once 'FileParser.php';
  * @copyright 2013 onwards Barloworld Transport (Pty) Ltd
  * @license GNU GPLv2
  * @link https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
-
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ *       This program is free software; you can redistribute it and/or
+ *       modify it under the terms of the GNU General Public License
+ *       as published by the Free Software Foundation; either version 2
+ *       of the License, or (at your option) any later version.
+ *      
+ *       This program is distributed in the hope that it will be useful,
+ *       but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *       GNU General Public License for more details.
  */
 class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
 {
@@ -217,7 +217,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                     $_result = $_dbh->getDataFromQuery($_query);
                     
                     if ($_result) {
-
+                        
                         // : Loop each result found
                         foreach ($_result as $rkey => $rvalue) {
                             // : If fleet found in original csv data been looped then add fleet name to main data array;
@@ -287,16 +287,14 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
             $this->_session->open($this->_maxurl);
             
             // : Wait for page to load and for elements to be present on page
-            $e = $w->until(function ($session)
-            {
+            $e = $w->until(function ($session) {
                 return $session->element('css selector', "#contentFrame");
             });
             
             $iframe = $this->_session->element('css selector', '#contentFrame');
             $this->_session->switch_to_frame($iframe);
             
-            $e = $w->until(function ($session)
-            {
+            $e = $w->until(function ($session) {
                 return $session->element('css selector', 'input[id=identification]');
             });
             // : End
@@ -318,14 +316,12 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
             $this->_session->switch_to_frame();
             
             // : Wait for page to load and for elements to be present on page
-            $e = $w->until(function ($session)
-            {
+            $e = $w->until(function ($session) {
                 return $session->element('css selector', "#contentFrame");
             });
             $iframe = $this->_session->element('css selector', '#contentFrame');
             $this->_session->switch_to_frame($iframe);
-            $e = $w->until(function ($session)
-            {
+            $e = $w->until(function ($session) {
                 return $session->element("xpath", "//*[text()='" . $this->_welcome . "']");
             });
             $this->assertElementPresent("xpath", "//*[text()='" . $this->_welcome . "']");
@@ -335,8 +331,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
             
             // : Load Planningboard to rid of iframe loading on every page from here on
             $this->_session->open($this->_maxurl . self::PB_URL);
-            $e = $w->until(function ($session)
-            {
+            $e = $w->until(function ($session) {
                 return $session->element("xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]");
             });
             // : End
@@ -359,23 +354,25 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                 // : Make 100% sure that the operation is set correctly
                 if (stripos($value['operation'], 'create') !== false) {
                     $_operation = "create";
-                } else if (stripos($value['operation'], 'update') !== false) {
-                    $_operation = "update";
-                } else if (stripos($value['operation'], 'remove') !== false) {
-                    $_operation = "remove";
-                } else {
-                    throw new Exception("Was not able to determine the operation to be performed");
-                }
+                } else 
+                    if (stripos($value['operation'], 'update') !== false) {
+                        $_operation = "update";
+                    } else 
+                        if (stripos($value['operation'], 'remove') !== false) {
+                            $_operation = "remove";
+                        } else {
+                            throw new Exception("Was not able to determine the operation to be performed");
+                        }
                 // : End
                 
                 // : Convert unix time stamp to string formatted Y-m-d H:i:s
                 $_start_date = $this->convertUnixToFormattedTime($value['start_date']);
                 $_end_date = $this->convertUnixToFormattedTime($value['end_date']);
-                //  : End
+                // : End
                 
                 // : Check if operation and dates required are valid and ready to go else skip record and report error
                 if ((($_operation === 'create') && ($_start_date === FALSE)) || (($_operation === 'update') && ($_start_date === FALSE || $_end_date === FALSE)) || (($_operation === 'remove') && ($_end_date === FALSE))) {
-                    throw new Exception("Datetime value supplied for operation: $_operation could not be converted or was not supplied.");    
+                    throw new Exception("Datetime value supplied for operation: $_operation could not be converted or was not supplied.");
                 }
                 // : End
                 
@@ -405,8 +402,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                             // : Load Fleet DataBrowser page
                             $this->_session->open($this->_maxurl . self::FLEET_URL . $_fleet);
                             $this->_tmp = $_fleet_name;
-                            $e = $w->until(function ($session)
-                            {
+                            $e = $w->until(function ($session) {
                                 return $session->element("xpath", "//*[@id='toolbar']/div[contains(text(), '{$this->_tmp}')]");
                             });
                             
@@ -431,16 +427,14 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                                     
                                     // : Wait for fleet name to be present on page within specified element
                                     $this->_tmp = $_fleet_name;
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("xpath", "//*[@id='toolbar']/div[contains(text(), '{$this->_tmp}')]");
                                     });
                                     // : End
                                     
                                     // : Wait for text of truck fleetnum to be present on page
                                     $this->_tmp = $_truck_fleetnum;
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("xpath", "//*/td[contains(text(), '{$this->_tmp}')]");
                                     });
                                     // : End
@@ -449,8 +443,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                                     $this->_session->element("css selector", "div.toolbar-cell-update")->click();
                                     
                                     // : Wait for Update Fleet Truck Link heading to be present in a table cell
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("xpath", "//*/td[contains(text(),'Update Fleet Truck Link')]");
                                     });
                                     
@@ -491,16 +484,14 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                                     
                                     // : Wait for fleet name to be present on page within specified element
                                     $this->_tmp = $_fleet_name;
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("xpath", "//*[@id='toolbar']/div[contains(text(), '{$this->_tmp}')]");
                                     });
                                     // : End
                                     
                                     // : Wait for text of truck fleetnum to be present on page
                                     $this->_tmp = $_truck_fleetnum;
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("xpath", "//*/td[contains(text(), '{$this->_tmp}')]");
                                     });
                                     // : End
@@ -516,8 +507,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                                     $this->_session->open($this->_maxurl . self::FLEET_URL . $_fleet);
                                     
                                     $this->_tmp = $_fleet_name;
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("xpath", "//*[@id='toolbar']/div[contains(text(), '{$this->_tmp}')]");
                                     });
                                     
@@ -527,8 +517,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                                     // : End
                                     
                                     // : Wait for table and column header of table to read Truck
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("xpath", "//*[@id='OrderBy29911']/table/tbody/tr/td[1]/nobr[contains(text(),'Truck')]");
                                     });
                                     // : End
@@ -539,8 +528,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                                     // : End
                                     
                                     // : Wait for text Create Fleet Truck Link
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("xpath", "//*/td[contains(text(),'Create Fleet Truck Link')]");
                                     });
                                     // : End
@@ -550,7 +538,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                                     $this->assertElementPresent("xpath", "//*[@id='udo_FleetTruckLink-18_0_0_fleetTruckLinkBeginDate-18']");
                                     $this->assertElementPresent("xpath", "//*[@id='udo_FleetTruckLink-19_0_0_fleetTruckLinkEndDate-19']");
                                     $this->assertElementPresent("css selector", "input[type=submit][name=save]");
-
+                                    
                                     $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-9__0_truck_id-9']/option[text()='{$_truck_fleetnum}']")->click();
                                     
                                     $this->_session->element("xpath", "//*[@id='udo_FleetTruckLink-18_0_0_fleetTruckLinkBeginDate-18']")->clear();
@@ -566,12 +554,10 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
                                     
                                     // : Wait for Fleet Truck Link page to reload and check for truck link
                                     $this->_tmp = $_truck_fleetnum;
-                                    $e = $w->until(function ($session)
-                                    {
+                                    $e = $w->until(function ($session) {
                                         return $session->element("xpath", "//*/a/nobr[contains(text(),'{$this->_tmp}')]");
                                     });
                                     // : End
-                                    
                                 } catch (Exception $e) {
                                     $this->reportNewError($e->getMessage(), $value);
                                 }
@@ -602,8 +588,7 @@ class MAXLive_FleetTruckLinkCommander extends PHPUnit_Framework_TestCase
         // Click the logout link
         $this->_session->element('xpath', "//*[contains(@href,'/logout')]")->click();
         // Wait for page to load and for elements to be present on page
-        $e = $w->until(function ($session)
-        {
+        $e = $w->until(function ($session) {
             return $session->element('css selector', 'input[id=identification]');
         });
         $this->assertElementPresent('css selector', 'input[id=identification]');

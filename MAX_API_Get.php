@@ -43,13 +43,12 @@ error_reporting(E_ALL);
  * print_r($_api->getErrors());
  * }
  */
- 
- /**
-  * DEV NOTES:
-  * 
-  * Detect bad user and/or password when making curl call
-  */
- 
+
+/**
+ * DEV NOTES:
+ *
+ * Detect bad user and/or password when making curl call
+ */
 class MAX_API_Get
 {
     
@@ -65,7 +64,9 @@ class MAX_API_Get
     const ENV_VAR = "BWT_CONFIG_PATH";
 
     const DS = DIRECTORY_SEPARATOR;
-    
+
+    const OBJREG = "objectRegistry";
+
     const LOG_STR = PHP_EOL . "STEP DETAIL: %s" . PHP_EOL . "LOG HEADER: %s" . PHP_EOL . "LOG DETAIL: %s" . PHP_EOL . "FUNCTION: %s" . PHP_EOL . "LINE: %s";
 
     const ERR_STR = PHP_EOL . "STEP DETAIL: %s" . PHP_EOL . "ERROR HEADER: %s" . PHP_EOL . "ERROR DETAIL: %s" . PHP_EOL . "FUNCTION: %s" . PHP_EOL . "LINE: %s";
@@ -102,244 +103,11 @@ class MAX_API_Get
 
     protected $_logs = array();
 
-    protected $_maxObjects = array(
-        "ObjectRegistry",
-        "Condition",
-        "Person",
-        "Corporate",
-        "Group",
-        "PermissionUser",
-        "PermissionRole",
-        "Group_Role_Link",
-        "MFile",
-        "GroupPermissionTemplate",
-        "ObjectRegistryField",
-        "Message",
-        "MessagePermissionUser",
-        "DataView",
-        "ItemListDataView",
-        "Currency",
-        "DataViewField",
-        "Report",
-        "Tab",
-        "TabDataView",
-        "Setting",
-        "StyleSetting",
-        "ObjectAttachment",
-        "Calendar",
-        "CalendarEvent",
-        "Process",
-        "DocumentCategory",
-        "DocumentTemplate",
-        "ProcessStep",
-        "Layout",
-        "GraphType",
-        "GraphDataView",
-        "EventDataView",
-        "udo_Process_Graph",
-        "AlertDataView",
-        "udo_Model",
-        "udo_Make",
-        "udo_Location",
-        "udo_Continent",
-        "udo_Point_Type",
-        "udo_Country",
-        "udo_Province",
-        "udo_Suburb",
-        "udo_City",
-        "udo_Truck",
-        "udo_Refuel",
-        "udo_Point_Point_Type",
-        "udo_Point",
-        "udo_Driver",
-        "ObjectNote",
-        "udo_ProductCategory",
-        "udo_PaymentTerms",
-        "udo_PalletType",
-        "udo_ContactType",
-        "udo_AccountManager",
-        "udo_Customer",
-        "udo_Proposal",
-        "udo_RateType",
-        "udo_Quote",
-        "udo_QuoteRate",
-        "udo_Trip",
-        "udo_ChepDepot",
-        "udo_ManlineDepot",
-        "udo_ProductType",
-        "udo_ProductDetail",
-        "udo_Cargo",
-        "udo_Assistant",
-        "udo_Trailer",
-        "udo_TrailerMake",
-        "udo_TrailerModel",
-        "udo_TripLegCargo",
-        "udo_TripLeg",
-        "udo_CustomerType",
-        "udo_CustomerAdminDetails",
-        "udo_CustomerContacts",
-        "udo_IndustryClass",
-        "udo_AccountStatus",
-        "udo_PaymentMethod",
-        "udo_CustomerCustomerType",
-        "udo_CustomerProcedures",
-        "udo_OffloadingCustomers",
-        "udo_CustomerLocations",
-        "udo_Rates",
-        "udo_Timeframe",
-        "udo_DebriefGrid",
-        "udo_DebriefGridRow",
-        "udo_TripException",
-        "udo_Debrief",
-        "udo_DebriefTripExceptionLink",
-        "udo_FuelException",
-        "udo_TimeframeFuelExceptionLink",
-        "udo_LocalOrders",
-        "udo_LocalAllocation",
-        "udo_FleetType",
-        "udo_Fleet",
-        "udo_FleetTruckLink",
-        "udo_DriverActivity",
-        "udo_Route",
-        "udo_Envelope",
-        "udo_RefuelOrderNumber",
-        "ImageGroup",
-        "udo_Position",
-        "ObjectRegistryDescriptiveField",
-        "udo_ManualPosition",
-        "ReportGroup",
-        "udo_RouteCache",
-        "udo_RouteCacheSummary",
-        "ObjectLog",
-        "ObjectInstanceLog",
-        "VersionControlItem",
-        "udo_LocsTruck",
-        "ObjectCrudAction",
-        "ObjectCrudActionProcess",
-        "ObjectCrudActionAlert",
-        "ObjectCrudActionError",
-        "MDateTime",
-        "udo_RateAdjustment",
-        "udo_FuelRoute",
-        "ObjectDataReference",
-        "DataViewMathColumn",
-        "ObjectCrudActionAlarm",
-        "Collection",
-        "CollectionMembers",
-        "udo_PositionDestination",
-        "udo_LocalCharges",
-        "UniqueConstraint",
-        "UniqueConstraintField",
-        "udo_Notes",
-        "udo_FuelPrice",
-        "PreferenceDescription",
-        "Preference",
-        "ObjectActionLog",
-        "ExpressionEvaluator",
-        "StartupProcess",
-        "StartupProcessUser",
-        "udo_PreferenceDescription",
-        "ReleaseNote",
-        "Sequence",
-        "DetailDataView",
-        "DetailDataViewField",
-        "udo_Plantation",
-        "udo_Depot",
-        "udo_Mill",
-        "DateRangeValue",
-        "udo_TollClass",
-        "udo_TruckDescription",
-        "udo_Loader",
-        "udo_LoaderRate",
-        "udo_LoadingCharges",
-        "udo_RatesAdjustment",
-        "RateDateRangeValue",
-        "udo_LoaderRateAdjustment",
-        "LoaderRateDateRangeValue",
-        "udo_TollGate",
-        "udo_RouteTollGate_link",
-        "udo_Toll",
-        "udo_EpodImageDefinitionsExclude",
-        "udo_FandVContract",
-        "udo_FandVContractTruck_link",
-        "DataViewParameter",
-        "DataViewParameterDate",
-        "DataViewParameterBoolean",
-        "DataViewParameterSelect",
-        "udo_HollowAdhoc",
-        "udo_TruckBudget",
-        "udo_FleetBudgetTotal",
-        "udo_FleetBudgetFactor",
-        "ObjectFieldEnum",
-        "Queue",
-        "QueueEntry",
-        "QueueEntryClia",
-        "QueueEntryProcess",
-        "QueueEntryEmail",
-        "QueueEntrySMS",
-        "QueueEntrySearch",
-        "QueueEntryOcr",
-        "ImageItemOcr",
-        "DataViewParameterDateTime",
-        "CalendarEventRecurring",
-        "ResultSet",
-        "udo_DebriefIncompleteDocumentationReason",
-        "udo_DieselPrice",
-        "PaymentLog",
-        "Esign",
-        "EsignEntry",
-        "SupportIssue",
-        "DataTableDataView",
-        "udo_CurrencyExchangeRate",
-        "ObjectFieldNumber",
-        "ObjectFieldDate",
-        "ObjectFieldDateTime",
-        "ObjectFieldForeignKey",
-        "ObjectFieldForeignKeyFile",
-        "ObjectFieldMonetary",
-        "ObjectFieldSet",
-        "ObjectFieldText",
-        "Order",
-        "udo_Zone",
-        "udo_ZoneCity_link",
-        "udo_DummyOrder",
-        "Correspondence",
-        "Batch",
-        "Image",
-        "OcrImageNote",
-        "udo_CargoBatchUpdate",
-        "udo_BusinessUnit",
-        "udo_CustomerBusinessUnit_link",
-        "ProcessTracker",
-        "AbstractInstance",
-        "udo_OffloadingCustomersBusinessUnit_link",
-        "udo_CustomerLocationsBusinessUnit_link",
-        "DataViewParameterMultipleSelect",
-        "udo_FandVContractRoute_link",
-        "ObjectFieldLargeText",
-        "ObjectFieldCalculated",
-        "ObjectFieldBoolean",
-        "udo_SubcontractorType",
-        "udo_Subcontractor",
-        "udo_SubcontractorFleet_link",
-        "udo_SubcontractorContact",
-        "QueueEntrySyspro",
-        "VersionControl",
-        "ImageDefinition",
-        "ItemListMore",
-        "udo_ImportedTrip",
-        "QueueEntryImportedTrip",
-        "udo_UnassignedCargo",
-        "QueueEntryOfflineTrip",
-        "Process_role_link",
-        "ReleaseLog",
-        "MenuItem",
-        "ProcessSubscription",
-        "PersistedResultSet",
-        "EventFrequency",
-        "udo_DeletedTrip",
-        "udo_TripProject"
-    );
+    protected $_localObjects = array();
+
+    protected $_latestObjects = array();
+
+    protected $_maxObjects = array();
     // : End
     
     // : Getters
@@ -511,32 +279,32 @@ class MAX_API_Get
             if (getenv(self::ENV_VAR)) {
                 
                 $_ini_path = getenv(self::ENV_VAR);
-            
+                
                 $ini = $_ini_path . self::DS . self::INI_FILE;
-            
+                
                 if (is_file($ini) === FALSE) {
                     $this->addError('Load INI File', 'INI File Not Found: ', $ini, __FUNCTION__, __LINE__);
                     return FALSE;
                 }
-            
-                $data = parse_ini_file($ini);
-            
-                if ((array_key_exists("apiuserpwd", $data) && $data["apiuserpwd"]) && (array_key_exists("apiusertestpwd", $data) && $data["apiusertestpwd"])) {
                 
+                $data = parse_ini_file($ini);
+                
+                if ((array_key_exists("apiuserpwd", $data) && $data["apiuserpwd"]) && (array_key_exists("apiusertestpwd", $data) && $data["apiusertestpwd"])) {
+                    
                     switch ($_mode) {
                         case "live":
-                        {
+                            {
                                 $this->_maxurl = self::LIVE_URL;
                                 $this->_apiuserpwd = $data['apiuserpwd'];
                                 break;
-                        }
+                            }
                         case "test":
                         default:
-                        {
-                            $this->_maxurl = self::TEST_URL;
-                            $this->_apiuserpwd = $data['apiusertestpwd'];
-                            break;
-                        }
+                            {
+                                $this->_maxurl = self::TEST_URL;
+                                $this->_apiuserpwd = $data['apiusertestpwd'];
+                                break;
+                            }
                     }
                 } else {
                     $this->addError('Validate INI File Data', 'Required fields not found', 'Please check that apiuserpwd key=value is present in file: ' . $ini, __FUNCTION__, __LINE__);
@@ -546,7 +314,6 @@ class MAX_API_Get
                 $this->addError('object construct', '__construct failed with an Exception:', 'Environment variable expected but not found: ' . self::ENV_VAR, __FUNCTION__, __LINE__);
                 return FALSE;
             }
-            
         } catch (Exception $e) {
             $this->addError('object construct', '__construct failed with an Exception:', $e->getMessage(), __FUNCTION__, __LINE__);
             return FALSE;
@@ -597,10 +364,57 @@ class MAX_API_Get
     }
 
     /**
+     * MAX_API_Get::fetchObjectRegistryObjects()
+     * Fetch Object Registry objects using MAX API
+     *
+     * @return bool
+     */
+    private function fetchObjectRegistryObjects()
+    {}
+
+    /**
+     * MAX_API_Get::loadLocalObjectRegistryData()
+     * Load local file containing object registry objects
+     *
+     * @return bool
+     */
+    private function loadLocalObjectRegistryData()
+    {}
+
+    /**
+     * MAX_API_Get::diffObjectRegistryObjects()
+     * Check if there is anything difference between the
+     * newly fetched data and the locally stored data
+     *
+     * @return bool
+     */
+    private function diffObjectRegistryObjects()
+    {}
+
+    /**
+     * MAX_API_Get::updateLocalObjectRegistryData()
+     * Save newly fetched object registry objects data to
+     * local file
+     *
+     * @return bool
+     */
+    private function updateLocalObjectRegistryData()
+    {}
+
+    /**
+     * MAX_API_Get::updateLocalObjectRegistryData()
+     * Set the object registry objects array to the newly fetched data
+     *
+     * @return bool
+     */
+    private function setObjectRegistryObjects()
+    {}
+
+    /**
      * MAX_API_Get::splitResultIntoDataArray()
      * Clean HTML string and extract data into an array
-     * 
-     * @param string $_htmlResponse
+     *
+     * @param string $_htmlResponse            
      * @return mixed
      */
     private function splitResultIntoDataArray($_htmlResponse)
@@ -733,28 +547,28 @@ class MAX_API_Get
         }
         return FALSE;
     }
-    
+
     /**
      * MAX_API_Get::addLogEntry($_step, $_logTitle, $_logDetail, $_func = NULL, $_line = NULL)
      * Add a new log entry to the class protected property _logs
      *
-     * @param string $_step
-     * @param string $_logTitle
-     * @param string $_logDetail
-     * @param string $_func
-     * @param string $_line
+     * @param string $_step            
+     * @param string $_logTitle            
+     * @param string $_logDetail            
+     * @param string $_func            
+     * @param string $_line            
      * @return bool
      *
      */
     private function addLogEntry($_step, $_logTitle, $_logDetail, $_func = NULL, $_line = NULL)
     {
         if (is_string($_step) && is_string($_logTitle) && $_step && $_logTitle && $_logDetail) {
-    
+            
             // Build log message string to store as new indice in logs array
             $_logMsg = sprintf(self::LOG_STR, strval($_step), strval($_logTitle), strval($_logDetail), strval($_func), strval($_line));
-    
+            
             if ($_logMsg && is_string($_logMsg)) {
-    
+                
                 $this->_logs[] = $_logMsg;
                 return TRUE;
             }
@@ -766,7 +580,7 @@ class MAX_API_Get
      * MAX_API_Get::getDataFromHTML()
      * Clean HTML string and extract data into an array
      *
-     * @param array $_htmlData
+     * @param array $_htmlData            
      * @return mixed
      */
     private function extractDataFromHTML($_htmlData)
@@ -844,6 +658,73 @@ class MAX_API_Get
         } catch (Exception $e) {
             $this->addError(__FUNCTION__, 'Caught Exception: ', $e->getMessage(), __FUNCTION__, __LINE__);
             return FALSE;
+        }
+        
+        return FALSE;
+    }
+
+    /**
+     * MAX_API_Get::LoadJSONFile($_file)
+     * Load JSON data file
+     *
+     * @return bool
+     */
+    private function LoadJSONFile($_file)
+    {
+        // Default _result to FALSE
+        $_result = false;
+        
+        try {
+            
+            if (file_exists($_file)) {
+                $_json_file = file_get_contents($_file);
+                
+                if ($_json_file) {
+                    $_json_data = json_decode($_json_file, true);
+                    
+                    if ($_json_data && is_array($_json_data)) {
+                        $_result = $_json_data;
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            echo "Caught exception: ", $e->getMessage(), "\n";
+            return FALSE;
+        }
+        
+        return $_result;
+    }
+
+    /**
+     * MAX_API_Get::SaveJSONFile($_file)
+     * Save JSON data to file in JSON format
+     *
+     * @param string $_file            
+     * @param array $_json_array            
+     * @return bool
+     */
+    private function SaveJSONFile($_file, $_json_array)
+    {
+        // Default _result to FALSE
+        $_result = FALSE;
+        
+        try {
+            
+            if (is_array($_json_array) && $_json_array && is_string($_file) && $_file) {
+                $_json_data = json_encode($_json_array);
+                
+                if (is_string($_json_data) && $_json_data) {
+                    if (file_put_contents($_file, $_json_data) !== FALSE) {
+                        return TRUE;
+                    } else {
+                        $this->addError(__FUNCTION__, 'Failed attempt to save file using file_put_contents method', strval($_file), __FUNCTION__, __LINE__);
+                    }
+                } else {}
+            } else {
+                $this->addError(__FUNCTION__, 'Argument: JSON is empty or not an array, OR, file is empty or not a string', strval($_file), __FUNCTION__, __LINE__);
+            }
+        } catch (Exception $e) {
+            $this->addError(__FUNCTION__, 'Attempt to save JSON file failed', $e->getMessage(), __FUNCTION__, __LINE__);
         }
         
         return FALSE;

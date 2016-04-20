@@ -56,8 +56,11 @@ class maxLoginLogout
     
     // : Variables
     public $_tmp;
+
     protected $_maxurl;
+
     protected $_autoLibObj;
+
     protected $_errors = array();
     // : End
     
@@ -66,27 +69,27 @@ class maxLoginLogout
      * MAX_LoginLogout::__construct
      * Class constructor
      */
-     public function __construct(&$_autoObj, $_maxurl)
-     {    
+    public function __construct(&$_autoObj, $_maxurl)
+    {
         if (is_object($_autoObj) && is_string($_maxurl)) {
             // Save referenced automation library object containing session and phpunit objects
             $this->_autoLibObj = $_autoObj;
             $this->_maxurl = $_maxurl;
-            
-        }  
-     }
-    
-     /**
+        }
+    }
+
+    /**
      * MAX_LoginLogout::__destruct
      * Class destructor
      */
-     public function __destruct() {
+    public function __destruct()
+    {
         unset($this);
-     }
+    }
     
-     // : End - Magic Functions
-     
-     // : Public Functions
+    // : End - Magic Functions
+    
+    // : Public Functions
     /**
      * MAX_LoginLogout::maxLogin
      * Log into MAX
@@ -117,16 +120,14 @@ class maxLoginLogout
                         $this->_autoLibObj->_sessionObj->open($this->_maxurl);
                         
                         // : Wait for page to load and for elements to be present on page
-                        $e = $this->_autoLibObj->_wObj->until(function ($session)
-                        {
+                        $e = $this->_autoLibObj->_wObj->until(function ($session) {
                             return $session->element('css selector', "#contentFrame");
                         });
                         
                         $iframe = $this->_autoLibObj->_sessionObj->element('css selector', '#contentFrame');
                         $this->_autoLibObj->_sessionObj->switch_to_frame($iframe);
                         
-                        $e = $this->_autoLibObj->_wObj->until(function ($session)
-                        {
+                        $e = $this->_autoLibObj->_wObj->until(function ($session) {
                             return $session->element('css selector', 'input[id=identification]');
                         });
                         // : End
@@ -148,16 +149,14 @@ class maxLoginLogout
                         $this->_autoLibObj->_sessionObj->switch_to_frame();
                         
                         // : Wait for page to load and for elements to be present on page
-                        $e = $this->_autoLibObj->_wObj->until(function ($session)
-                        {
+                        $e = $this->_autoLibObj->_wObj->until(function ($session) {
                             return $session->element('css selector', "#contentFrame");
                         });
                         $iframe = $this->_autoLibObj->_sessionObj->element('css selector', '#contentFrame');
                         $this->_autoLibObj->_sessionObj->switch_to_frame($iframe);
                         
                         $this->_tmp = $_welcome;
-                        $e = $this->_autoLibObj->_wObj->until(function ($session)
-                        {
+                        $e = $this->_autoLibObj->_wObj->until(function ($session) {
                             return $session->element("xpath", "//*[text()='" . $this->_tmp . "']");
                         });
                         $this->_autoLibObj->assertElementPresent("xpath", "//*[text()='" . $_welcome . "']");
@@ -167,8 +166,7 @@ class maxLoginLogout
                         
                         // : Load Planningboard to rid of iframe loading on every page from here on
                         $this->_autoLibObj->_sessionObj->open($this->_maxurl . self::PB_URL);
-                        $e = $this->_autoLibObj->_wObj->until(function ($session)
-                        {
+                        $e = $this->_autoLibObj->_wObj->until(function ($session) {
                             return $session->element("xpath", "//*[contains(text(),'You Are Here') and contains(text(), 'Planningboard')]");
                         });
                         // : End
@@ -181,11 +179,10 @@ class maxLoginLogout
                         $session = $this->_autoLibObj->_sessionObj;
                         $this->_autoLibObj->_sessionObj->open($this->_maxurl);
                         
-                        $e = $this->_autoLibObj->_wObj->until(function ($session)
-                        {
+                        $e = $this->_autoLibObj->_wObj->until(function ($session) {
                             return $session->element("xpath", "//*[text()='Sign In']");
                         });
-
+                        
                         // : Assert element present
                         $this->_autoLibObj->assertElementPresent('css selector', '#identification');
                         $this->_autoLibObj->assertElementPresent('css selector', '#password');
@@ -200,8 +197,7 @@ class maxLoginLogout
                         // Click login button
                         $this->_autoLibObj->_sessionObj->element('css selector', '#btn_Sign_In')->click();
                         
-                        $e = $this->_autoLibObj->_wObj->until(function ($session)
-                        {
+                        $e = $this->_autoLibObj->_wObj->until(function ($session) {
                             return $session->element("xpath", "//*[text()='My Tasks']");
                         });
                         
@@ -228,8 +224,7 @@ class maxLoginLogout
             $session = $this->_autoLibObj->_sessionObj;
             $this->_autoLibObj->_sessionObj->element('xpath', "//*[contains(@href,'/logout')]")->click();
             // Wait for page to load and for elements to be present on page
-            $e = $this->_autoLibObj->_wObj->until(function ($session)
-            {
+            $e = $this->_autoLibObj->_wObj->until(function ($session) {
                 return $session->element('css selector', 'input[id=identification]');
             });
             $this->_autoLibObj->assertElementPresent('css selector', 'input[id=identification]');
@@ -261,8 +256,7 @@ class maxLoginLogout
             $this->_tmp = $_tripNumber;
             
             // Wait for page to load and for elements to be present on page
-            $e = $this->_autoLibObj->_wObj->until(function ($session)
-            {
+            $e = $this->_autoLibObj->_wObj->until(function ($session) {
                 return $session->element('xpath', '//a[text()="' . self::$_tmp . '"]');
             });
         } catch (Exception $e) {
