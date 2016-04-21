@@ -11,7 +11,7 @@ error_reporting(E_ALL);
  *
  * @package MAX_API_Get
  * @author Clinton Wright <cwright@bwtrans.com>
- * @copyright 2013 onwards Barloworld Transport (Pty) Ltd
+ * @copyright 2016 onwards Barloworld Transport (Pty) Ltd
  * @license GNU GPL
  * @link http://www.gnu.org/licenses/gpl.html
  *       * This program is free software: you can redistribute it and/or modify
@@ -53,7 +53,7 @@ class MAX_API_Get
 {
     
     // : Constants
-    const INI_FILE = "api_data.ini";
+    const CONFIG_FILE = "bwt-config.json";
 
     const LIVE_URL = "https://login.max.bwtsgroup.com";
 
@@ -108,9 +108,28 @@ class MAX_API_Get
     protected $_latestObjects = array();
 
     protected $_maxObjects = array();
+    
+    protected $_debugData = array();
+    
+    protected $_objRegFile = FALSE;
     // : End
     
     // : Getters
+    /**
+     * MAX_API_Get::getDebugData()
+     * Return debug data array
+     *
+     * @return mixed
+     */
+    public function getDebugData()
+    {
+        if ($this->_debugData) {
+            return $this->_debugData;
+        }
+    
+        return FALSE;
+    }    
+
     /**
      * MAX_API_Get::getErrors()
      * Return logged errors if any else return FALSE
@@ -179,6 +198,37 @@ class MAX_API_Get
             return FALSE;
         }
         return $_result;
+    }
+    
+    /**
+     * MAX_API_Get::getMaxUrl()
+     * Get MAX URL fetched from the config file
+     * 
+     * @return mixed
+     */
+    public function getMaxUrl()
+    {
+        if (is_string($this->_maxurl) && $this->_maxurl) {
+            return $this->_maxurl;
+        }
+        
+        return FALSE;
+    }
+    
+    /**
+     * MAX_API_Get::getObjRegFilePath()
+     * Get object registry objects JSON file path
+     * Contains object registry objects fetched from MAX
+     *
+     * @return mixed
+     */
+    public function getObjRegFilePath()
+    {
+        if (is_string($this->_objRegFile) && $this->_objRegFile) {
+            return $this->_objRegFile;
+        }
+    
+        return FALSE;
     }
     
     // : Setters
@@ -262,6 +312,30 @@ class MAX_API_Get
             return FALSE;
         }
     }
+
+    /**
+     * MAX_API_Get::extractEnvFromStr($_subject)
+     * Extract the env name from a formatted string: ENV:ENV_NAME
+     *
+     * @param string $_subject
+     * @return mixed
+     */
+    public function extractEnvFromStr($_subject)
+    {
+        $_results = (array) array();
+
+        preg_match('/^ENV:.*/i', $_subject, $_results);
+        
+        if (is_array($_results) && $_results) {
+            $_results = preg_split('/^ENV:', -1, PREG_SPLIT_NO_EMPTY);
+            
+            if (count($_results) === 1 && is_array($_results)) {
+                return $_results[0];
+            }
+        }
+        
+        return FALSE;
+    }
     
     // : End - Public Functions
     
@@ -278,48 +352,65 @@ class MAX_API_Get
             // Check if environment variable is set else fail
             if (getenv(self::ENV_VAR)) {
                 
-                $_ini_path = getenv(self::ENV_VAR);
+                $_config = (array) array();
+                $_config_path = getenv(self::ENV_VAR);
                 
-                $ini = $_ini_path . self::DS . self::INI_FILE;
+                $_config_file = $_config_path . self::DS . self::CONFIG_FILE;
                 
-                if (is_file($ini) === FALSE) {
-                    $this->addError('Load INI File', 'INI File Not Found: ', $ini, __FUNCTION__, __LINE__);
+                if (is_file($_config_file) === FALSE) {
+                    $this->addError('Load JSON File', 'JSON File Not Found: ', $_config_file, __FUNCTION__, __LINE__);
                     return FALSE;
                 }
                 
-                $data = parse_ini_file($ini);
+                $this->addLogEntry(__CLASS__, 'Attempt to Load JSON file', $_config_file, __FUNCTION__, __LINE__);
+                $_config = $this->LoadJSONFile($_config_file);
                 
-                if ((array_key_exists("apiuserpwd", $data) && $data["apiuserpwd"]) && (array_key_exists("apiusertestpwd", $data) && $data["apiusertestpwd"])) {
-                    
-                    switch ($_mode) {
-                        case "live":
-                            {
-                                $this->_maxurl = self::LIVE_URL;
-                                $this->_apiuserpwd = $data['apiuserpwd'];
-                                break;
+                $this->addLogEntry(__CLASS__, 'Loaded JSON file', $_config, __FUNCTION__, __LINE__);
+                
+                if ($_config && is_array($_config)) {
+                        
+                        $this->addLogEntry(__CLASS__, 'Loaded JSON file and decoded data', $_config, __FUNCTION__, __LINE__);
+
+                        if (isset($_config['config']['dataManager']['default_mode']) && isset($_config['config']['dataManager']['tenant']) && isset($_config['config']['dataManager']['curl']['apiuserpwd']) && isset($_config['config']['dataManager']['curl']['objregpath']) && isset($_config['config']['dataManager']['curl']['objregfile'])) {
+                            
+                            $_mode = $_config['config']['dataManager']['tenant'];
+                            $this->_apiuserpwd = $_config['config']['dataManager']['curl']['apiuserpwd'];
+                            
+                            // Check if ENV:ENV_NAME format string provided for PATH
+                            $_env_path = $this->extractEnvFromStr($_config['config']['dataManager']['curl']['objregpath']);
+                            
+                            // If ENV provided then use it else just use the string found in the config data
+                            $_objregpath = $_env_path ? $_env_path : $_config['config']['dataManager']['curl']['objregpath'];
+                            
+                            $this->_debugData = $_objregpath;
+                            
+                            $_objregfile = $_config['config']['dataManager']['curl']['objregfile'];
+                            
+                            $this->_objRegFile = $_objregpath . self::DS . $_objregfile;
+                            
+                            switch ($_mode) {
+                                case "live": {
+                                    $this->_maxurl = self::LIVE_URL;
+                                    break;
+                                }
+                                case "test":
+                                default: {
+                                    $this->_maxurl = self::TEST_URL;
+                                }
                             }
-                        case "test":
-                        default:
-                            {
-                                $this->_maxurl = self::TEST_URL;
-                                $this->_apiuserpwd = $data['apiusertestpwd'];
-                                break;
-                            }
-                    }
-                } else {
-                    $this->addError('Validate INI File Data', 'Required fields not found', 'Please check that apiuserpwd key=value is present in file: ' . $ini, __FUNCTION__, __LINE__);
-                    return FALSE;
+                            
+                        } else {
+                            $this->addError(__CLASS__, 'Required fields not found in json config file. Run script from cmd line for help to generate a config file', $_config_file, __FUNCTION__, __LINE__);
+                        }
+                        
                 }
+                
             } else {
-                $this->addError('object construct', '__construct failed with an Exception:', 'Environment variable expected but not found: ' . self::ENV_VAR, __FUNCTION__, __LINE__);
-                return FALSE;
+                $this->addError(__CLASS__, 'Environment variable expected but not found: ', self::ENV_VAR, __FUNCTION__, __LINE__);
             }
         } catch (Exception $e) {
-            $this->addError('object construct', '__construct failed with an Exception:', $e->getMessage(), __FUNCTION__, __LINE__);
-            return FALSE;
+            $this->addError(__CLASS__, '__construct failed with an Exception:', $e->getMessage(), __FUNCTION__, __LINE__);
         }
-        // If code reaches this point then code processed successfully
-        return TRUE;
     }
     
     // : End
@@ -679,20 +770,28 @@ class MAX_API_Get
             if (file_exists($_file)) {
                 $_json_file = file_get_contents($_file);
                 
-                if ($_json_file) {
+                if ($_json_file && is_string($_json_file)) {
                     $_json_data = json_decode($_json_file, true);
                     
                     if ($_json_data && is_array($_json_data)) {
                         $_result = $_json_data;
+                        return $_result;
+                    } else {
+                        $this->addError(__CLASS__, 'No JSON data found: ', $_json_file, __FUNCTION__, __LINE__);
+                        // Debug
+                        $this->_debugData = $_json_data;
                     }
+                } else {
+                    $this->addError(__CLASS__, 'No contents in the JSON file: ', $_json_file, __FUNCTION__, __LINE__);
                 }
+            } else {
+                $this->addError(__CLASS__, 'File not found: ', $_json_file, __FUNCTION__, __LINE__);
             }
         } catch (Exception $e) {
-            echo "Caught exception: ", $e->getMessage(), "\n";
-            return FALSE;
+            $this->addError(__CLASS__, 'Caught Exception: ', $e->getMessage(), __FUNCTION__, __LINE__);
         }
         
-        return $_result;
+        return FALSE;
     }
 
     /**
@@ -725,6 +824,31 @@ class MAX_API_Get
             }
         } catch (Exception $e) {
             $this->addError(__FUNCTION__, 'Attempt to save JSON file failed', $e->getMessage(), __FUNCTION__, __LINE__);
+        }
+        
+        return FALSE;
+    }
+    
+    /**
+     * MAX_API_Get::envExists($_env_name)
+     * Check if supplied env name exists
+     *
+     * @param string $_env_name
+     * @return bool
+     */
+    private function envExists($_env_name)
+    {
+        try {
+            $_result = getenv($_env_name);
+            
+            if ($_result || is_string($_result)) {
+                return $_result;
+            } else {
+                $this->addError(__CLASS__, 'Environment variable not found: ', $_env_name, __FUNCTION__, __LINE__);
+            }
+            
+        } catch (Exception $e) {
+            $this->addError(__CLASS__, 'Attempt to check if environment variable exists failed with error: ', $e->getMessage(), __FUNCTION__, __LINE__);
         }
         
         return FALSE;

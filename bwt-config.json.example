@@ -1,0 +1,42 @@
+{
+	"data" :
+	{
+		"path" : "data",
+		"mms" : {
+			"customer_codes" : [
+				"MEAF","NCP"
+			],
+			"status" : [
+				"Accepted", "Disbanded", "Delivered"
+			]
+		}
+	},
+	"behaviour" :
+	{
+		"default" : "create_upload"
+	},
+	"maxurl" :
+	{
+		"default" : "test",
+		"test" : "http://subdomain.domain.com",
+		"live" : "https://subdomain.domain.com",
+		"soap-mms-server" : "/BarlowworldTripService.wsdl"
+	},
+	"MaxLogin" :
+	{
+		"username" : "email",
+		"password" : "pwd"
+	},
+	"config" :
+	{
+		"dataManager" : {
+				"default_mode" : "curl",
+				"tenant" : "test",
+				"curl" : {
+						"apiuserpwd" : "email:pwd",
+						"objregpath" : "ENV:BWT_DATA_PATH",
+						"objregfile" : "objreg-objects.json"
+				}
+		}
+	}
+}
