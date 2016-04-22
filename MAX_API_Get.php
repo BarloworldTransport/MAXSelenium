@@ -47,7 +47,8 @@ error_reporting(E_ALL);
 /**
  * DEV NOTES:
  *
- * Detect bad user and/or password when making curl call
+ * - Detect bad user and/or password when making curl call
+ * - Add function to convert a multidimensional array into a string representation -> Handy for debug info
  */
 class MAX_API_Get
 {
@@ -65,7 +66,9 @@ class MAX_API_Get
 
     const DS = DIRECTORY_SEPARATOR;
 
-    const OBJREG = "objectRegistry";
+    const OBJREG = "objectregistry";
+    
+    const OBJREG_API_QUERY = 'handle like "%s"';
 
     const LOG_STR = PHP_EOL . "STEP DETAIL: %s" . PHP_EOL . "LOG HEADER: %s" . PHP_EOL . "LOG DETAIL: %s" . PHP_EOL . "FUNCTION: %s" . PHP_EOL . "LINE: %s";
 
@@ -105,7 +108,7 @@ class MAX_API_Get
 
     protected $_localObjects = array();
 
-    protected $_latestObjects = array();
+    protected $_pulledObjects = array();
 
     protected $_maxObjects = array();
     
@@ -290,7 +293,7 @@ class MAX_API_Get
     public function runApiQuery()
     {
         try {
-            if ($this->_apiObject && $this->_apiFilter) {
+            if ($this->_apiObject && is_string($this->_apiFilter)) {
                 
                 $_result = $this->splitResultIntoDataArray($this->maxApiGetData());
                 
@@ -327,7 +330,7 @@ class MAX_API_Get
         preg_match('/^ENV:.*/i', $_subject, $_results);
         
         if (is_array($_results) && $_results) {
-            $_results = preg_split('/^ENV:', -1, PREG_SPLIT_NO_EMPTY);
+            $_results = preg_split('/^ENV:/', -1, PREG_SPLIT_NO_EMPTY);
             
             if (count($_results) === 1 && is_array($_results)) {
                 return $_results[0];
@@ -363,7 +366,7 @@ class MAX_API_Get
                 }
                 
                 $this->addLogEntry(__CLASS__, 'Attempt to Load JSON file', $_config_file, __FUNCTION__, __LINE__);
-                $_config = $this->LoadJSONFile($_config_file);
+                $_config = $this->loadJSONFile($_config_file);
                 
                 $this->addLogEntry(__CLASS__, 'Loaded JSON file', $_config, __FUNCTION__, __LINE__);
                 
@@ -382,6 +385,7 @@ class MAX_API_Get
                             // If ENV provided then use it else just use the string found in the config data
                             $_objregpath = $_env_path ? $_env_path : $_config['config']['dataManager']['curl']['objregpath'];
                             
+                            // Store data into debug data property to report on
                             $this->_debugData = $_objregpath;
                             
                             $_objregfile = $_config['config']['dataManager']['curl']['objregfile'];
@@ -398,6 +402,8 @@ class MAX_API_Get
                                     $this->_maxurl = self::TEST_URL;
                                 }
                             }
+                            
+                            $this->fetchObjectRegistryObjects();
                             
                         } else {
                             $this->addError(__CLASS__, 'Required fields not found in json config file. Run script from cmd line for help to generate a config file', $_config_file, __FUNCTION__, __LINE__);
@@ -417,7 +423,7 @@ class MAX_API_Get
     
     // : Private Functions
     /**
-     * MAX_API_Get::maxApiGetData($_url)
+     * MAX_API_Get::maxApiGetData()
      * Get data from MAX using using MAX API HTTP GET request
      *
      * @return mixed
@@ -426,7 +432,7 @@ class MAX_API_Get
     {
         $_result = array();
         
-        if ($this->_apiFilter && $this->_apiObject && $this->_maxurl && $this->_apiuserpwd) {
+        if (is_string($this->_apiFilter) && $this->_apiObject && $this->_maxurl && $this->_apiuserpwd) {
             try {
                 // Build url string to use to run the API request
                 $_url = ($this->_maxurl . self::API_URL . urlencode($this->_apiObject) . "&filter=" . urlencode($this->_apiFilter));
@@ -442,10 +448,10 @@ class MAX_API_Get
                 
                 curl_close($ch);
             } catch (Exception $e) {
-                $this->addError('CURL fetch data', 'cURL failed to get data with Exception: ', $e->getMessage(), __FUNCTION__, __LINE__);
+                $this->addError(__CURL__, 'cURL failed to get data with Exception: ', $e->getMessage(), __FUNCTION__, __LINE__);
                 return FALSE;
             }
-            $this->addLogEntry(__FUNCTION__, 'Print out curl response', $output, __FUNCTION__, __LINE__);
+            $this->addLogEntry(__CURL__, 'Print out curl response', $output, __FUNCTION__, __LINE__);
             return $output;
         } else {
             $this->addError('CURL fetch data', 'cURL failed to get data with Exception: ', sprintf(self::ERR_CONFIG_NOT_COMPLETE, strval($this->_apiFilter), strval($this->_apiObject), strval($this->_maxurl), strval($this->_apiuserpwd)), __FUNCTION__, __LINE__);
@@ -461,7 +467,13 @@ class MAX_API_Get
      * @return bool
      */
     private function fetchObjectRegistryObjects()
-    {}
+    {
+        $this->_apiObject = self::OBJREG;
+        $this->setFilter('');
+        $this->runApiQuery();
+        $_results = $this->getData();
+        $this->_debugData = $_results;
+    }
 
     /**
      * MAX_API_Get::loadLocalObjectRegistryData()
@@ -470,7 +482,30 @@ class MAX_API_Get
      * @return bool
      */
     private function loadLocalObjectRegistryData()
-    {}
+    {
+        if ($this->_objRegFile && is_string($this->_objRegFile)) {
+            
+            if (file_exists($this->_objRegFile)) {
+                
+                $_results = $this->loadJSONFile($this->_objRegFile);
+                
+                if ($_results && is_array($_results)) {
+                    
+                    if (isset($_results['max']['objects'])) {
+                        
+                        $this->_localObjects = $_results;
+                        return TRUE;
+                    } else {
+                        $this->addError(__CLASS__, 'Objects JSON data validation failed. Expected key not found in JSON data: ', 'max.objects', __FUNCTION__, __LINE__);
+                    }
+                } else {
+                    $this->addError(__CLASS__, 'No JSON found on attempt to load objects JSON data file ', $this->_objRegFile, __FUNCTION__, __LINE__);
+                }
+            }
+        }
+        
+        return FALSE;
+    }
 
     /**
      * MAX_API_Get::diffObjectRegistryObjects()
@@ -480,16 +515,6 @@ class MAX_API_Get
      * @return bool
      */
     private function diffObjectRegistryObjects()
-    {}
-
-    /**
-     * MAX_API_Get::updateLocalObjectRegistryData()
-     * Save newly fetched object registry objects data to
-     * local file
-     *
-     * @return bool
-     */
-    private function updateLocalObjectRegistryData()
     {}
 
     /**
@@ -668,7 +693,7 @@ class MAX_API_Get
     }
 
     /**
-     * MAX_API_Get::getDataFromHTML()
+     * MAX_API_Get::extractDataFromHTML()
      * Clean HTML string and extract data into an array
      *
      * @param array $_htmlData            
@@ -755,12 +780,12 @@ class MAX_API_Get
     }
 
     /**
-     * MAX_API_Get::LoadJSONFile($_file)
+     * MAX_API_Get::loadJSONFile($_file)
      * Load JSON data file
      *
      * @return bool
      */
-    private function LoadJSONFile($_file)
+    private function loadJSONFile($_file)
     {
         // Default _result to FALSE
         $_result = false;
@@ -795,14 +820,14 @@ class MAX_API_Get
     }
 
     /**
-     * MAX_API_Get::SaveJSONFile($_file)
+     * MAX_API_Get::saveJSONFile($_file)
      * Save JSON data to file in JSON format
      *
      * @param string $_file            
      * @param array $_json_array            
      * @return bool
      */
-    private function SaveJSONFile($_file, $_json_array)
+    private function saveJSONFile($_file, $_json_array)
     {
         // Default _result to FALSE
         $_result = FALSE;
