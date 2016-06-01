@@ -235,11 +235,30 @@ function check_if_port_is_available() {
     fi
 }
 
+find_free_port() {
+
+    local FOUNDPORT=0
+    
+    while [ $FOUNDPORT -eq 0 ]
+    do
+        result=$(check_if_port_is_available $PORT)
+        
+        if [ $result -eq 1 ]; then
+            FOUNDPORT=1
+        else
+            PORT=$((PORT + 1))
+        fi
+    done
+    
+    echo $PORT
+}
+
 case "$1" in
 start)
     get_instance_count
-    result=$(check_if_port_is_available 6234)
-    echo -e "Checking if port is available: "
+
+    FREEPORT=$(find_free_port)
+    echo -e "Available port: $FREEPORT"
     exit 0
     getpid
     if [ -z $PID ]
