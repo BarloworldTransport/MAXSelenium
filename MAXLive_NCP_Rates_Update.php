@@ -66,6 +66,12 @@ class MAXLive_NCP_Rates_Update extends PHPUnit_Framework_TestCase
 
     const XLS_SUBJECT = "Errors caught while creating rates for subcontracts";
     
+    // : Required environment variables meant to be used to make script bash friendly
+    const ENV_FILE = 'NCP_RATES_FILE';
+    
+    const ENV_PORT = 'NCP_RATES_SELENIUM_PORT';
+    // : End
+    
     // : Variables
     protected static $driver;
 
@@ -144,6 +150,10 @@ class MAXLive_NCP_Rates_Update extends PHPUnit_Framework_TestCase
      */
     public function __construct()
     {
+        
+        $_env_file = getenv(self::ENV_FILE);
+        $_env_port = getenv(self::ENV_PORT);
+        
         $ini = dirname(realpath(__FILE__)) . self::DS . self::INI_DIR . self::DS . self::INI_FILE;
         if (is_file($ini) === FALSE) {
             echo "No " . self::INI_FILE . " file found. Please refer to documentation for script to determine which fields are required and their corresponding values." . PHP_EOL;
@@ -160,8 +170,15 @@ class MAXLive_NCP_Rates_Update extends PHPUnit_Framework_TestCase
             $this->_mode = $data["mode"];
             $this->_ip = $data["ip"];
             $this->_proxyip = $data["proxy"];
-            $this->_xls = $data["xls"];
-            $this->_wdport = $data["wdport"];
+
+            if ($_env_port == false && array_key_exists("wdport", $data)) {
+                $this->_wdport = $data["wdport"];
+            }
+            
+            if ($_env_file == false && array_key_exists("xls", $data)) {
+                $this->_xls = $data["xls"];
+            }            
+            
             $this->_browser = $data["browser"];
             switch ($this->_mode) {
                 case "live":
@@ -174,6 +191,16 @@ class MAXLive_NCP_Rates_Update extends PHPUnit_Framework_TestCase
             echo "The correct data is not present in " . self::INI_FILE . ". Please confirm. Fields are username, password, welcome and mode" . PHP_EOL;
             return FALSE;
         }
+        
+        // : Check if wdport and xls is set and if not check if ENV VARS are set and give error if checks fail
+        if (($this->_wdport == false || $this->_xls == false) && ($_env_file == false || $_env_port == false)) {
+            print("Please set the environment variables for the following: " . PHP_EOL);
+            print("Selenium Webdriver Port: " . self::ENV_PORT . PHP_EOL);
+            print("XLS filename: " . self::ENV_FILE . PHP_EOL);
+            // Terminate
+            exit();            
+        }
+        // : End
     }
 
     /**

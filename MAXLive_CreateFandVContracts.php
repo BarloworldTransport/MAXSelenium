@@ -74,6 +74,12 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase
 
     const XLS_SUBJECT = "Errors caught while creating F & V contracts";
     
+    // : Required environment variables meant to be used to make script bash friendly
+    const ENV_FILE = 'FANDV_ROLLOVER_FILE';
+    
+    const ENV_PORT = 'FANDV_ROLLOVER_SELENIUM_PORT';
+    // : End
+    
     // : Variables
     protected static $driver;
 
@@ -148,23 +154,33 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase
      */
     public function __construct()
     {
+        $_env_file = getenv(self::ENV_FILE);
+        $_env_port = getenv(self::ENV_PORT);
+        
         $ini = dirname(realpath(__FILE__)) . self::DS . self::INI_DIR . self::DS . self::INI_FILE;
         if (is_file($ini) === FALSE) {
             echo "File $ini not found. Please create it and populate it with the following data: username=x@y.com, password=`your password`, your name shown on MAX the welcome page welcome=`Joe Soap` and mode=`test` or `live`" . PHP_EOL;
             return FALSE;
         }
         $data = parse_ini_file($ini);
-        if ((array_key_exists("proxy", $data)) && (array_key_exists("browser", $data) && $data["browser"]) && (array_key_exists("ip", $data) && $data["ip"]) && (array_key_exists("datadir", $data) && $data["datadir"]) && (array_key_exists("username", $data) && $data["username"]) && (array_key_exists("xls", $data) && $data["xls"]) && (array_key_exists("password", $data) && $data["password"]) && (array_key_exists("welcome", $data) && $data["welcome"]) && (array_key_exists("mode", $data) && $data["mode"])) {
+        if ((array_key_exists("proxy", $data)) && (array_key_exists("browser", $data) && $data["browser"]) && (array_key_exists("ip", $data) && $data["ip"]) && (array_key_exists("datadir", $data) && $data["datadir"]) && (array_key_exists("username", $data) && $data["username"]) && (array_key_exists("password", $data) && $data["password"]) && (array_key_exists("welcome", $data) && $data["welcome"]) && (array_key_exists("mode", $data) && $data["mode"])) {
             $this->_username = $data["username"];
             $this->_password = $data["password"];
             $this->_welcome = $data["welcome"];
             $this->_dataDir = $data["datadir"];
             $this->_errDir = $data["errordir"];
             $this->_scrDir = $data["screenshotdir"];
-            $this->_xls = $data["xls"];
             $this->_ip = $data["ip"];
             $this->_proxyip = $data["proxy"];
-            $this->_wdport = $data["wdport"];
+            
+            if ($_env_port == false && array_key_exists("wdport", $data)) {
+                $this->_wdport = $data["wdport"];
+            }
+            
+            if ($_env_file == false && array_key_exists("xls", $data)) {
+                $this->_xls = $data["xls"];
+            }
+            
             $this->_browser = $data["browser"];
             $this->_mode = $data["mode"];
             switch ($this->_mode) {
@@ -178,6 +194,16 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase
             echo "The correct data is not present in $ini. Please confirm the following fields are present in the file: username, password, welcome, mode, dataDir, ip, proxy, browser and xls." . PHP_EOL;
             return FALSE;
         }
+        
+        // : Check if wdport and xls is set and if not check if ENV VARS are set and give error if checks fail
+        if (($this->_wdport == false || $this->_xls == false) && ($_env_file == false || $_env_port == false)) {
+            print("Please set the environment variables for the following: " . PHP_EOL);
+            print("Selenium Webdriver Port: " . self::ENV_PORT . PHP_EOL);
+            print("XLS filename: " . self::ENV_FILE . PHP_EOL);
+            // Terminate
+            exit();
+        }
+        // : End
     }
 
     /**
