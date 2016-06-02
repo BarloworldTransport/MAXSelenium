@@ -460,6 +460,7 @@ function check_if_port_is_available() {
         SEDPARAMS="/^tcp.*$1.*/p"
         # Run netstat command to determine if port is been used
         CHECKPORT=$($NETSTAT -tl | $SED -n -e $SEDPARAMS)
+		echo -e "Check if port is availabe: $CHECKPORT"
         
         # Return 1 if port is free else 0
         if [ -z "$CHECKPORT" ]; then
@@ -477,19 +478,22 @@ function check_if_port_is_available() {
 function find_free_port() {
 
     local FOUNDPORT=0
+	local TEMPPORT=$PORT
     
     while [ $FOUNDPORT -eq 0 ]
     do
-        result=$(check_if_port_is_available $PORT)
-        
+        result=$(check_if_port_is_available $TEMPPORT)
+        echo -e "Result of port check: $result"
+		exit 0
         if [ $result -eq 1 ]; then
             FOUNDPORT=1
         else
-            PORT=$((PORT + 1))
+            TEMPPORT=$((TEMPPORT + 1))
         fi
     done
     
-    echo $PORT
+    echo $TEMPPORT
+	exit 0
 }
 
 function find_free_display() {
@@ -519,6 +523,8 @@ function find_free_display() {
 function run_instance() {
 
 	local FREE_PORT=$(find_free_port)
+	echo -e "Found free port: $FREE_PORT"
+	exit 0
 	local FREE_DISPLAY=$(find_free_display)
 	local NEW_XVFB_LOGFILE=/var/log/xvfb_$FREE_PORT.log
 	local NEW_SELENIUM_LOGFILE=/var/log/selenium_$FREE_PORT.log
@@ -532,7 +538,7 @@ function run_instance() {
 	GREP_PARAMS="$SELENIUM.*$FREE_PORT"
 	local NEW_SELENIUM_PID=$(get_pid_for_program $GREP_PARAMS)
 	
-	if [ $NEW_XVFB_PID -gt 1 -a $NEW_SELENIUM_PID -gt 1 ]; then
+	if [ -n "$NEW_XVFB_PID" -a -n "$NEW_SELENIUM_PID" ]; then
 
 		verify_pids_in_pid_file
 
@@ -557,7 +563,7 @@ function find_unmanaged_instances() {
 
 case "$1" in
 start)
-	verify_pids_in_pid_file
+	run_instance
     exit 0
     
     if [ -z $PID ]
