@@ -560,7 +560,6 @@ start)
 	verify_pids_in_pid_file
     exit 0
     
-    getpid
     if [ -z $PID ]
     then
         echo "Starting a selenium instance..."
