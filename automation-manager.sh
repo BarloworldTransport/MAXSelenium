@@ -20,16 +20,9 @@
 #       along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # DEVLEPER NOTES TO SELF
-# When clearing up PID entries from PID file
-# it only clears up one entry per run of the script
-# Fix to clear all that are no longer valid
-# FINDINGS:
-# XVFB_PIDLIST[$PIDITEM_INSTANCENO]=$PIDITEM_XVFBPID
-# This does not seem to referencing the no in the variable
-# intended to access the correct index for the array
-# it seems to be selecting 1 index each time its run using
-# this method. Find out how to reference an index using
-# a variable for an array
+#
+# BUGS:
+# None at the moment
 
 # Declare global array variables
 declare -a LISTVERSIONS
@@ -37,6 +30,7 @@ declare -a INSTANCES
 declare -a CONFIG_DATA
 declare -a SELENIUM_PIDLIST
 declare -a XVFB_PIDLIST
+
 # End
 # Set variables for the default config
 CONFIG_PORT="PORT=4444"
@@ -282,14 +276,14 @@ function kill_program() {
 
 }
 
+# Counts lines within PIDFILE excluding comments
 function get_instance_count() {
 
     if [ -e $PIDFILE ]; then
-        INSTANCE_COUNT=$($WC -l $PIDFILE | $AWK '{{print $1}}')
-    else
-        echo -e "PID file does not exist and therefore there is no instances handled by this service"
+        INSTANCE_COUNT=$($CAT $PIDFILE | $SED -n -e '/^#/!p' | $WC -l | $AWK '{{print $1}}')
     fi
     
+    echo $INSTANCE_COUNT
 }
 
 function check_if_port_is_available() {
@@ -363,8 +357,6 @@ function load_pids_from_pid_file() {
 
     unset SELENIUM_PIDLIST
     unset XVFB_PIDLIST
-    declare -a SELENIUM_PIDLIST
-    declare -a XVFB_PIDLIST
     
 	if [ -e $PIDFILE ]; then
 
@@ -372,7 +364,6 @@ function load_pids_from_pid_file() {
 		do
 			# Run grep on line to check if the line is commented
 			IS_COMMENT=$(echo $PIDITEM | $GREP -P '^#')
-			echo -e "TEST"
 
 			if [ -z $IS_COMMENT ]; then
 
@@ -394,14 +385,26 @@ function load_pids_from_pid_file() {
 				# Get PHPUnit PID ID
 				PIDITEM_PHPUNITPID=$(echo $PIDITEM | $AWK -F',' '{print $6}')
 
-				if [ -n "$PIDITEM_SELENIUMPID" -a -n "$PIDITEM_INSTANCENO" ]; then
+				if [ -n "$PIDITEM_SELENIUMPID" ]; then
 
-					SELENIUM_PIDLIST[$PIDITEM_INSTANCENO]=$PIDITEM_SELENIUMPID
+                    if [ ${#SELENIUM_PIDLIST[@]} -eq 0 ]; then
+                        # If the array has no items then add the first
+                        SELENIUM_PIDLIST=("$PIDITEM_SELENIUMPID")
+                    else
+                        # If the array has items then add to the existing
+                        SELENIUM_PIDLIST=("${SELENIUM_PIDLIST[@]}" "$PIDITEM_SELENIUMPID")
+                    fi
 				fi
 
 				if [ -n "$PIDITEM_XVFBPID" -a -n "$PIDITEM_INSTANCENO" ]; then
 
-					XVFB_PIDLIST[$PIDITEM_INSTANCENO]=$PIDITEM_XVFBPID
+                    if [ ${#XVFB_PIDLIST[@]} -eq 0 ]; then
+                        # If the array has no items then add the first
+                        XVFB_PIDLIST=("$PIDITEM_XVFBPID")
+                    else
+                        # If the array has items then add to the existing
+                        XVFB_PIDLIST=("${XVFB_PIDLIST[@]}" "$PIDITEM_XVFBPID")
+                    fi
 				fi
 			fi
 
@@ -413,8 +416,7 @@ function load_pids_from_pid_file() {
 		# Return 0 to indicate fail to load PID IDs from the file
 		echo 0
 	fi
-	
-	echo -e "TEST PRINT: ${SELENIUM_PIDLIST[@]}"
+    
 }
 
 function remove_pid() {
@@ -446,8 +448,7 @@ function remove_pid() {
 
 function verify_pids_in_pid_file() {
 
-	load_pids_from_pid_file
-
+	load_pids_from_pid_file > /dev/null
 	RESULT=$(load_pids_from_pid_file)
 	local XCOUNT=0
 
@@ -455,11 +456,10 @@ function verify_pids_in_pid_file() {
 
 		for ITEM_SELENIUM in "${SELENIUM_PIDLIST[@]}"
 		do
-			XCOUNT=$((XCOUNT + 1))
 
 			# Check if selenium process is running
-			RESULT_SELENIUM_PID=$($PS -o pid,user,command ${SELENIUM_PIDLIST[$XCOUNT]} | $SED -n -e '/.*PID.*COMMAND/!p' | $HEAD -n 1)
-			RESULT_XVBF_PID=$($PS -o pid,user,command ${XVFB_PIDLIST[$XCOUNT]} | $SED -n -e '/.*PID.*COMMAND/!p' | $HEAD -n 1)
+			RESULT_SELENIUM_PID=$($PS -o pid,user,command ${SELENIUM_PIDLIST[XCOUNT]} | $SED -n -e '/.*PID.*COMMAND/!p' | $HEAD -n 1)
+			RESULT_XVBF_PID=$($PS -o pid,user,command ${XVFB_PIDLIST[XCOUNT]} | $SED -n -e '/.*PID.*COMMAND/!p' | $HEAD -n 1)
 			
 			if [ -z "$RESULT_SELENIUM_PID" -o -z "$RESULT_XVBF_PID" ]; then
 
@@ -478,6 +478,7 @@ function verify_pids_in_pid_file() {
 				
 			fi 
 
+            XCOUNT=$((XCOUNT + 1))
 		done
 	else
 	    # Return 0 if nothing was done
@@ -561,7 +562,8 @@ function add_pid_to_file() {
 	    local _XVFB_PID=${ARRAY[1]}
 	    local _PORT=${ARRAY[2]}
 	    local _DISPLAY=${ARRAY[3]}
-	    local YCOUNT=$INSTANCE_COUNT
+	    local YCOUNT=$(get_instance_count)
+        local COUNT=0
 	    
 	
     	if [ ! -e $PIDFILE ]; then
@@ -584,8 +586,7 @@ function add_pid_to_file() {
 
                     # Rescan PIDs in PID file and update accordingly
                     verify_pids_in_pid_file > /dev/null
-                    get_instance_count
-                    YCOUNT=$INSTANCE_COUNT
+                    YCOUNT=$(get_instance_count)
                     
 			        # Recheck for the presense of either of the following PIDs
                     RESULT_PID1=$(check_pid ${ARRAY[0]})
@@ -599,8 +600,33 @@ function add_pid_to_file() {
                     
                     # Build string to append to PID file
                     _STRING_VALUE="$YCOUNT,$_SELENIUM_PID,$_XVFB_PID,$_PORT,$_DISPLAY,0"
-                    
-                    # Append PID data string to file
+
+                    # Rewrite PID file and exclude comment line
+                    for LINE_ITEM in $($CAT $PIDFILE | $SED -n -e '/^#/!p')
+                    do
+
+                        # Increment count
+                        COUNT=$((COUNT + 1))
+
+                        # Setup SED params
+                        SEDPARAMS="s/^[0-9]\{1,2\},/$COUNT,/"
+
+                        # Change line instance #
+                        LINE_STRING=$(echo $LINE_ITEM | $SED $SEDPARAMS | $HEAD -n 1)
+                        
+                        if [ $COUNT -eq 1 ]; then
+                            # Empty PID file
+                            $CAT /dev/null > $PIDFILE
+
+                            # Add comment line
+                            echo "#ID,SELENIUMPID,XVFBPID,PORT,DISPLAY,PHPUNIT" >> $PIDFILE
+                        fi
+
+                        # Append file
+                        echo $LINE_STRING >> $PIDFILE
+
+                    done
+
                     echo $_STRING_VALUE >> $PIDFILE
 
                     # Prepare SED params
@@ -669,6 +695,68 @@ function get_pid_for_program() {
     fi
 }
 
+function clear_all_instances() {
+
+    clear && clear && clear
+    echo -e "WARNING:"
+    echo -e "Are you sure you want to kill all running selenium instances? [yN]"
+    read
+
+    if [[ "$REPLY" == [Yy]* ]]; then
+
+        if [ ${#SELENIUM_PIDLIST[@]} -gt 0 -a ${#XVFB_PIDLIST[@]} -gt 0 ]; then
+        
+            local COUNT=${#SELENIUM_PIDLIST[@]}
+            # Kill all Selenium processes
+            for i in ${SELENIUM_PIDLIST[@]}
+            do
+                echo -e "Print process:"
+                $PS -o pid,user,command $i | $SED -n -e '/.*PID.*USER.*COMMAND/!p'
+
+                echo -e "Killing process PID: $i"
+                KILLSTATUS=$(kill_program $i)
+
+                if [ $KILLSTATUS -eq 1 ]; then
+                    echo -e "Process with PID terminated successfully: $i"
+                else
+                    echo -e "Process with PID failed to terminate: $i"
+                fi
+
+            done
+
+            # Kill all XVFB processes
+            COUNT=${#XVFB_PIDLIST[@]}
+            for i in ${XVFB_PIDLIST[@]}
+            do
+                echo -e "Print process:"
+                $PS -o pid,user,command $i | $SED -n -e '/.*PID.*USER.*COMMAND/!p'
+
+                echo -e "Killing process PID: $i"
+                KILLSTATUS=$(kill_program $i)
+
+                if [ $KILLSTATUS -eq 1 ]; then
+                    echo -e "Process with PID terminated successfully: $i"
+                else
+                    echo -e "Process with PID failed to terminate: $i"
+                fi
+
+            done
+
+            # Clear arrays for PID lists
+            unset SELENIUM_PIDLIST
+            unset XVFB_PIDLIST
+            
+            # Clear the content of the PID file
+            if [ -e $PIDFILE ]; then
+                $CAT /dev/null > $PIDFILE
+                # Add comment line
+                echo "#ID,SELENIUMPID,XVFBPID,PORT,DISPLAY,PHPUNIT" >> $PIDFILE
+            fi
+
+        fi
+    fi
+}
+
 function run_instance() {
 
 	local FREE_PORT=$(find_free_port)
@@ -703,8 +791,8 @@ function run_instance() {
 		RESULT=$(add_pid_to_file ${PID_DATA[@]})
 		
 		if [ $RESULT -eq 0 -o $RESULT -eq 2 ]; then
-            kill_program $NEW_XVFB_PID
-            kill_program $NEW_SELENIUM_PID
+            kill_program $NEW_XVFB_PID > /dev/null
+            kill_program $NEW_SELENIUM_PID > /dev/null
             echo 0
         elif [ $RESULT -eq 1 ]; then
             echo 1
@@ -714,8 +802,8 @@ function run_instance() {
 	
 	    # if one of the two processes started as the instance
 	    # fails to start then kill both processes
-	    kill_program $NEW_XVFB_PID
-	    kill_program $NEW_SELENIUM_PID
+	    kill_program $NEW_XVFB_PID > /dev/null
+	    kill_program $NEW_SELENIUM_PID > /dev/null
 	    echo 0
 	fi
 	
@@ -728,6 +816,13 @@ function remove_instance() {
 }
 
 function list_instances() {
+    local SOME_VAR="TEST"
+}
+
+# Intended to fetch an instance status
+# for the purpose determining if it is
+# free or busy
+function get_instance_status() {
     local SOME_VAR="TEST"
 }
 
@@ -772,13 +867,11 @@ function print_usage() {
 
 # Clean up PIDs in the PID file
 verify_pids_in_pid_file
-exit 0
 
 case "$1" in
 start)
     check_requirements
     run_instance
-    exit 0
     ;;
 stop)
     check_requirements
@@ -812,6 +905,9 @@ stop)
     fi
     echo
     ;;
+stop-all)
+    clear_all_instances
+    ;;
 status)
     check_requirements
     if [ -z $PID ]
@@ -819,6 +915,13 @@ status)
         echo "Selenium service is not running."
     else
         echo "Selenium service is running. PID: $PID"
+    fi
+    ;;
+run)
+    if [ $# -eq 2 ]; then
+        SOME_VAR="test"
+    else
+        print_usage
     fi
     ;;
 list-selenium)
