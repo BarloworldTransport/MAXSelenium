@@ -853,6 +853,7 @@ function print_usage() {
     echo -e ""
     echo -e "start:                             start a new selenium server instance"
     echo -e "stop <instance>:                   stop a selenium server instance"
+    echo -e "stop-all:                          stop all selenium server instances. Be careful with this!"
     echo -e "status [instance]:                 status of all instances or a particular instance"
     echo -e "list-selenium:                     find and list all selenium server files on your system"
     echo -e "                                   as well as show the set default selenium file"
