@@ -550,6 +550,15 @@ function check_pid() {
 
 }
 
+function rewrite_pid_file() {
+
+    if [ ${#SELENIUM_PIDLIST[@]} -ne 0 -a ${#XVFB_PIDLIST[@]} -ne 0 ]; then
+    {
+        
+    }
+
+}
+
 function add_pid_to_file() {
 
     # Save passed array argument to a local variable
