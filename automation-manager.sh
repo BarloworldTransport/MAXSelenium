@@ -19,11 +19,6 @@
 #       You should have received a copy of the GNU General Public License
 #       along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-# DEVLEPER NOTES TO SELF
-#
-# BUGS:
-# None at the moment
-
 # Declare global array variables
 declare -a LISTVERSIONS
 declare -a INSTANCES
@@ -38,9 +33,11 @@ CONFIG_DISPLAY="DISPLAY=99"
 CONFIG_TIMEOUT="TIMEOUT=0"
 CONFIG_BROWSERTIMEOUT="BROWSERTIMEOUT=0"
 CONFIG_SELENIUM="SELENIUM=/opt/selenium/selenium-server.jar"
+CONFIG_FANDV_SCRIPT="SCRIPT_FANDV=$HOME/BWT/MAXSelenium/MAXLive_CreateFandVContracts.php"
+CONFIG_NCP_RATES_SCRIPT="SCRIPT_NCP_RATES=$HOME/BWT/MAXSelenium/MAXLive_NCP_Rates_Update.php"
 CONFIG_DATA=($CONFIG_PORT $CONFIG_DISPLAY $CONFIG_TIMEOUT $CONFIG_BROWSERTIMEOUT $CONFIG_SELENIUM)
-CONFIG_FILE=/etc/default/automation-manager
-PIDFILE=./testpidfile
+CONFIG_FILE="$HOME/.automation-manager.conf"
+PIDFILE="$HOME/.automation-manager.pid"
 TMPCACHEFILE=/tmp/amcache.tmp
 # End
 # Set variables for program locations to call
@@ -59,6 +56,7 @@ WC=$(which wc)
 NETSTAT=$(which netstat)
 RM=$(which rm)
 PS=$(which ps)
+PHPUNIT=$(which phpunit)
 # End
 # Set other variables
 COUNT=0
@@ -552,10 +550,71 @@ function check_pid() {
 
 function rewrite_pid_file() {
 
-    if [ ${#SELENIUM_PIDLIST[@]} -ne 0 -a ${#XVFB_PIDLIST[@]} -ne 0 ]; then
-    {
+    local COUNT=0
+
+    # Fetch array passed to the function
+    local LINE_ARRAY=("$@")
+
+    if [ ! -e $PIDFILE ]; then
+        $TOUCH $PIDFILE
+    fi
+
+    if [ -e $PIDFILE ]; then
+
+        # Clean up the instances in the PID file and reload the PIDs from the PID file
+        verify_pids_in_pid_file > /dev/null
+
+        if [ ${#SELENIUM_PIDLIST[@]} -ne 0 -a ${#XVFB_PIDLIST[@]} -ne 0 ]; then
+            # Rewrite PID file and exclude comment line
+            echo -e "PID file array: ${SELENIUM_PIDLIST[@]}"
+
+            for LINE_ITEM in $($CAT $PIDFILE | $SED -n -e '/^#/!p')
+            do
+
+                # Increment count
+                COUNT=$((COUNT + 1))
+                echo "Count: $COUNT"
+
+                # Setup SED params
+                SEDPARAMS="s/^[0-9]\{1,2\},/$COUNT,/"
+
+                # Change line instance #
+                LINE_STRING=$(echo $LINE_ITEM | $SED $SEDPARAMS | $HEAD -n 1)
+                
+                # If adding first entry then write the comment line first
+                if [ $COUNT -eq 1 ]; then
+                    # Empty PID file
+                    $CAT /dev/null > $PIDFILE
+
+                    # Add comment line
+                    echo "#ID,SELENIUMPID,XVFBPID,PORT,DISPLAY,PHPUNIT" >> $PIDFILE
+                fi
+
+                # Append file
+                echo $LINE_STRING >> $PIDFILE
+
+            done
+ 
+        fi
         
-    }
+    fi
+
+    if [ ${#LINE_ARRAY[@]} -gt 0 ]; then
+
+        for LINE_ITEM in ${LINE_ARRAY[@]}
+        do
+            VALIDATE_LINE_ITEM=$(echo $LINE_ITEM | $SED -n -e '/^[0-9]\{1,2\},[0-9]\{1,8\},[0-9]\{1,8\},[0-9]\{1,4\},[0-9]\{1,4\},[0-9]\{1,8\}/p')
+
+            if [ -n $VALIDATE_LINE_ITEM ]; then
+                echo $LINE_ITEM >> $PIDFILE
+            fi
+
+        done
+        
+        echo 1
+    else
+        echo 0
+    fi
 
 }
 
@@ -573,6 +632,7 @@ function add_pid_to_file() {
 	    local _DISPLAY=${ARRAY[3]}
 	    local YCOUNT=$(get_instance_count)
         local COUNT=0
+        declare local ARRAY
 	    
 	
     	if [ ! -e $PIDFILE ]; then
@@ -609,34 +669,13 @@ function add_pid_to_file() {
                     
                     # Build string to append to PID file
                     _STRING_VALUE="$YCOUNT,$_SELENIUM_PID,$_XVFB_PID,$_PORT,$_DISPLAY,0"
+                    
+                    ARRAY=($_STRING_VALUE)
 
-                    # Rewrite PID file and exclude comment line
-                    for LINE_ITEM in $($CAT $PIDFILE | $SED -n -e '/^#/!p')
-                    do
 
-                        # Increment count
-                        COUNT=$((COUNT + 1))
-
-                        # Setup SED params
-                        SEDPARAMS="s/^[0-9]\{1,2\},/$COUNT,/"
-
-                        # Change line instance #
-                        LINE_STRING=$(echo $LINE_ITEM | $SED $SEDPARAMS | $HEAD -n 1)
-                        
-                        if [ $COUNT -eq 1 ]; then
-                            # Empty PID file
-                            $CAT /dev/null > $PIDFILE
-
-                            # Add comment line
-                            echo "#ID,SELENIUMPID,XVFBPID,PORT,DISPLAY,PHPUNIT" >> $PIDFILE
-                        fi
-
-                        # Append file
-                        echo $LINE_STRING >> $PIDFILE
-
-                    done
-
-                    echo $_STRING_VALUE >> $PIDFILE
+                    # Rewrite PID file with new instance
+                    #RESULT=$(rewrite_pid_file ${ARRAY[@]})
+                    rewrite_pid_file ${ARRAY[@]}
 
                     # Prepare SED params
                     SEDPARAMS="/$_STRING_VALUE/p"
@@ -798,6 +837,8 @@ function run_instance() {
 		
 		# Attempt to add data to the PID file
 		RESULT=$(add_pid_to_file ${PID_DATA[@]})
+        echo -e $RESULT
+        exit 1
 		
 		if [ $RESULT -eq 0 -o $RESULT -eq 2 ]; then
             kill_program $NEW_XVFB_PID > /dev/null
@@ -843,7 +884,62 @@ function find_unmanaged_instances() {
 }
 
 function run_automation_fand_rollover() {
-    local SOME_VAR="TEST"
+    local INSTANCE=0
+    local INSTANCE_SELENIUM_PID=0
+    local INSTANCE_XVFB_PID=0
+    local SCRIPT_LOG_FILE=0
+    run_instance
+    
+    # Fetch the newly created instance
+    if [ ${#SELENIUM_PIDLIST[@]} -ne 0 ]; then
+        INSTANCE=${#SELENIUM_PIDLIST[@]}
+        INSTANCE=$((INSTANCE - 1))
+        INSTANCE_SELENIUM_PID=${SELENIUM_PIDLIST[INSTANCE]}
+        INSTANCE_XVFB_PID=${XVFB_PIDLIST[INSTANCE]}
+        echo -e "Print instance picked for FANDV"
+        exit 0
+        # Run the script
+        if [ -n $1 ]; then
+            if [ -r $1 ]; then
+                if [ -r $PIDFILE ]; then
+                    
+                    SEDPARAMS="/$INSTANCE,$INSTANCE_SELENIUM_PID,$INSTANCE_XVFB_PID,.*/p"
+                    INSTANCE_PORT=$($SED -n -e $SEDPARAMS | $AWK '{print $4}')
+                    if [ -e $SCRIPT_FANDV -a -x $SCRIPT_FANDV ]; then
+                        SCRIPT_LOG_FILE="./PHPUNIT_FANDV_SCRIPT_$INSTANCE_PORT.log"
+
+                        # Set environment variables
+                        export FANDV_ROLLOVER_FILE=$1
+
+                        $PHPUNIT $SCRIPT_FANDV > $SCRIPT_LOG_FILE 2>&1 &
+                        PROCESS_LOOKUP_STRING="phpunit.*$SCRIPT_FANDV.*$SCRIPT_FILE"
+
+                        if [ -n $PROCESS_LOOKUP_STRING ]; then
+                            IS_RUNNING=$($PS -o pid,user,command | $SED -n -e '/.*PID.*USER.*COMMAND/!p' | $GREP -Pi $PROCESS_LOOKUP_STRING)
+                            if [ -n $IS_RUNNING ]; then
+                                echo -e "Successfully started F and V Rollover on selenium instance: $INSTANCE"
+                                echo -e "PHPUnit log file: $SCRIPT_LOG_FILE"
+                            fi
+                        else
+                            echo -e "Failed to start FandV Rollover script"
+                        fi
+                        
+                    else
+                        echo -e "Could not the F and V Script to run at set location:"
+                        echo -e "$SCRIPT_FANDV"
+                        echo -e "Please set the correct location of the script in the following config file:"
+                        echo -e "$CONFIG_FILE"
+                        exit 1
+                    fi
+                fi
+            else
+                clear && clear && clear
+                echo -e "ERROR:"
+                echo -e "Could not find the argument supplied XLS file: $1"
+                echo -e "Please verify and/or correct its location"
+            fi
+        fi
+    fi
 }
 
 function run_automation_ncp_updates() {
@@ -920,18 +1016,31 @@ stop-all)
     ;;
 status)
     check_requirements
-    if [ -z $PID ]
-    then
-        echo "Selenium service is not running."
+    if [ -e $PIDFILE ]; then
+        clear && clear && clear
+        echo -e "Currently managed selenium instances:"
+        $CAT $PIDFILE
     else
-        echo "Selenium service is running. PID: $PID"
+        echo -e "There is no selenium instances managed at this moment."
     fi
     ;;
 run)
-    if [ $# -eq 2 ]; then
-        SOME_VAR="test"
+    if [ $# -eq 3 ]; then
+        case "$2" in
+        fandv-rollover)
+            echo -e "Attempting to run F and V contracts rollover script..."
+            run_automation_fand_rollover $3
+            ;;
+        ncp-rate-update)
+            echo -e "Attempting to run NCP rates update script..."
+            ;;
+        *)
+            print_usage
+            echo -e "ERROR: Invalid argument given for run option"
+        esac
     else
         print_usage
+        echo "ERROR: Not all required arguments where supplied"
     fi
     ;;
 list-selenium)

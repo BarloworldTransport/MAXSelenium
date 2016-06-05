@@ -202,6 +202,12 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase
             print("XLS filename: " . self::ENV_FILE . PHP_EOL);
             // Terminate
             exit();
+        } else {
+            $this->_wdport = $_env_port;
+            $this->_xls = $_env_file;
+            print("Using environment variables for the following settings:" . PHP_EOL);
+            print("Webdriver Port: " . $_env_port . PHP_EOL);
+            print("XLS file: " . $_env_file . PHP_EOL);
         }
         // : End
     }
