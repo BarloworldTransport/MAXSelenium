@@ -1035,6 +1035,8 @@ run)
         case "$2" in
         fandv-rollover)
             echo -e "Attempting to run F and V contracts rollover script..."
+			echo -e "$3"
+			exit 0
             run_automation_fand_rollover $3
             ;;
         ncp-rate-update)
