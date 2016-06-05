@@ -912,7 +912,7 @@ function run_automation_fand_rollover() {
                     SEDPARAMS="/$INSTANCE,$INSTANCE_SELENIUM_PID,$INSTANCE_XVFB_PID,.*/p"
                     INSTANCE_PORT=$($SED -n -e $SEDPARAMS | $AWK '{print $4}')
                     if [ -e $SCRIPT_FANDV -a -x $SCRIPT_FANDV ]; then
-                        SCRIPT_LOG_FILE="./PHPUNIT_FANDV_SCRIPT_$INSTANCE_PORT.log"
+                        SCRIPT_LOG_FILE="$HOME/.PHPUNIT_FANDV_SCRIPT_$INSTANCE_PORT.log"
 
                         # Set environment variables
                         export FANDV_ROLLOVER_FILE=$1
