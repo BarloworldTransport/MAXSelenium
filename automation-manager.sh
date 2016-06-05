@@ -340,7 +340,7 @@ function find_free_display() {
     
     while [ $FOUNDDISPLAY -eq 0 ]
     do
-		result=$($PS au | $GREP -i 'xvfb' | $GREP $TEMPDISPLAY )
+		result=$($PS x -o pid,user,command | $GREP -i 'xvfb' | $GREP $TEMPDISPLAY )
         
         if [ -z "$result" ]; then
             FOUNDDISPLAY=1
@@ -462,8 +462,8 @@ function verify_pids_in_pid_file() {
 		do
 
 			# Check if selenium process is running
-			RESULT_SELENIUM_PID=$($PS -o pid,user,command ${SELENIUM_PIDLIST[XCOUNT]} | $SED -n -e '/.*PID.*COMMAND/!p' | $HEAD -n 1)
-			RESULT_XVBF_PID=$($PS -o pid,user,command ${XVFB_PIDLIST[XCOUNT]} | $SED -n -e '/.*PID.*COMMAND/!p' | $HEAD -n 1)
+			RESULT_SELENIUM_PID=$($PS x -o pid,user,command ${SELENIUM_PIDLIST[XCOUNT]} | $SED -n -e '/.*PID.*COMMAND/!p' | $HEAD -n 1)
+			RESULT_XVBF_PID=$($PS x -o pid,user,command ${XVFB_PIDLIST[XCOUNT]} | $SED -n -e '/.*PID.*COMMAND/!p' | $HEAD -n 1)
 			
 			if [ -z "$RESULT_SELENIUM_PID" -o -z "$RESULT_XVBF_PID" ]; then
 
@@ -648,8 +648,8 @@ function add_pid_to_file() {
     	if [ -e $PIDFILE ]; then
     	
     	    # Check if the processes are running
-			local RESULT_SELENIUM=$($PS -o pid,user,command ${ARRAY[0]} | $SED -n -e '/.*PID.*COMMAND.*/!p' | $HEAD -n 1)
-			local RESULT_XVFB=$($PS -o pid,user,command ${ARRAY[1]} | $SED -n -e '/.*PID.*COMMAND.*/!p' | $HEAD -n 1)
+			local RESULT_SELENIUM=$($PS x -o pid,user,command ${ARRAY[0]} | $SED -n -e '/.*PID.*COMMAND.*/!p' | $HEAD -n 1)
+			local RESULT_XVFB=$($PS x -o pid,user,command ${ARRAY[1]} | $SED -n -e '/.*PID.*COMMAND.*/!p' | $HEAD -n 1)
 
 			if [ -n "$RESULT_SELENIUM" -a -n "$RESULT_XVFB" ]; then
 			    
@@ -727,7 +727,7 @@ function get_pid_for_program() {
     if [ -n "$1" ]; then
     
         # Run ps to and pipe out to grep to fetch a matching process
-        PSQUERY=$($PS au | $GREP -Pi "$1" | $SED -n -e '/grep/!p')
+        PSQUERY=$($PS x -o user,pid,command | $GREP -Pi "$1" | $SED -n -e '/grep/!p')
         
         if [ -n "$PSQUERY" ]; then
             
@@ -765,7 +765,7 @@ function clear_all_instances() {
             for i in ${SELENIUM_PIDLIST[@]}
             do
                 echo -e "Print process:"
-                $PS -o pid,user,command $i | $SED -n -e '/.*PID.*USER.*COMMAND/!p'
+                $PS x -o pid,user,command $i | $SED -n -e '/.*PID.*USER.*COMMAND/!p'
 
                 echo -e "Killing process PID: $i"
                 KILLSTATUS=$(kill_program $i)
@@ -783,7 +783,7 @@ function clear_all_instances() {
             for i in ${XVFB_PIDLIST[@]}
             do
                 echo -e "Print process:"
-                $PS -o pid,user,command $i | $SED -n -e '/.*PID.*USER.*COMMAND/!p'
+                $PS x -o pid,user,command $i | $SED -n -e '/.*PID.*USER.*COMMAND/!p'
 
                 echo -e "Killing process PID: $i"
                 KILLSTATUS=$(kill_program $i)
@@ -921,7 +921,7 @@ function run_automation_fand_rollover() {
                         PROCESS_LOOKUP_STRING="phpunit.*$SCRIPT_FANDV.*$SCRIPT_FILE"
 
                         if [ -n $PROCESS_LOOKUP_STRING ]; then
-                            IS_RUNNING=$($PS -o pid,user,command | $SED -n -e '/.*PID.*USER.*COMMAND/!p' | $GREP -Pi $PROCESS_LOOKUP_STRING)
+                            IS_RUNNING=$($PS x -o pid,user,command | $SED -n -e '/.*PID.*USER.*COMMAND/!p' | $GREP -Pi $PROCESS_LOOKUP_STRING)
                             if [ -n $IS_RUNNING ]; then
                                 echo -e "Successfully started F and V Rollover on selenium instance: $INSTANCE"
                                 echo -e "PHPUnit log file: $SCRIPT_LOG_FILE"
