@@ -815,8 +815,8 @@ function run_instance() {
 
 	local FREE_PORT=$(find_free_port)
 	local FREE_DISPLAY=$(find_free_display)
-	local NEW_XVFB_LOGFILE=/var/log/xvfb_$FREE_PORT.log
-	local NEW_SELENIUM_LOGFILE=/var/log/selenium_$FREE_PORT.log
+	local NEW_XVFB_LOGFILE=$HOME/.xvfb_$FREE_PORT.log
+	local NEW_SELENIUM_LOGFILE=$HOME/.selenium_$FREE_PORT.log
 
 	$XVFB :$FREE_DISPLAY -ac -screen 0 $XVFBSCREENRES > $NEW_XVFB_LOGFILE 2>&1 &
 	export DISPLAY=localhost:$FREE_DISPLAY.0
