@@ -826,8 +826,6 @@ function run_instance() {
 	local NEW_XVFB_PID=$(get_pid_for_program $GREP_PARAMS)
 	GREP_PARAMS="$SELENIUM.*$FREE_PORT"
 	local NEW_SELENIUM_PID=$(get_pid_for_program $GREP_PARAMS)
-	echo -e "Selenium PID: $NEW_SELENIUM_PID"
-	echo -e "XVFB PID: $NEW_XVFB_PID"
 	
 	if [ -n "$NEW_XVFB_PID" -a -n "$NEW_SELENIUM_PID" ]; then
         
@@ -843,8 +841,6 @@ function run_instance() {
 		
 		# Attempt to add data to the PID file
 		RESULT=$(add_pid_to_file ${PID_DATA[@]})
-        echo -e $RESULT
-        exit 1
 		
 		if [ $RESULT -eq 0 -o $RESULT -eq 2 ]; then
             kill_program $NEW_XVFB_PID > /dev/null
@@ -895,6 +891,7 @@ function run_automation_fand_rollover() {
     local INSTANCE_XVFB_PID=0
     local SCRIPT_LOG_FILE=0
     run_instance
+    echo -e "TEST"
     
     # Fetch the newly created instance
     if [ ${#SELENIUM_PIDLIST[@]} -ne 0 ]; then
@@ -1035,8 +1032,6 @@ run)
         case "$2" in
         fandv-rollover)
             echo -e "Attempting to run F and V contracts rollover script..."
-			echo -e "$3"
-			exit 0
             run_automation_fand_rollover $3
             ;;
         ncp-rate-update)
