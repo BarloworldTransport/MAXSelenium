@@ -138,6 +138,12 @@ function check_requirements() {
         echo -e "netstat was not found and/or is not executable but is required"
         exit 1
     fi
+
+    # Check for netstat and that it is executable
+    if [ ! -x $PHPUNIT ]; then
+        echo -e "PHPUnit was not found and/or is not executable but is required"
+        exit 1
+    fi
     
     # Check for selenium and that it is executable
     if [ ! -x $SELENIUM ]; then
