@@ -413,14 +413,12 @@ function load_pids_from_pid_file() {
 			fi
 
 		done
-		
 		# Return 1 as it is believed to have completed successfully at this point
 		echo 1
 	else
 		# Return 0 to indicate fail to load PID IDs from the file
 		echo 0
 	fi
-    
 }
 
 function remove_pid() {
@@ -842,11 +840,11 @@ function run_instance() {
 		# Attempt to add data to the PID file
 		RESULT=$(add_pid_to_file ${PID_DATA[@]})
 		
-		if [ $RESULT -eq 0 -o $RESULT -eq 2 ]; then
+		if [ "$RESULT" == "0" -o "$RESULT" == "2" ]; then
             kill_program $NEW_XVFB_PID > /dev/null
             kill_program $NEW_SELENIUM_PID > /dev/null
             echo 0
-        elif [ $RESULT -eq 1 ]; then
+        elif [ "$RESULT" == "1"  ]; then
             echo 1
 		fi
 		
@@ -858,7 +856,6 @@ function run_instance() {
 	    kill_program $NEW_SELENIUM_PID > /dev/null
 	    echo 0
 	fi
-	
 }
 
 # This function is intended to stop an instance
@@ -891,9 +888,8 @@ function run_automation_fand_rollover() {
     local INSTANCE_XVFB_PID=0
     local SCRIPT_LOG_FILE=0
     run_instance
-    echo -e "TEST"
-    
     # Fetch the newly created instance
+
     if [ ${#SELENIUM_PIDLIST[@]} -ne 0 ]; then
         INSTANCE=${#SELENIUM_PIDLIST[@]}
         INSTANCE=$((INSTANCE - 1))
@@ -1028,6 +1024,7 @@ status)
     fi
     ;;
 run)
+    check_requirements
     if [ $# -eq 3 ]; then
         case "$2" in
         fandv-rollover)
