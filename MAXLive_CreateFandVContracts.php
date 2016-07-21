@@ -173,8 +173,13 @@ class MAXLive_CreateFandVContracts extends PHPUnit_Framework_TestCase {
 			$w = new PHPWebDriver_WebDriverWait ( $this->_session );
 			
 			// : Get xls data
-			$FandVContract = new FandVReadXLSData ( $file );
-			$this->_data = $FandVContract->getData ();
+			$type = (string) mime_content_type($file);
+			if ($type === 'text/plain') {
+			    $this->_data = json_decode(utf8_encode(file_get_contents($argv[1])), true);
+			} else {
+			    $FandVContract = new FandVReadXLSData ( $file );
+			    $this->_data = $FandVContract->getData ();
+			}
 			// : End
 			
 			// : Build columns to be used when creating the error report spreadsheet
